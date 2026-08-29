@@ -187,7 +187,7 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
               return (
                 <div
                   key={piar.id}
-                  className={`student-card-item ${isActive ? 'active' : ''}`}
+                  className={`student-card-item ${isActive ? 'active' : ''} ${activeDropdownId === piar.id ? 'menu-open' : ''}`}
                 >
                   {/* Left content area */}
                   <div className="sc-body">
@@ -250,26 +250,13 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
                   <div className="sc-actions no-print" onClick={e => e.stopPropagation()}>
                     {isActive ? (
                       <button
-                        className="sc-btn-manage"
+                        className="sc-btn-deselect"
                         onClick={(e) => {
                           e.stopPropagation();
                           setActiveStudentId(null);
                           showToast('Se quitó la selección del estudiante.');
                         }}
                         title="Quitar Selección de Estudiante"
-                        style={{
-                          backgroundColor: 'rgba(239, 68, 68, 0.15)',
-                          color: '#ef4444',
-                          borderColor: 'rgba(239, 68, 68, 0.3)'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.25)';
-                          e.currentTarget.style.borderColor = '#ef4444';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.15)';
-                          e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
-                        }}
                       >
                         <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
                         Deseleccionar
@@ -287,7 +274,7 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
 
                     <div style={{ position: 'relative' }}>
                       <button
-                        className="sc-btn-more"
+                        className={`sc-btn-more ${activeDropdownId === piar.id ? 'active' : ''}`}
                         onClick={(e) => {
                           e.stopPropagation();
                           setActiveDropdownId(activeDropdownId === piar.id ? null : piar.id);

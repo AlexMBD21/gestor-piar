@@ -14,12 +14,13 @@ import ScrollToTop from '../components/ScrollToTop';
 
 export default function AppPage() {
   const { profile, isSuperAdmin, signOut } = useAuth();
-  const { getActiveStudent, activeStudentId, unsavedChanges } = usePiar();
+  const { getActiveStudent, activeStudentId, unsavedChanges, discardActiveStudentChanges } = usePiar();
   const [activeTab, setActiveTab] = useState('tab-dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('piar_sidebar_collapsed') === 'true');
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('piar_dark_mode') === 'enabled');
   const [toasts, setToasts] = useState([]);
   const [showStudentModal, setShowStudentModal] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ show: false, tabId: null });
 
   useEffect(() => {
     if (darkMode) document.body.classList.add('dark-mode');
@@ -50,8 +51,7 @@ export default function AppPage() {
 
   const switchTab = async (tabId, overrideStudentId = null) => {
     if (unsavedChanges && (tabId === 'tab-dashboard' || tabId === 'tab-admin')) {
-      showToast('Por favor, guarda tu aportación al final de la página antes de salir.', 'warning');
-      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      setConfirmModal({ show: true, tabId });
       return;
     }
     setActiveTab(tabId);
@@ -192,6 +192,47 @@ export default function AppPage() {
           switchTab={switchTab}
           showToast={showToast}
         />
+      )}
+
+      {confirmModal.show && (
+        <div id="modal-confirm-discard" className="modal-overlay active" onClick={(e) => e.target.id === 'modal-confirm-discard' && setConfirmModal({ show: false, tabId: null })}>
+          <div className="modal-container" style={{ maxWidth: '420px' }}>
+            <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: '8px' }}>
+              <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--warning)' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>warning</span>
+                Cambios sin guardar
+              </h3>
+              <button className="modal-close" onClick={() => setConfirmModal({ show: false, tabId: null })}>&times;</button>
+            </div>
+            <div className="modal-body" style={{ padding: '0 24px 20px 24px', fontSize: '0.95rem', color: 'var(--text-main)', lineHeight: '1.5' }}>
+              Tienes aportaciones sin guardar en el formulario. ¿Deseas descartar los cambios y salir?
+            </div>
+            <div className="modal-footer" style={{ borderTop: 'none', paddingTop: '0', display: 'flex', gap: '12px' }}>
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                onClick={() => setConfirmModal({ show: false, tabId: null })}
+                style={{ flex: 1, padding: '10px 16px', height: 'auto' }}
+              >
+                Seguir Editando
+              </button>
+              <button 
+                type="button" 
+                className="btn btn-danger" 
+                onClick={async () => {
+                  setConfirmModal({ show: false, tabId: null });
+                  await discardActiveStudentChanges();
+                  showToast('Cambios no guardados descartados.', 'warning');
+                  setActiveTab(confirmModal.tabId);
+                  window.scrollTo(0, 0);
+                }}
+                style={{ flex: 1, padding: '10px 16px', height: 'auto' }}
+              >
+                Descartar y Salir
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <div id="toast-container" className="toast-container">

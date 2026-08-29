@@ -102,6 +102,13 @@ export function PiarProvider({ children }) {
     setUnsavedChanges(true);
   };
 
+  const discardActiveStudentChanges = async () => {
+    setLoading(true);
+    await loadPiars();
+    setUnsavedChanges(false);
+    setLoading(false);
+  };
+
   const saveActivePiar = async () => {
     const activeStudent = getActiveStudent();
     if (!activeStudent || !unsavedChanges) return true;
@@ -295,7 +302,8 @@ export function PiarProvider({ children }) {
     <PiarContext.Provider value={{
       piars, loading, activeStudentId, setActiveStudentId, editLogs,
       getActiveStudent, savePiar, createPiar, deletePiar, importPiar, loadPiars, releaseSectionLock,
-      unsavedChanges, setUnsavedChanges, updateLocalPiarData, saveActivePiar
+      unsavedChanges, setUnsavedChanges, updateLocalPiarData, saveActivePiar,
+      discardActiveStudentChanges
     }}>
       {children}
     </PiarContext.Provider>
