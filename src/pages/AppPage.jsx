@@ -54,11 +54,6 @@ export default function AppPage() {
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
       return;
     }
-    const studentId = overrideStudentId || activeStudentId;
-    if (!studentId && tabId !== 'tab-dashboard' && tabId !== 'tab-admin') {
-      showToast('Seleccione un estudiante en el Panel de Control para acceder a esta sección.', 'warning');
-      return;
-    }
     setActiveTab(tabId);
     window.scrollTo(0, 0);
   };

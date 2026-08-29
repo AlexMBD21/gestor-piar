@@ -1,4 +1,5 @@
 import { usePiar } from '../context/PiarContext';
+import { PLantillasPIAR } from '../lib/piarTemplates';
 import Anexo1DatosPersonales from './anexos/Anexo1DatosPersonales';
 import Anexo1Salud from './anexos/Anexo1Salud';
 import Anexo1Hogar from './anexos/Anexo1Hogar';
@@ -7,10 +8,14 @@ import Anexo1Educativo from './anexos/Anexo1Educativo';
 export default function Anexo1Form({ showToast, switchTab }) {
   const { getActiveStudent, updateLocalPiarData, saveActivePiar, unsavedChanges } = usePiar();
   const activeStudent = getActiveStudent();
+  const isBlankTemplate = !activeStudent;
 
-  if (!activeStudent) return null;
+  const displayStudent = activeStudent || {
+    id: 'blanco-temp',
+    data: PLantillasPIAR.blanco
+  };
 
-  const data = activeStudent.data;
+  const data = displayStudent.data;
   const { general, estudiante, salud, hogar, trayectoria, institucion, firmas } = data.anexo1;
 
   const handleChange = (section, field, value) => {
@@ -40,28 +45,52 @@ export default function Anexo1Form({ showToast, switchTab }) {
   const handleFirmaChange = (index, field, value) => {
     const updatedData = { ...data };
     updatedData.anexo1.firmas[index][field] = value;
-    updateLocalPiarData(activeStudent.id, updatedData);
+    updateLocalPiarData(displayStudent.id, updatedData);
   };
 
   return (
     <>
-      {/* Diligenciamiento y Datos Personales */}
-      <Anexo1DatosPersonales general={general} estudiante={estudiante} handleChange={handleChange} />
+      {isBlankTemplate && (
+        <div className="no-print" style={{ 
+          backgroundColor: 'rgba(236, 106, 6, 0.1)', 
+          border: '1px dashed var(--warning)', 
+          borderRadius: '8px', 
+          padding: '16px', 
+          marginBottom: '20px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '12px',
+          color: 'var(--text-color, #1e293b)'
+        }}>
+          <span className="material-symbols-outlined" style={{ color: 'var(--warning)', fontSize: '24px' }}>info</span>
+          <div>
+            <strong style={{ display: 'block', marginBottom: '2px' }}>Vista de Formulario en Blanco (Solo Lectura)</strong>
+            <span style={{ fontSize: '0.9rem', color: 'var(--text-muted, #64748b)' }}>
+              No has seleccionado ningún estudiante. Estás viendo la estructura vacía del Anexo 1. Selecciona un estudiante en el Panel de Control para poder editarlo.
+            </span>
+          </div>
+        </div>
+      )}
 
-      {/* Entorno Salud */}
-      <Anexo1Salud salud={salud} handleChange={handleChange} handleTerapiaChange={handleTerapiaChange} />
+      <div style={isBlankTemplate ? { pointerEvents: 'none', opacity: 0.85 } : {}}>
+        {/* Diligenciamiento y Datos Personales */}
+        <Anexo1DatosPersonales general={general} estudiante={estudiante} handleChange={handleChange} />
 
-      {/* Entorno Hogar */}
-      <Anexo1Hogar hogar={hogar} handleChange={handleChange} />
+        {/* Entorno Salud */}
+        <Anexo1Salud salud={salud} handleChange={handleChange} handleTerapiaChange={handleTerapiaChange} />
 
-      {/* Entorno Educativo */}
-      <Anexo1Educativo 
-        trayectoria={trayectoria} 
-        institucion={institucion} 
-        firmas={firmas} 
-        handleChange={handleChange} 
-        handleFirmaChange={handleFirmaChange} 
-      />
+        {/* Entorno Hogar */}
+        <Anexo1Hogar hogar={hogar} handleChange={handleChange} />
+
+        {/* Entorno Educativo */}
+        <Anexo1Educativo 
+          trayectoria={trayectoria} 
+          institucion={institucion} 
+          firmas={firmas} 
+          handleChange={handleChange} 
+          handleFirmaChange={handleFirmaChange} 
+        />
+      </div>
 
       {/* Botones de Navegación del Wizard */}
       <div className="no-print" style={{ 
@@ -74,7 +103,7 @@ export default function Anexo1Form({ showToast, switchTab }) {
         gap: '12px'
       }}>
         <div style={{ flex: 1 }}>
-            {unsavedChanges && (
+            {unsavedChanges && !isBlankTemplate && (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', animation: 'fadeIn 0.3s ease-in-out' }}>
                 <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'var(--warning)', animation: 'pulse 1.5s infinite ease-in-out' }} />
                 <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--warning)' }}>Tienes aportaciones sin guardar</span>
@@ -82,13 +111,15 @@ export default function Anexo1Form({ showToast, switchTab }) {
             )}
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
-            <button type="button" className="btn btn-primary" onClick={async () => {
-              const success = await saveActivePiar();
-              if (success) showToast('Aportación guardada correctamente');
-              else showToast('Error al guardar', 'danger');
-            }}>
-              Guardar Aportación
-            </button>
+            {!isBlankTemplate && (
+              <button type="button" className="btn btn-primary" onClick={async () => {
+                const success = await saveActivePiar();
+                if (success) showToast('Aportación guardada correctamente');
+                else showToast('Error al guardar', 'danger');
+              }}>
+                Guardar Aportación
+              </button>
+            )}
             <button type="button" className="btn btn-secondary" onClick={() => switchTab('tab-anexo2')}>
               Siguiente Anexo 2 &rarr;
             </button>

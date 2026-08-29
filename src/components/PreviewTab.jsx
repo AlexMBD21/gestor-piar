@@ -1,31 +1,23 @@
 import { usePiar } from '../context/PiarContext';
-import { escHtml } from '../lib/piarTemplates';
+import { escHtml, PLantillasPIAR } from '../lib/piarTemplates';
 
 export default function PreviewTab({ showToast }) {
   const { getActiveStudent } = usePiar();
   const activeStudent = getActiveStudent();
+  const isBlankTemplate = !activeStudent;
 
-  if (!activeStudent) {
-    return (
-      <div className="card">
-        <div className="preview-container">
-          <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-muted)' }}>
-            <svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginBottom: 16, opacity: 0.4 }}>
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" />
-            </svg>
-            <p style={{ fontSize: '1rem' }}>No hay ningún estudiante seleccionado. Seleccione un estudiante en el Panel de Control para ver el documento.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const displayStudent = activeStudent || {
+    nombre: '',
+    grado: '',
+    data: PLantillasPIAR.blanco
+  };
 
-  const s = activeStudent.data;
+  const s = displayStudent.data;
 
-  const v = (val) => val && String(val).trim() ? String(val) : '—';
+  const v = (val) => val && String(val).trim() ? String(val) : (isBlankTemplate ? '' : '—');
   
   const fmtDate = (d) => {
-    if (!d) return '—';
+    if (!d) return isBlankTemplate ? '' : '—';
     const parts = d.split('-');
     if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
     return d;
@@ -75,7 +67,7 @@ export default function PreviewTab({ showToast }) {
       <div className="card-title-container no-print">
         <h3 className="card-title">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
-          Vista Previa del Documento PIAR
+          {isBlankTemplate ? 'Vista Previa (Formulario en Blanco)' : 'Vista Previa del Documento PIAR'}
         </h3>
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn btn-primary btn-sm" onClick={handlePrint}>
@@ -87,6 +79,28 @@ export default function PreviewTab({ showToast }) {
       <p className="card-description no-print" style={{ marginBottom: 20 }}>
         Esta es una previsualización del documento PIAR completo tal como se imprimirá.
       </p>
+
+      {isBlankTemplate && (
+        <div className="no-print" style={{ 
+          backgroundColor: 'rgba(236, 106, 6, 0.1)', 
+          border: '1px dashed var(--warning)', 
+          borderRadius: '8px', 
+          padding: '16px', 
+          marginBottom: '20px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '12px',
+          color: 'var(--text-color, #1e293b)'
+        }}>
+          <span className="material-symbols-outlined" style={{ color: 'var(--warning)', fontSize: '24px' }}>info</span>
+          <div>
+            <strong style={{ display: 'block', marginBottom: '2px' }}>Modo Documento en Blanco</strong>
+            <span style={{ fontSize: '0.9rem', color: 'var(--text-muted, #64748b)' }}>
+              No has seleccionado ningún estudiante. Estás viendo la plantilla vacía del formulario PIAR. Puedes visualizar su formato o imprimirla/guardarla en blanco para rellenarla manualmente.
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Mobile view placeholder */}
       <div className="mobile-print-notice no-print">
@@ -205,11 +219,11 @@ export default function PreviewTab({ showToast }) {
             <tbody>
               <tr>
                 <td style={{ width: '45%' }}>
-                  <strong>Afiliación al sistema de salud</strong> SI {sal.afiliacionSalud === 'SI' ? '✔' : '___'} No {sal.afiliacionSalud === 'NO' ? '✔' : '___'}
+                  <strong>Afiliación al sistema de salud</strong> SI {(!isBlankTemplate && sal.afiliacionSalud === 'SI') ? '✔' : '___'} No {(!isBlankTemplate && sal.afiliacionSalud === 'NO') ? '✔' : '___'}
                 </td>
                 <td style={{ width: '25%' }}><strong>EPS:</strong> {v(sal.eps)}</td>
-                <td style={{ width: '15%' }}><strong>Contributivo:</strong> {sal.regimen === 'Contributivo' ? '✔' : ''}</td>
-                <td style={{ width: '15%' }}><strong>Subsidiado:</strong> {sal.regimen === 'Subsidiado' ? '✔' : ''}</td>
+                <td style={{ width: '15%' }}><strong>Contributivo:</strong> {(!isBlankTemplate && sal.regimen === 'Contributivo') ? '✔' : ''}</td>
+                <td style={{ width: '15%' }}><strong>Subsidiado:</strong> {(!isBlankTemplate && sal.regimen === 'Subsidiado') ? '✔' : ''}</td>
               </tr>
               <tr>
                 <td colSpan="4"><strong>Lugar donde le atienden en caso de emergencia:</strong> {v(sal.lugarEmergencia)}</td>
@@ -221,20 +235,20 @@ export default function PreviewTab({ showToast }) {
             <tbody>
               <tr>
                 <td style={{ width: '35%' }}><strong>¿El niño está siendo atendido por el sector salud?</strong></td>
-                <td style={{ width: '8%', textAlign: 'center' }}>Si<br />{sal.atendidoSectorSalud === 'SI' ? '✔' : ''}</td>
-                <td style={{ width: '8%', textAlign: 'center' }}>No<br />{sal.atendidoSectorSalud === 'NO' ? '✔' : ''}</td>
+                <td style={{ width: '8%', textAlign: 'center' }}>Si<br />{(!isBlankTemplate && sal.atendidoSectorSalud === 'SI') ? '✔' : ''}</td>
+                <td style={{ width: '8%', textAlign: 'center' }}>No<br />{(!isBlankTemplate && sal.atendidoSectorSalud === 'NO') ? '✔' : ''}</td>
                 <td style={{ width: '49%' }}><strong>Frecuencia:</strong><br />{v(sal.frecuenciaAtencion)}</td>
               </tr>
               <tr>
                 <td><strong>Tiene diagnóstico médico:</strong></td>
-                <td style={{ textAlign: 'center' }}>Si<br />{sal.diagnosticoMedico === 'SI' ? '✔' : ''}</td>
-                <td style={{ textAlign: 'center' }}>No<br />{sal.diagnosticoMedico === 'NO' ? '✔' : ''}</td>
+                <td style={{ textAlign: 'center' }}>Si<br />{(!isBlankTemplate && sal.diagnosticoMedico === 'SI') ? '✔' : ''}</td>
+                <td style={{ textAlign: 'center' }}>No<br />{(!isBlankTemplate && sal.diagnosticoMedico === 'NO') ? '✔' : ''}</td>
                 <td><strong>Cuál:</strong><br />{v(sal.diagnosticoCual)}</td>
               </tr>
               <tr>
                 <td rowSpan="3" style={{ verticalAlign: 'middle' }}><strong>¿El niño está asistiendo a terapias?</strong></td>
-                <td rowSpan="3" style={{ textAlign: 'center', verticalAlign: 'middle' }}>Si<br />{sal.atendidoTerapias === 'SI' ? '✔' : ''}</td>
-                <td rowSpan="3" style={{ textAlign: 'center', verticalAlign: 'middle' }}>No<br />{sal.atendidoTerapias === 'NO' ? '✔' : ''}</td>
+                <td rowSpan="3" style={{ textAlign: 'center', verticalAlign: 'middle' }}>Si<br />{(!isBlankTemplate && sal.atendidoTerapias === 'SI') ? '✔' : ''}</td>
+                <td rowSpan="3" style={{ textAlign: 'center', verticalAlign: 'middle' }}>No<br />{(!isBlankTemplate && sal.atendidoTerapias === 'NO') ? '✔' : ''}</td>
                 <td style={{ padding: 0 }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none' }}>
                     <tbody>
@@ -261,7 +275,7 @@ export default function PreviewTab({ showToast }) {
             <tbody>
               <tr>
                 <td style={{ width: '50%' }}>
-                  <strong>¿Actualmente recibe tratamiento médico por alguna enfermedad en particular?</strong> SI {sal.tratamientoMedico === 'SI' ? '✔' : '___'} NO {sal.tratamientoMedico === 'NO' ? '✔' : '___'}
+                  <strong>¿Actualmente recibe tratamiento médico por alguna enfermedad en particular?</strong> SI {(!isBlankTemplate && sal.tratamientoMedico === 'SI') ? '✔' : '___'} NO {(!isBlankTemplate && sal.tratamientoMedico === 'NO') ? '✔' : '___'}
                 </td>
                 <td style={{ width: '50%' }}>
                   <strong>¿Cuál?</strong> <span style={{ fontSize: '8pt', color: '#666', fontWeight: 'normal' }}>Ejemplo: para epilepsia, oxígeno, insulina, etc.</span><br />
@@ -270,13 +284,13 @@ export default function PreviewTab({ showToast }) {
               </tr>
               <tr>
                 <td colSpan="2">
-                  <strong>¿Consume medicamentos? Si {sal.consumeMedicamentos === 'SI' ? '✔' : '___'} No {sal.consumeMedicamentos === 'NO' ? '✔' : '___'} Frecuencia y horario:</strong> <span style={{ fontSize: '8pt', color: '#666', fontWeight: 'normal' }}>(Si debe consumirlo en horario de clases)</span><br />
+                  <strong>¿Consume medicamentos? Si {(!isBlankTemplate && sal.consumeMedicamentos === 'SI') ? '✔' : '___'} No {(!isBlankTemplate && sal.consumeMedicamentos === 'NO') ? '✔' : '___'} Frecuencia y horario:</strong> <span style={{ fontSize: '8pt', color: '#666', fontWeight: 'normal' }}>(Si debe consumirlo en horario de clases)</span><br />
                   {v(sal.medicamentosFrecuencia)}
                 </td>
               </tr>
               <tr>
                 <td colSpan="2">
-                  <strong>¿Cuenta con productos de apoyo para favorecer su movilidad, comunicación e independencia?</strong> NO {sal.productosApoyo === 'NO' ? '✔' : '___'} SI {sal.productosApoyo === 'SI' ? '✔' : '___'} <strong>¿Cuáles?</strong> <span style={{ fontSize: '8pt', color: '#666', fontWeight: 'normal' }}>(Silla de ruedas, bastón, audífonos, etc.)</span><br />
+                  <strong>¿Cuenta con productos de apoyo para favorecer su movilidad, comunicación e independencia?</strong> NO {(!isBlankTemplate && sal.productosApoyo === 'NO') ? '✔' : '___'} SI {(!isBlankTemplate && sal.productosApoyo === 'SI') ? '✔' : '___'} <strong>¿Cuáles?</strong> <span style={{ fontSize: '8pt', color: '#666', fontWeight: 'normal' }}>(Silla de ruedas, bastón, audífonos, etc.)</span><br />
                   {v(sal.productosApoyoCuales)}
                 </td>
               </tr>
@@ -345,12 +359,12 @@ export default function PreviewTab({ showToast }) {
                 <td colSpan="4"><strong>Personas con quien vive:</strong><br />{v(hog.personasConQuienVive)}</td>
               </tr>
               <tr>
-                <td colSpan="2"><strong>¿Está bajo protección?</strong> Si {hog.bajoProteccion === 'SI' ? '✔' : '___'} No {hog.bajoProteccion === 'NO' ? '✔' : '___'}</td>
+                <td colSpan="2"><strong>¿Está bajo protección?</strong> Si {(!isBlankTemplate && hog.bajoProteccion === 'SI') ? '✔' : '___'} No {(!isBlankTemplate && hog.bajoProteccion === 'NO') ? '✔' : '___'}</td>
                 <td colSpan="2"></td>
               </tr>
               <tr>
                 <td colSpan="4">
-                  <strong>La familia recibe algún subsidio de alguna entidad:</strong> SI {hog.recibeSubsidio === 'SI' ? '✔' : '___'} NO {hog.recibeSubsidio === 'NO' ? '✔' : '___'} <strong>¿Cuál?</strong> {v(hog.subsidioCual)}
+                  <strong>La familia recibe algún subsidio de alguna entidad:</strong> SI {(!isBlankTemplate && hog.recibeSubsidio === 'SI') ? '✔' : '___'} NO {(!isBlankTemplate && hog.recibeSubsidio === 'NO') ? '✔' : '___'} <strong>¿Cuál?</strong> {v(hog.subsidioCual)}
                 </td>
               </tr>
             </tbody>
@@ -362,11 +376,11 @@ export default function PreviewTab({ showToast }) {
             <tbody>
               <tr>
                 <td style={{ width: '50%', padding: '4px 8px' }}>
-                  <strong>¿Ha estado vinculado en otra institución, fundación o educación inicial?</strong> SI {tra.vinculadoAntes === 'SI' ? '✔' : '___'} NO {tra.vinculadoAntes === 'NO' ? '✔' : '___'}
+                  <strong>¿Ha estado vinculado en otra institución, fundación o educación inicial?</strong> SI {(!isBlankTemplate && tra.vinculadoAntes === 'SI') ? '✔' : '___'} NO {(!isBlankTemplate && tra.vinculadoAntes === 'NO') ? '✔' : '___'}
                 </td>
                 <td style={{ width: '50%', padding: '4px 8px' }}>
-                  <strong>NO___ ¿Por qué?</strong> {tra.vinculadoAntes === 'NO' ? v(tra.observaciones) : ''}<br />
-                  <strong>SI___ ¿Cuáles?</strong> {tra.vinculadoAntes === 'SI' ? v(tra.vinculadoCuales) : ''}
+                  <strong>NO___ ¿Por qué?</strong> {(!isBlankTemplate && tra.vinculadoAntes === 'NO') ? v(tra.observaciones) : ''}<br />
+                  <strong>SI___ ¿Cuáles?</strong> {(!isBlankTemplate && tra.vinculadoAntes === 'SI') ? v(tra.vinculadoCuales) : ''}
                 </td>
               </tr>
               <tr>
@@ -376,7 +390,7 @@ export default function PreviewTab({ showToast }) {
                     <tbody>
                       <tr>
                         <td style={{ border: 'none', borderRight: '1px solid #000', width: '40%', padding: '4px 6px' }}>
-                          <strong>¿Aprobó?</strong> SI {tra.aprobo === 'SI' ? '✔' : '___'} NO {tra.aprobo === 'NO' ? '✔' : '___'}
+                          <strong>¿Aprobó?</strong> SI {(!isBlankTemplate && tra.aprobo === 'SI') ? '✔' : '___'} NO {(!isBlankTemplate && tra.aprobo === 'NO') ? '✔' : '___'}
                         </td>
                         <td style={{ border: 'none', width: '60%', padding: '4px 6px' }}><strong>Observaciones:</strong> {v(tra.observaciones)}</td>
                       </tr>
@@ -386,13 +400,13 @@ export default function PreviewTab({ showToast }) {
               </tr>
               <tr>
                 <td style={{ width: '50%', padding: '4px 8px' }}>
-                  <strong>¿Se recibe informe pedagógico cualitativo o PIAR previo?</strong> NO {tra.recibeInforme === 'NO' ? '✔' : '___'} SI {tra.recibeInforme === 'SI' ? '✔' : '___'}
+                  <strong>¿Se recibe informe pedagógico cualitativo o PIAR previo?</strong> NO {(!isBlankTemplate && tra.recibeInforme === 'NO') ? '✔' : '___'} SI {(!isBlankTemplate && tra.recibeInforme === 'SI') ? '✔' : '___'}
                 </td>
                 <td style={{ width: '50%', padding: '4px 8px' }}><strong>¿De qué institución proviene el informe?</strong><br />{v(tra.informeProcedencia)}</td>
               </tr>
               <tr>
                 <td style={{ width: '50%', padding: '4px 8px' }}>
-                  <strong>¿Está asistiendo en la actualidad a programas complementarios?</strong> NO {tra.programasComplementarios === 'NO' ? '✔' : '___'} SI {tra.programasComplementarios === 'SI' ? '✔' : '___'}
+                  <strong>¿Está asistiendo en la actualidad a programas complementarios?</strong> NO {(!isBlankTemplate && tra.programasComplementarios === 'NO') ? '✔' : '___'} SI {(!isBlankTemplate && tra.programasComplementarios === 'SI') ? '✔' : '___'}
                 </td>
                 <td style={{ width: '50%', padding: '4px 8px' }}><strong>¿Cuáles?</strong><br />{v(tra.programasCuales)}</td>
               </tr>
@@ -477,12 +491,12 @@ export default function PreviewTab({ showToast }) {
                 <td colSpan="2" style={{ textAlign: 'center', fontWeight: 'bold', backgroundColor: '#f1f5f9' }}>DATOS DEL ESTUDIANTE</td>
               </tr>
               <tr>
-                <td style={{ width: '50%' }}><strong>Nombre del estudiante:</strong><br />{v(activeStudent.nombre)}</td>
+                <td style={{ width: '50%' }}><strong>Nombre del estudiante:</strong><br />{isBlankTemplate ? '' : v(activeStudent?.nombre)}</td>
                 <td style={{ width: '50%' }}><strong>Documento de Identificación:</strong><br />{v(est.numeroIdentificacion)}</td>
               </tr>
               <tr>
                 <td style={{ width: '50%' }}><strong>Edad:</strong><br />{v(est.edad)}</td>
-                <td style={{ width: '50%' }}><strong>Grado:</strong><br />{v(activeStudent.grado)}</td>
+                <td style={{ width: '50%' }}><strong>Grado:</strong><br />{isBlankTemplate ? '' : v(activeStudent?.grado)}</td>
               </tr>
             </tbody>
           </table>
@@ -692,9 +706,9 @@ export default function PreviewTab({ showToast }) {
                 <td style={{ width: '65%' }} colSpan="2"><strong>Institución educativa y Sede:</strong><br />{v(gen3.institucionSede)}</td>
               </tr>
               <tr>
-                <td style={{ width: '35%' }}><strong>Nombre del estudiante:</strong><br />{v(activeStudent.nombre)}</td>
+                <td style={{ width: '35%' }}><strong>Nombre del estudiante:</strong><br />{isBlankTemplate ? '' : v(activeStudent?.nombre)}</td>
                 <td style={{ width: '35%' }}><strong>Documento de Identificación:</strong><br />{v(est.numeroIdentificacion)}</td>
-                <td style={{ width: '30%' }}><strong>Edad:</strong> {v(est.edad)}<br /><strong>Grado:</strong> {v(activeStudent.grado)}</td>
+                <td style={{ width: '30%' }}><strong>Edad:</strong> {v(est.edad)}<br /><strong>Grado:</strong> {isBlankTemplate ? '' : v(activeStudent?.grado)}</td>
               </tr>
               <tr>
                 <td style={{ width: '35%' }}><strong>Nombres equipo directivo y docentes:</strong></td>
@@ -775,9 +789,9 @@ export default function PreviewTab({ showToast }) {
                     <td style={{ fontWeight: 'bold' }}>{a.actividad}</td>
                     <td>{v(a.descripcion)}</td>
                     <td style={{ textAlign: 'center', fontWeight: 'bold' }}>
-                      <span style={{ margin: '0 4px', padding: '1px 4px', border: a.frecuencia === 'D' ? '1px solid #000' : 'none' }}>D</span>
-                      <span style={{ margin: '0 4px', padding: '1px 4px', border: a.frecuencia === 'S' ? '1px solid #000' : 'none' }}>S</span>
-                      <span style={{ margin: '0 4px', padding: '1px 4px', border: a.frecuencia === 'P' ? '1px solid #000' : 'none' }}>P</span>
+                      <span style={{ margin: '0 4px', padding: '1px 4px', border: (!isBlankTemplate && a.frecuencia === 'D') ? '1px solid #000' : 'none' }}>D</span>
+                      <span style={{ margin: '0 4px', padding: '1px 4px', border: (!isBlankTemplate && a.frecuencia === 'S') ? '1px solid #000' : 'none' }}>S</span>
+                      <span style={{ margin: '0 4px', padding: '1px 4px', border: (!isBlankTemplate && a.frecuencia === 'P') ? '1px solid #000' : 'none' }}>P</span>
                     </td>
                   </tr>
                 ))

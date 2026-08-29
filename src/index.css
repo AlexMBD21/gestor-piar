@@ -51,34 +51,34 @@
    DARK MODE PALETTE - MD3 (Based on exact user image)
    ========================================= */
 body.dark-mode {
-  --primary: #adc6ff;
-  --primary-hover: #d8e2ff;
-  --primary-light: #00285d;
-  --primary-rgb: 173, 198, 255;
+  --primary: #5c8ffa;
+  --primary-hover: #8ab0ff;
+  --primary-light: #102a55;
+  --primary-rgb: 92, 143, 250;
 
-  --secondary: #ffb690;
-  --tertiary: #4edea3;
-  --success: #4edea3;
-  --warning: #ffb690;
-  --danger: #ffb4ab;
+  --secondary: #ffa066;
+  --tertiary: #34d399;
+  --success: #34d399;
+  --warning: #ffa066;
+  --danger: #ff8a80;
 
-  --bg-app: #0b1326;
-  --bg-sidebar: #131b2e;
-  --bg-card: #171f33;
-  --bg-input: #222a3d;
+  --bg-app: #070d19;
+  --bg-sidebar: #0c1222;
+  --bg-card: #11192e;
+  --bg-input: #1b243d;
 
-  --text-main: #dae2fd;
-  --text-muted: #8c909f;
-  --text-on-primary: #002e6a;
+  --text-main: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-on-primary: #070d19;
 
-  --border-color: #2d3449; /* outline-variant */
-  --border-focus: #adc6ff;
+  --border-color: #20293f;
+  --border-focus: #5c8ffa;
 
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 10px 25px -3px rgba(0, 0, 0, 0.6), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
   
-  --shadow-glow: 0 4px 14px 0 rgba(77, 142, 255, 0.1);
+  --shadow-glow: 0 4px 14px 0 rgba(92, 143, 250, 0.15);
 }
 
 /* ==========================================

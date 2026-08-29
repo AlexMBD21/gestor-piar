@@ -248,14 +248,42 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
 
                   {/* Right: Action buttons */}
                   <div className="sc-actions no-print" onClick={e => e.stopPropagation()}>
-                    <button
-                      className="sc-btn-manage"
-                      onClick={(e) => { e.stopPropagation(); handleManage(piar); }}
-                      title="Gestionar PIAR"
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit_document</span>
-                      Gestionar
-                    </button>
+                    {isActive ? (
+                      <button
+                        className="sc-btn-manage"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveStudentId(null);
+                          showToast('Se quitó la selección del estudiante.');
+                        }}
+                        title="Quitar Selección de Estudiante"
+                        style={{
+                          backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                          color: '#ef4444',
+                          borderColor: 'rgba(239, 68, 68, 0.3)'
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.25)';
+                          e.currentTarget.style.borderColor = '#ef4444';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.15)';
+                          e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.3)';
+                        }}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>close</span>
+                        Deseleccionar
+                      </button>
+                    ) : (
+                      <button
+                        className="sc-btn-manage"
+                        onClick={(e) => { e.stopPropagation(); handleManage(piar); }}
+                        title="Gestionar PIAR"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit_document</span>
+                        Gestionar
+                      </button>
+                    )}
 
                     <div style={{ position: 'relative' }}>
                       <button

@@ -47,12 +47,64 @@ export default function Sidebar({ activeTab, switchTab, sidebarCollapsed, setSid
       {/* Student Selector — expandido */}
       <div className="sidebar-student-selector">
         <p>ESTUDIANTE EN GESTIÓN</p>
-        <button className="student-btn" disabled={!activeStudent}>
-          <span className="student-name">
-            {activeStudent ? `${activeStudent.nombre} (${activeStudent.grado || 'S/G'})` : 'Ninguno'}
-          </span>
-          <span className="material-symbols-outlined icon-more">unfold_more</span>
-        </button>
+        {activeStudent ? (
+          <div className="active-student-badge" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '10px 12px',
+            borderRadius: 'var(--radius-md, 12px)',
+            background: 'rgba(92, 143, 250, 0.12)',
+            border: '1px solid rgba(92, 143, 250, 0.3)',
+            color: 'var(--text-main)',
+            animation: 'fadeIn 0.2s ease-in-out',
+            boxShadow: 'var(--shadow-sm)'
+          }}>
+            <span className="material-symbols-outlined" style={{ 
+              fontSize: '20px', 
+              color: 'var(--primary)',
+              background: 'rgba(92, 143, 250, 0.15)',
+              borderRadius: '50%',
+              padding: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>school</span>
+            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+              <span className="student-name" style={{ 
+                fontSize: '0.85rem', 
+                fontWeight: 700, 
+                color: 'var(--text-main)',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+                {activeStudent.nombre}
+              </span>
+              <span style={{ 
+                fontSize: '0.75rem', 
+                color: 'var(--text-muted)',
+                fontWeight: 600
+              }}>
+                Grado: {activeStudent.grado || 'S/G'}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="active-student-badge-empty" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '10px 12px',
+            borderRadius: 'var(--radius-md, 12px)',
+            background: 'var(--bg-app)',
+            border: '1px dashed var(--border-color)',
+            color: 'var(--text-muted)'
+          }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '20px', color: 'var(--text-muted)' }}>person_off</span>
+            <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Ningún estudiante</span>
+          </div>
+        )}
       </div>
 
       {/* Student Avatar — solo visible cuando está contraído */}
@@ -74,7 +126,7 @@ export default function Sidebar({ activeTab, switchTab, sidebarCollapsed, setSid
               <div key={item.tab}>
                 <div className="nav-divider"></div>
                 <a
-                  className={`nav-link nav-link-preview ${activeTab === item.tab ? 'active' : ''} ${item.tab !== 'tab-dashboard' && !activeStudent ? 'nav-disabled' : ''}`}
+                  className={`nav-link nav-link-preview ${activeTab === item.tab ? 'active' : ''}`}
                   onClick={() => switchTab(item.tab)}
                   data-tooltip={item.label}
                 >
@@ -88,7 +140,7 @@ export default function Sidebar({ activeTab, switchTab, sidebarCollapsed, setSid
           return (
             <a
               key={item.tab}
-              className={`nav-link ${activeTab === item.tab ? 'active' : ''} ${item.tab !== 'tab-dashboard' && !activeStudent ? 'nav-disabled' : ''}`}
+              className={`nav-link ${activeTab === item.tab ? 'active' : ''}`}
               onClick={() => switchTab(item.tab)}
               data-tooltip={item.label}
             >
