@@ -77,60 +77,101 @@ export default function TeacherList() {
   };
 
   return (
-    <div className="card">
-      <div className="card-title-container">
-        <h3 className="card-title">Listado de Profesores</h3>
-        <button className="btn btn-success btn-sm" onClick={() => setShowCreateModal(true)}>
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    <div className="md3-card">
+      <div className="card-title-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+        <h3 className="card-title" style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)' }}>Listado de Profesores</h3>
+        <button className="btn-md3-filled" onClick={() => setShowCreateModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', height: '38px', borderRadius: '20px' }}>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Nuevo Profesor
         </button>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 24, color: 'var(--text-muted)' }}>
+        <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
           <div className="login-spinner" style={{ width: 28, height: 28, margin: '0 auto 12px' }} />
           Cargando profesores...
         </div>
       ) : (
-        <div className="table-wrapper" style={{ width: '100%', overflowX: 'auto' }}>
-          <table className="custom-table" style={{ width: '100%' }}>
-            <thead>
-              <tr>
-                <th>Nombre Completo</th>
-                <th>Correo Electrónico</th>
-                <th>Rol</th>
-                <th>Creado en</th>
-                <th className="action-cell">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {teachers.map(t => (
-                <tr key={t.id}>
-                  <td style={{ fontWeight: 600 }}>{t.full_name || '—'}</td>
-                  <td>{t.email || '—'}</td>
-                  <td>
-                    <span className={`preview-badge ${t.role === 'superadmin' ? 'badge-si' : 'badge-no'}`} style={{ textTransform: 'capitalize' }}>
-                      {t.role}
-                    </span>
-                  </td>
-                  <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                    {new Date(t.created_at).toLocaleDateString()}
-                  </td>
-                  <td className="action-cell">
-                    <button className="btn btn-secondary btn-sm" onClick={() => setSelectedTeacher(t)} style={{ marginRight: 8 }}>
-                      Editar
-                    </button>
-                    {t.role !== 'superadmin' && (
-                      <button className="btn btn-danger btn-sm" onClick={() => handleDeleteTeacher(t)}>
-                        Eliminar
-                      </button>
-                    )}
-                  </td>
+        <>
+          {/* Desktop Table View */}
+          <div className="table-wrapper hide-mobile-only" style={{ width: '100%', overflowX: 'auto' }}>
+            <table className="custom-table" style={{ width: '100%' }}>
+              <thead>
+                <tr>
+                  <th>Nombre Completo</th>
+                  <th>Correo Electrónico</th>
+                  <th>Rol</th>
+                  <th>Creado en</th>
+                  <th className="action-cell">Acciones</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {teachers.map(t => (
+                  <tr key={t.id}>
+                    <td style={{ fontWeight: 600 }}>{t.full_name || '—'}</td>
+                    <td>{t.email || '—'}</td>
+                    <td>
+                      <span className={`preview-badge ${t.role === 'superadmin' ? 'badge-si' : 'badge-no'}`} style={{ textTransform: 'capitalize' }}>
+                        {t.role}
+                      </span>
+                    </td>
+                    <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                      {new Date(t.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="action-cell">
+                      <div className="action-cell-buttons">
+                        <button className="btn-edit-teacher" onClick={() => setSelectedTeacher(t)}>
+                          Editar
+                        </button>
+                        {t.role !== 'superadmin' && (
+                          <button className="btn-delete-teacher" onClick={() => handleDeleteTeacher(t)}>
+                            Eliminar
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Card List */}
+          <div className="admin-mobile-cards show-mobile-only">
+            {teachers.map(t => (
+              <div key={t.id} className="admin-teacher-card">
+                <div className="teacher-card-row">
+                  <span className="teacher-card-label">Nombre</span>
+                  <span className="teacher-card-value" style={{ fontWeight: 600 }}>{t.full_name || '—'}</span>
+                </div>
+                <div className="teacher-card-row">
+                  <span className="teacher-card-label">Correo</span>
+                  <span className="teacher-card-value">{t.email || '—'}</span>
+                </div>
+                <div className="teacher-card-row">
+                  <span className="teacher-card-label">Rol</span>
+                  <span className={`preview-badge ${t.role === 'superadmin' ? 'badge-si' : 'badge-no'}`} style={{ textTransform: 'capitalize' }}>
+                    {t.role}
+                  </span>
+                </div>
+                <div className="teacher-card-row">
+                  <span className="teacher-card-label">Creado</span>
+                  <span className="teacher-card-value">{new Date(t.created_at).toLocaleDateString()}</span>
+                </div>
+                <div className="teacher-card-actions">
+                  <button className="btn-edit-teacher" onClick={() => setSelectedTeacher(t)}>
+                    Editar
+                  </button>
+                  {t.role !== 'superadmin' && (
+                    <button className="btn-delete-teacher" onClick={() => handleDeleteTeacher(t)}>
+                      Eliminar
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Modal para Crear */}

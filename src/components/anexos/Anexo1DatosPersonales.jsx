@@ -1,4 +1,4 @@
-export default function Anexo1DatosPersonales({ general, estudiante, handleChange }) {
+export default function Anexo1DatosPersonales({ general, estudiante, handleChange, isBlankTemplate }) {
   return (
     <div className="card print-page">
       <div className="card-title-container">
@@ -9,6 +9,28 @@ export default function Anexo1DatosPersonales({ general, estudiante, handleChang
         <span className="card-description no-print">Información para la matrícula</span>
       </div>
       
+      {isBlankTemplate && (
+        <div className="no-print" style={{ 
+          backgroundColor: 'rgba(236, 106, 6, 0.1)', 
+          border: '1px dashed var(--warning)', 
+          borderRadius: '8px', 
+          padding: '16px', 
+          marginBottom: '20px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '12px',
+          color: 'var(--text-color, #1e293b)'
+        }}>
+          <span className="material-symbols-outlined" style={{ color: 'var(--warning)', fontSize: '24px' }}>info</span>
+          <div>
+            <strong style={{ display: 'block', marginBottom: '2px' }}>Vista de Formulario en Blanco (Solo Lectura)</strong>
+            <span style={{ fontSize: '0.9rem', color: 'var(--text-muted, #64748b)' }}>
+              No has seleccionado ningún estudiante. Estás viendo la estructura vacía del Anexo 1. Selecciona un estudiante en el Panel de Control para poder editarlo.
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="info-banner no-print">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
         <div>
