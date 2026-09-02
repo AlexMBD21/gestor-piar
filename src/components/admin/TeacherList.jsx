@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabaseClient';
 import TeacherEditModal from './TeacherEditModal';
 
@@ -6,7 +7,22 @@ export default function TeacherList() {
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isClosingCreateModal, setIsClosingCreateModal] = useState(false);
   const [selectedTeacher, setSelectedTeacher] = useState(null);
+  const [deleteModalTeacher, setDeleteModalTeacher] = useState(null);
+  const [isClosingDeleteTeacherModal, setIsClosingDeleteTeacherModal] = useState(false);
+
+  const handleCloseCreateModal = () => {
+    setIsClosingCreateModal(true);
+    setTimeout(() => {
+      setShowCreateModal(false);
+      setIsClosingCreateModal(false);
+      setErrorMsg('');
+      setCreateEmail('');
+      setCreatePassword('');
+      setCreateName('');
+    }, 350);
+  };
 
   // Form para crear profesor
   const [createEmail, setCreateEmail] = useState('');
@@ -55,38 +71,46 @@ export default function TeacherList() {
     if (error || data?.error) {
       setErrorMsg(data?.error || error?.message || 'Error al crear el profesor.');
     } else {
-      setCreateEmail('');
-      setCreatePassword('');
-      setCreateName('');
-      setShowCreateModal(false);
+      handleCloseCreateModal();
       fetchTeachers();
     }
   };
 
-  const handleDeleteTeacher = async (teacher) => {
-    if (confirm(`¿Estás seguro de eliminar al profesor ${teacher.full_name || teacher.email}?\nEsta acción eliminará todos sus PIARs asociados.`)) {
-      const { error } = await supabase.rpc('admin_delete_teacher', {
-        teacher_id: teacher.id
-      });
-      if (error) {
-        alert(error.message);
-      } else {
-        fetchTeachers();
-      }
+  const handleCloseDeleteTeacherModal = () => {
+    setIsClosingDeleteTeacherModal(true);
+    setTimeout(() => {
+      setDeleteModalTeacher(null);
+      setIsClosingDeleteTeacherModal(false);
+    }, 350);
+  };
+
+  const handleConfirmDeleteTeacher = async () => {
+    if (!deleteModalTeacher) return;
+    const target = deleteModalTeacher;
+    handleCloseDeleteTeacherModal();
+    const { error } = await supabase.rpc('admin_delete_teacher', {
+      teacher_id: target.id
+    });
+    if (error) {
+      alert(error.message);
+    } else {
+      fetchTeachers();
     }
   };
 
   return (
     <div className="md3-card">
-      <div className="card-title-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-        <h3 className="card-title" style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>admin_panel_settings</span>
-          Listado de Profesores
-        </h3>
-        <button className="btn-md3-filled" onClick={() => setShowCreateModal(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '8px 16px', height: '38px', borderRadius: '20px' }}>
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nuevo Profesor
-        </button>
+      <div className="md3-card-header">
+        <div className="md3-card-title-group">
+          <span className="material-symbols-outlined icon-display" style={{ color: 'var(--text-main)', fontVariationSettings: "'FILL' 0, 'wght' 400" }}>admin_panel_settings</span>
+          <h3 className="font-headline-sm">Listado de Profesores</h3>
+        </div>
+        <div className="md3-card-actions">
+          <button id="btn-new-teacher" className="btn-md3-filled" onClick={() => setShowCreateModal(true)}>
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            <span>Nuevo Profesor</span>
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -127,7 +151,7 @@ export default function TeacherList() {
                           Editar
                         </button>
                         {t.role !== 'superadmin' && (
-                          <button className="btn-delete-teacher" onClick={() => handleDeleteTeacher(t)}>
+                          <button className="btn-delete-teacher" onClick={() => setDeleteModalTeacher(t)}>
                             Eliminar
                           </button>
                         )}
@@ -166,7 +190,7 @@ export default function TeacherList() {
                     Editar
                   </button>
                   {t.role !== 'superadmin' && (
-                    <button className="btn-delete-teacher" onClick={() => handleDeleteTeacher(t)}>
+                    <button className="btn-delete-teacher" onClick={() => setDeleteModalTeacher(t)}>
                       Eliminar
                     </button>
                   )}
@@ -178,12 +202,14 @@ export default function TeacherList() {
       )}
 
       {/* Modal para Crear */}
-      {showCreateModal && (
-        <div className="modal-overlay active" onClick={(e) => e.target.className.includes('modal-overlay') && setShowCreateModal(false)}>
-          <div className="modal-container" style={{ maxWidth: 450 }}>
+      {showCreateModal && createPortal(
+        <div id="modal-create-teacher" className={`modal-overlay active ${isClosingCreateModal ? 'closing' : ''}`} onClick={(e) => e.target.id === 'modal-create-teacher' && handleCloseCreateModal()}>
+          <div className="modal-container" style={{ maxWidth: '450px', width: '100%' }}>
             <div className="modal-header">
                <h3 className="modal-title">Registrar Nuevo Profesor</h3>
-               <button className="modal-close" onClick={() => setShowCreateModal(false)}>&times;</button>
+               <button type="button" className="modal-close" onClick={handleCloseCreateModal} aria-label="Cerrar modal">
+                 <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
+               </button>
             </div>
             <form onSubmit={handleCreateTeacher}>
               <div className="modal-body">
@@ -248,16 +274,14 @@ export default function TeacherList() {
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowCreateModal(false)} disabled={actionLoading}>
-                  Cancelar
-                </button>
-                <button type="submit" className="btn btn-success" disabled={actionLoading}>
+                <button type="submit" className="btn-md3-filled" disabled={actionLoading}>
                   {actionLoading ? 'Registrando...' : 'Registrar'}
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal para Editar */}
@@ -267,6 +291,38 @@ export default function TeacherList() {
           onClose={() => setSelectedTeacher(null)}
           onSuccess={() => { setSelectedTeacher(null); fetchTeachers(); }}
         />
+      )}
+
+      {/* Modal de Confirmación para Eliminar Profesor */}
+      {deleteModalTeacher && createPortal(
+        <div id="modal-delete-teacher" className={`modal-overlay active ${isClosingDeleteTeacherModal ? 'closing' : ''}`} onClick={(e) => e.target.id === 'modal-delete-teacher' && handleCloseDeleteTeacherModal()}>
+          <div className="modal-container" style={{ maxWidth: '420px', width: '100%' }}>
+            <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: '8px' }}>
+              <h3 className="modal-title" style={{ fontSize: '1.2rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="material-symbols-outlined" style={{ color: 'var(--danger)', fontSize: '24px' }}>person_remove</span>
+                ¿Eliminar cuenta de profesor?
+              </h3>
+              <button type="button" className="modal-close" onClick={handleCloseDeleteTeacherModal} aria-label="Cerrar modal">
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: '0 24px 20px 24px', fontSize: '0.95rem', color: 'var(--text-main)', lineHeight: '1.5' }}>
+              ¿Estás seguro de que deseas eliminar al profesor <strong>{deleteModalTeacher.full_name || deleteModalTeacher.email}</strong>? Esta acción eliminará permanentemente la cuenta y todos sus PIARs asociados.
+            </div>
+            <div className="modal-footer" style={{ borderTop: 'none', paddingTop: '0' }}>
+              <button 
+                type="button" 
+                className="btn btn-danger" 
+                onClick={handleConfirmDeleteTeacher}
+                style={{ width: '100%', padding: '12px 16px', height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
+                Eliminar Profesor
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { supabase } from '../../lib/supabaseClient';
 
 export default function TeacherEditModal({ teacher, onClose, onSuccess }) {
@@ -8,6 +9,14 @@ export default function TeacherEditModal({ teacher, onClose, onSuccess }) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+    }, 350);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -45,15 +54,20 @@ export default function TeacherEditModal({ teacher, onClose, onSuccess }) {
     }
 
     setLoading(false);
-    onSuccess();
+    handleClose();
+    setTimeout(() => {
+      onSuccess();
+    }, 350);
   };
 
-  return (
-    <div className="modal-overlay active" onClick={(e) => e.target.className.includes('modal-overlay') && onClose()}>
-      <div className="modal-container" style={{ maxWidth: 450 }}>
+  return createPortal(
+    <div id="modal-edit-teacher" className={`modal-overlay active ${isClosing ? 'closing' : ''}`} onClick={(e) => e.target.id === 'modal-edit-teacher' && handleClose()}>
+      <div className="modal-container" style={{ maxWidth: '450px', width: '100%' }}>
         <div className="modal-header">
           <h3 className="modal-title">Editar Profesor</h3>
-          <button className="modal-close" onClick={onClose}>&times;</button>
+          <button type="button" className="modal-close" onClick={handleClose} aria-label="Cerrar modal">
+            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
+          </button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
@@ -115,15 +129,13 @@ export default function TeacherEditModal({ teacher, onClose, onSuccess }) {
             </div>
           </div>
           <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose} disabled={loading}>
-              Cancelar
-            </button>
-            <button type="submit" className="btn btn-primary" disabled={loading}>
+            <button type="submit" className="btn-md3-filled" disabled={loading}>
               {loading ? 'Guardando...' : 'Guardar Cambios'}
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

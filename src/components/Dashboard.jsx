@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { usePiar } from '../context/PiarContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -6,6 +7,8 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
   const { piars, activeStudentId, setActiveStudentId, deletePiar, importPiar, loading, createPiar, editLogs } = usePiar();
   const { user, isSuperAdmin } = useAuth();
   const [historyModalPiar, setHistoryModalPiar] = useState(null);
+  const [deleteModalPiar, setDeleteModalPiar] = useState(null);
+  const [isClosingDeleteModal, setIsClosingDeleteModal] = useState(false);
   const [activeDropdownId, setActiveDropdownId] = useState(null);
 
   useEffect(() => {
@@ -31,11 +34,21 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
     showToast(`Gestionando PIAR de: ${piar.nombre}`);
   };
 
-  const handleDelete = async (piar) => {
-    if (confirm(`¿Está seguro de que desea eliminar permanentemente el PIAR de ${piar.nombre}?`)) {
-      await deletePiar(piar.id);
-      showToast('PIAR eliminado.', 'danger');
-    }
+  const handleCloseDeleteModal = () => {
+    setIsClosingDeleteModal(true);
+    setTimeout(() => {
+      setDeleteModalPiar(null);
+      setIsClosingDeleteModal(false);
+    }, 350);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteModalPiar) return;
+    const targetName = deleteModalPiar.nombre;
+    const targetId = deleteModalPiar.id;
+    handleCloseDeleteModal();
+    await deletePiar(targetId);
+    showToast(`PIAR de ${targetName} eliminado.`, 'danger');
   };
 
   const handleImport = (e) => {
@@ -297,7 +310,7 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
                             className="sc-dropdown-item sc-dropdown-item-danger"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDelete(piar);
+                              setDeleteModalPiar(piar);
                               setActiveDropdownId(null);
                             }}
                           >
@@ -337,17 +350,21 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
       </div>
 
       {/* Modal de Historial de Ediciones */}
-      {historyModalPiar && (
+      {historyModalPiar && createPortal(
         <div id="modal-piar-history" className="modal-overlay active" onClick={(e) => e.target.id === 'modal-piar-history' && setHistoryModalPiar(null)}>
-          <div className="modal-container" style={{ maxWidth: '500px', width: '100%', margin: '20px auto' }}>
+          <div className="modal-container" style={{ maxWidth: '500px', width: '100%' }}>
             <div className="modal-header">
-              <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.2rem' }}>
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--primary)' }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Historial: {historyModalPiar.nombre}
+              <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.2rem', minWidth: 0 }}>
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--primary)', flexShrink: 0 }}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  Historial: {historyModalPiar.nombre}
+                </span>
               </h3>
-              <button className="modal-close" onClick={() => setHistoryModalPiar(null)}>&times;</button>
+              <button type="button" className="modal-close" onClick={() => setHistoryModalPiar(null)} aria-label="Cerrar modal">
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
+              </button>
             </div>
-            <div className="modal-body" style={{ maxHeight: '400px', overflowY: 'auto', padding: '20px' }}>
+            <div className="modal-body" style={{ maxHeight: '70vh', overflowY: 'auto', overflowX: 'hidden', padding: '20px' }}>
               {editLogs[historyModalPiar.id]?.length > 0 ? (
                 <div style={{ position: 'relative', margin: '10px 0 20px 10px', borderLeft: '2px solid var(--border-color)', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   {editLogs[historyModalPiar.id].map((log, idx) => {
@@ -380,8 +397,8 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
                           border: '1px solid var(--border-color)',
                           boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
                         }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <span style={{ fontWeight: 600, color: 'var(--primary)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '8px', flexWrap: 'wrap' }}>
+                            <span style={{ fontWeight: 600, color: 'var(--primary)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                               <span style={{ background: 'var(--primary-light)', color: 'var(--primary)', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem' }}>
                                 #{logIndex}
                               </span>
@@ -393,13 +410,13 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
                           </div>
                           
                           <div style={{ fontSize: '0.85rem', color: 'var(--text-color)', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                            <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 600 }}>
+                            <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 600, flexShrink: 0 }}>
                               {log.editor_name ? log.editor_name.substring(0, 2).toUpperCase() : 'U'}
                             </div>
-                            <span>
-                              <strong>{log.editor_name}</strong>
-                              <span style={{ color: 'var(--text-muted)', marginLeft: '6px', fontSize: '0.75rem' }}>({log.editor_email})</span>
-                            </span>
+                            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                              <strong style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{log.editor_name}</strong>
+                              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{log.editor_email}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -412,13 +429,41 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
                 </div>
               )}
             </div>
-            <div className="modal-footer" style={{ padding: '16px 20px' }}>
-              <button className="btn btn-secondary" onClick={() => setHistoryModalPiar(null)}>
-                Cerrar
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Modal de Confirmación para Eliminar PIAR */}
+      {deleteModalPiar && createPortal(
+        <div id="modal-delete-piar" className={`modal-overlay active ${isClosingDeleteModal ? 'closing' : ''}`} onClick={(e) => e.target.id === 'modal-delete-piar' && handleCloseDeleteModal()}>
+          <div className="modal-container" style={{ maxWidth: '420px', width: '100%' }}>
+            <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: '8px' }}>
+              <h3 className="modal-title" style={{ fontSize: '1.2rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="material-symbols-outlined" style={{ color: 'var(--danger)', fontSize: '24px' }}>delete_forever</span>
+                ¿Eliminar registro PIAR?
+              </h3>
+              <button type="button" className="modal-close" onClick={handleCloseDeleteModal} aria-label="Cerrar modal">
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: '0 24px 20px 24px', fontSize: '0.95rem', color: 'var(--text-main)', lineHeight: '1.5' }}>
+              ¿Estás seguro de que deseas eliminar permanentemente el PIAR de <strong>{deleteModalPiar.nombre}</strong>? Esta acción no se puede deshacer.
+            </div>
+            <div className="modal-footer" style={{ borderTop: 'none', paddingTop: '0' }}>
+              <button 
+                type="button" 
+                className="btn btn-danger" 
+                onClick={handleConfirmDelete}
+                style={{ width: '100%', padding: '12px 16px', height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
+                Eliminar Permanentemente
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

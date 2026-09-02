@@ -198,24 +198,18 @@ export default function AppPage() {
         <div id="modal-confirm-discard" className="modal-overlay active" onClick={(e) => e.target.id === 'modal-confirm-discard' && setConfirmModal({ show: false, tabId: null })}>
           <div className="modal-container" style={{ maxWidth: '420px' }}>
             <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: '8px' }}>
-              <h3 className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--warning)' }}>
-                <span className="material-symbols-outlined" style={{ fontSize: '28px' }}>warning</span>
-                Cambios sin guardar
+              <h3 className="modal-title" style={{ fontSize: '1.2rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="material-symbols-outlined">warning</span>
+                ¿Descartar cambios?
               </h3>
-              <button className="modal-close" onClick={() => setConfirmModal({ show: false, tabId: null })}>&times;</button>
+              <button type="button" className="modal-close" onClick={() => setConfirmModal({ show: false, tabId: null })} aria-label="Cerrar modal">
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
+              </button>
             </div>
             <div className="modal-body" style={{ padding: '0 24px 20px 24px', fontSize: '0.95rem', color: 'var(--text-main)', lineHeight: '1.5' }}>
               Tienes aportaciones sin guardar en el formulario. ¿Deseas descartar los cambios y salir?
             </div>
-            <div className="modal-footer" style={{ borderTop: 'none', paddingTop: '0', display: 'flex', gap: '12px' }}>
-              <button 
-                type="button" 
-                className="btn btn-secondary" 
-                onClick={() => setConfirmModal({ show: false, tabId: null })}
-                style={{ flex: 1, padding: '10px 16px', height: 'auto' }}
-              >
-                Seguir Editando
-              </button>
+            <div className="modal-footer" style={{ borderTop: 'none', paddingTop: '0' }}>
               <button 
                 type="button" 
                 className="btn btn-danger" 
@@ -226,7 +220,7 @@ export default function AppPage() {
                   setActiveTab(confirmModal.tabId);
                   window.scrollTo(0, 0);
                 }}
-                style={{ flex: 1, padding: '10px 16px', height: 'auto' }}
+                style={{ width: '100%', padding: '10px 16px', height: 'auto' }}
               >
                 Descartar y Salir
               </button>

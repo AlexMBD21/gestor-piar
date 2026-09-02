@@ -8,6 +8,14 @@ export default function StudentModal({ onClose, switchTab, showToast }) {
   const [lastname, setLastname] = useState('');
   const [grade, setGrade] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      onClose();
+    }, 350);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,7 +29,7 @@ export default function StudentModal({ onClose, switchTab, showToast }) {
     setLoading(false);
     if (created) {
       setActiveStudentId(created.id);
-      onClose();
+      handleClose();
       switchTab('tab-anexo1', created.id);
       showToast(`Se creó el PIAR de ${created.nombre}`);
     } else {
@@ -30,11 +38,13 @@ export default function StudentModal({ onClose, switchTab, showToast }) {
   };
 
   return (
-    <div id="modal-new-student" className="modal-overlay active" onClick={(e) => e.target.id === 'modal-new-student' && onClose()}>
+    <div id="modal-new-student" className={`modal-overlay active ${isClosing ? 'closing' : ''}`} onClick={(e) => e.target.id === 'modal-new-student' && handleClose()}>
       <div className="modal-container">
         <div className="modal-header">
           <h3 className="modal-title">Nuevo Registro PIAR</h3>
-          <button id="btn-modal-close" className="modal-close" onClick={onClose}>&times;</button>
+          <button id="btn-modal-close" type="button" className="modal-close" onClick={handleClose} aria-label="Cerrar modal">
+            <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
+          </button>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
@@ -76,10 +86,7 @@ export default function StudentModal({ onClose, switchTab, showToast }) {
             </div>
           </div>
           <div className="modal-footer">
-            <button type="button" id="btn-modal-cancel" className="btn btn-secondary" onClick={onClose} disabled={loading}>
-              Cancelar
-            </button>
-            <button type="submit" id="btn-modal-submit" className="btn btn-success" disabled={loading}>
+            <button type="submit" id="btn-modal-submit" className="btn-md3-filled" disabled={loading}>
               {loading ? 'Creando...' : 'Crear Registro'}
             </button>
           </div>

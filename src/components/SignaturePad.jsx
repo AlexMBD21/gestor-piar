@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 export default function SignaturePad({ label, savedSignature, onSave, onClear }) {
   const canvasRef = useRef(null);
@@ -288,7 +289,7 @@ export default function SignaturePad({ label, savedSignature, onSave, onClear })
           </button>
 
           {/* Modal Overlay para Dibujar la Firma */}
-          {isModalOpen && (
+          {isModalOpen && createPortal(
             <div className="signature-modal-overlay">
               <div className="signature-modal-content">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -297,18 +298,11 @@ export default function SignaturePad({ label, savedSignature, onSave, onClear })
                   </h4>
                   <button 
                     type="button" 
-                    className="btn-close-modal"
+                    className="modal-close"
                     onClick={() => { setIsModalOpen(false); setHasDrawn(false); }}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'var(--text-muted)',
-                      fontSize: '1.2rem',
-                      cursor: 'pointer',
-                      padding: '4px'
-                    }}
+                    aria-label="Cerrar modal"
                   >
-                    ✕
+                    <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
                   </button>
                 </div>
                 
@@ -338,29 +332,30 @@ export default function SignaturePad({ label, savedSignature, onSave, onClear })
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
                   <button
                     type="button"
-                    className="btn btn-secondary btn-sm"
+                    className="btn-md3-outlined"
                     onClick={clearCanvas}
                     disabled={!hasDrawn}
-                    style={{ flex: 1, justifyContent: 'center', padding: '10px' }}
+                    style={{ flex: 1, justifyContent: 'center', padding: '10px', height: 'auto' }}
                   >
                     Limpiar
                   </button>
                   <button
                     type="button"
-                    className="btn btn-success btn-sm"
+                    className="btn-md3-filled"
                     onClick={() => {
                       saveSignature();
                       setIsModalOpen(false);
                     }}
                     disabled={!hasDrawn}
-                    style={{ flex: 1, justifyContent: 'center', gap: '6px', padding: '10px' }}
+                    style={{ flex: 1, justifyContent: 'center', gap: '6px', padding: '10px', height: 'auto' }}
                   >
-                    <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>check</span>
                     Guardar
                   </button>
                 </div>
               </div>
-            </div>
+            </div>,
+            document.body
           )}
         </>
       ) : (
