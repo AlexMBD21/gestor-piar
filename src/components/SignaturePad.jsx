@@ -341,7 +341,7 @@ export default function SignaturePad({ label, savedSignature, onSave, onClear })
                   </button>
                   <button
                     type="button"
-                    className="btn-md3-filled"
+                    className="btn-md3-success"
                     onClick={() => {
                       saveSignature();
                       setIsModalOpen(false);

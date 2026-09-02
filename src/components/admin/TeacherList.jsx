@@ -274,7 +274,7 @@ export default function TeacherList() {
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="submit" className="btn-md3-filled" disabled={actionLoading}>
+                <button type="submit" className="btn-md3-success" disabled={actionLoading}>
                   {actionLoading ? 'Registrando...' : 'Registrar'}
                 </button>
               </div>

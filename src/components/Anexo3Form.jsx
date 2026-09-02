@@ -276,8 +276,9 @@ export default function Anexo3Form({ showToast, switchTab }) {
         paddingTop: '16px', 
         borderTop: '1px solid var(--border-color)'
       }}>
-        <button type="button" className="btn btn-secondary" onClick={() => switchTab('tab-anexo2')}>
-          &larr; Anterior Anexo 2
+        <button type="button" className="btn-wizard-prev" onClick={() => switchTab('tab-anexo2')}>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_back</span>
+          <span>Anterior Anexo 2</span>
         </button>
         
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
@@ -289,18 +290,20 @@ export default function Anexo3Form({ showToast, switchTab }) {
           )}
         </div>
         
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           {!isBlankTemplate && (
-            <button type="button" className="btn btn-primary" onClick={async () => {
+            <button type="button" className="btn-wizard-save" onClick={async () => {
               const success = await saveActivePiar();
               if (success) showToast('Aportación guardada correctamente');
               else showToast('Error al guardar', 'danger');
             }}>
-              Guardar Aportación
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>save</span>
+              <span>Guardar Aportación</span>
             </button>
           )}
-          <button type="button" className="btn btn-secondary" onClick={() => switchTab('tab-preview')}>
-            Finalizar / Vista Previa &rarr;
+          <button type="button" className="btn-wizard-next" onClick={() => switchTab('tab-preview')}>
+            <span>Finalizar y Ver PIAR</span>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>visibility</span>
           </button>
         </div>
       </div>

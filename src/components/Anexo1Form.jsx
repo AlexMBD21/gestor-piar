@@ -81,29 +81,37 @@ export default function Anexo1Form({ showToast, switchTab }) {
         borderTop: '1px solid var(--border-color)',
         gap: '12px'
       }}>
-        <div style={{ flex: 1 }}>
-            {unsavedChanges && !isBlankTemplate && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', animation: 'fadeIn 0.3s ease-in-out' }}>
-                <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'var(--warning)', animation: 'pulse 1.5s infinite ease-in-out' }} />
-                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--warning)' }}>Tienes aportaciones sin guardar</span>
-              </div>
-            )}
-          </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
-            {!isBlankTemplate && (
-              <button type="button" className="btn btn-primary" onClick={async () => {
-                const success = await saveActivePiar();
-                if (success) showToast('Aportación guardada correctamente');
-                else showToast('Error al guardar', 'danger');
-              }}>
-                Guardar Aportación
-              </button>
-            )}
-            <button type="button" className="btn btn-secondary" onClick={() => switchTab('tab-anexo2')}>
-              Siguiente Anexo 2 &rarr;
-            </button>
-          </div>
+        <button type="button" className="btn-wizard-prev" onClick={() => switchTab('tab-dashboard')}>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_back</span>
+          <span>Volver a Estudiantes</span>
+        </button>
+
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+          {unsavedChanges && !isBlankTemplate && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', animation: 'fadeIn 0.3s ease-in-out' }}>
+              <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'var(--warning)', animation: 'pulse 1.5s infinite ease-in-out' }} />
+              <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--warning)' }}>Tienes aportaciones sin guardar</span>
+            </div>
+          )}
         </div>
+        
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          {!isBlankTemplate && (
+            <button type="button" className="btn-wizard-save" onClick={async () => {
+              const success = await saveActivePiar();
+              if (success) showToast('Aportación guardada correctamente');
+              else showToast('Error al guardar', 'danger');
+            }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>save</span>
+              <span>Guardar Aportación</span>
+            </button>
+          )}
+          <button type="button" className="btn-wizard-next" onClick={() => switchTab('tab-anexo2')}>
+            <span>Siguiente Anexo 2</span>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_forward</span>
+          </button>
+        </div>
+      </div>
     </>
   );
 }

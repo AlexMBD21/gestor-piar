@@ -86,7 +86,7 @@ export default function StudentModal({ onClose, switchTab, showToast }) {
             </div>
           </div>
           <div className="modal-footer">
-            <button type="submit" id="btn-modal-submit" className="btn-md3-filled" disabled={loading}>
+            <button type="submit" id="btn-modal-submit" className="btn-md3-success" disabled={loading}>
               {loading ? 'Creando...' : 'Crear Registro'}
             </button>
           </div>

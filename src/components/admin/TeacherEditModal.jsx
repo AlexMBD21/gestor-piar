@@ -129,7 +129,7 @@ export default function TeacherEditModal({ teacher, onClose, onSuccess }) {
             </div>
           </div>
           <div className="modal-footer">
-            <button type="submit" className="btn-md3-filled" disabled={loading}>
+            <button type="submit" className="btn-md3-success" disabled={loading}>
               {loading ? 'Guardando...' : 'Guardar Cambios'}
             </button>
           </div>

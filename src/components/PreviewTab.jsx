@@ -1,7 +1,7 @@
 import { usePiar } from '../context/PiarContext';
 import { escHtml, PLantillasPIAR } from '../lib/piarTemplates';
 
-export default function PreviewTab({ showToast }) {
+export default function PreviewTab({ showToast, switchTab }) {
   const { getActiveStudent } = usePiar();
   const activeStudent = getActiveStudent();
   const isBlankTemplate = !activeStudent;
@@ -902,6 +902,27 @@ export default function PreviewTab({ showToast }) {
             Ministerio de Educación Nacional – Viceministerio de Educación Preescolar, Básica y Media – Decreto 1421 de 2017
           </div>
         </div>
+      </div>
+
+      {/* Botones de Navegación del Wizard en Vista Previa */}
+      <div className="no-print" style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginTop: '32px', 
+        paddingTop: '16px', 
+        borderTop: '1px solid var(--border-color)',
+        gap: '12px'
+      }}>
+        <button type="button" className="btn-wizard-prev" onClick={() => switchTab && switchTab('tab-anexo3')}>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_back</span>
+          <span>Anterior Anexo 3</span>
+        </button>
+
+        <button type="button" className="btn-wizard-next" onClick={() => switchTab && switchTab('tab-dashboard')}>
+          <span>Finalizar y Salir</span>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>check_circle</span>
+        </button>
       </div>
     </div>
   );

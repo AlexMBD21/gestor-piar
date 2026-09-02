@@ -154,7 +154,7 @@ export default function AppPage() {
           <Anexo3Form showToast={showToast} switchTab={switchTab} />
         </div>
         <div id="tab-preview" className={`tab-content ${activeTab === 'tab-preview' ? 'active' : ''}`}>
-          <PreviewTab showToast={showToast} />
+          <PreviewTab showToast={showToast} switchTab={switchTab} />
         </div>
         {isSuperAdmin && (
           <div id="tab-admin" className={`tab-content ${activeTab === 'tab-admin' ? 'active' : ''}`}>

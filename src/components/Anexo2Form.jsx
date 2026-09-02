@@ -224,8 +224,9 @@ export default function Anexo2Form({ showToast, switchTab }) {
         paddingTop: '16px', 
         borderTop: '1px solid var(--border-color)'
       }}>
-        <button type="button" className="btn btn-secondary" onClick={() => switchTab('tab-anexo1')}>
-          &larr; Anterior Anexo 1
+        <button type="button" className="btn-wizard-prev" onClick={() => switchTab('tab-anexo1')}>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_back</span>
+          <span>Anterior Anexo 1</span>
         </button>
         
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
@@ -237,18 +238,20 @@ export default function Anexo2Form({ showToast, switchTab }) {
           )}
         </div>
         
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           {!isBlankTemplate && (
-            <button type="button" className="btn btn-primary" onClick={async () => {
+            <button type="button" className="btn-wizard-save" onClick={async () => {
               const success = await saveActivePiar();
               if (success) showToast('Aportación guardada correctamente');
               else showToast('Error al guardar', 'danger');
             }}>
-              Guardar Aportación
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>save</span>
+              <span>Guardar Aportación</span>
             </button>
           )}
-          <button type="button" className="btn btn-secondary" onClick={() => switchTab('tab-anexo3')}>
-            Siguiente Anexo 3 &rarr;
+          <button type="button" className="btn-wizard-next" onClick={() => switchTab('tab-anexo3')}>
+            <span>Siguiente Anexo 3</span>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_forward</span>
           </button>
         </div>
       </div>
