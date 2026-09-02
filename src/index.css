@@ -5,16 +5,16 @@
   /* =========================================
      LIGHT MODE PALETTE - MD3 
      ========================================= */
-  --primary: #3b82f6;
-  --primary-hover: #1d4ed8;
-  --primary-light: #eff6ff;
-  --primary-rgb: 59, 130, 246;
+  --primary: #2b579a;
+  --primary-hover: #1f4074;
+  --primary-light: #e6eff9;
+  --primary-rgb: 43, 87, 154;
   
   --secondary: #f97316;
   --tertiary: #10b981;
   
-  --success: #10b981;
-  --success-hover: #059669;
+  --success: #0d9488;
+  --success-hover: #0f766e;
   --warning: #f97316;
   --danger: #ef4444;
   --danger-hover: #dc2626;
@@ -29,7 +29,7 @@
   --text-on-primary: #ffffff;
 
   --border-color: #e2e8f0;
-  --border-focus: #3b82f6;
+  --border-focus: #2b579a;
 
   --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
@@ -51,14 +51,15 @@
    DARK MODE PALETTE - MD3 (Based on exact user image)
    ========================================= */
 body.dark-mode {
-  --primary: #60a5fa;
-  --primary-hover: #93c5fd;
-  --primary-light: #1e293b;
-  --primary-rgb: 96, 165, 250;
+  --primary: #2b579a;
+  --primary-hover: #1f4074;
+  --primary-light: #162a4a;
+  --primary-rgb: 43, 87, 154;
 
   --secondary: #fb923c;
   --tertiary: #34d399;
-  --success: #34d399;
+  --success: #0d9488;
+  --success-hover: #0f766e;
   --warning: #fb923c;
   --danger: #f87171;
 
@@ -69,10 +70,10 @@ body.dark-mode {
 
   --text-main: #fafafa;
   --text-muted: #a1a1aa;
-  --text-on-primary: #09090b;
+  --text-on-primary: #ffffff;
 
   --border-color: #27272a;
-  --border-focus: #60a5fa;
+  --border-focus: #4a7abf;
 
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.6);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.7), 0 2px 4px -2px rgba(0, 0, 0, 0.7);
@@ -573,13 +574,11 @@ body.dark-mode .sidebar-profile-card {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background-color: var(--text-on-primary);
-  transition: transform var(--transition-fast);
-}
-body.dark-mode .toggle-thumb {
-  background-color: #002e6a;
+  background-color: var(--primary);
+  transition: transform var(--transition-fast), background-color var(--transition-fast);
 }
 .theme-toggle-btn.active .toggle-thumb {
+  background-color: #ffffff;
   transform: translateX(20px);
 }
 
@@ -805,7 +804,7 @@ body.dark-mode .header-profile-chip .profile-avatar {
 
 .card-title {
   font-size: 1.3rem;
-  color: var(--primary);
+  color: var(--text-main);
   display: flex;
   align-items: center;
   gap: 10px;
@@ -1258,16 +1257,16 @@ body.dark-mode .student-card-item.active {
   flex-shrink: 0;
 }
 .sc-pill-success {
-  background: rgba(16, 185, 129, 0.12);
-  color: #10b981;
+  background: rgba(13, 148, 136, 0.15); /* Teal tint */
+  color: #0f766e; /* Teal 700 for better readability */
 }
-.sc-pill-success .sc-pill-dot { background: #10b981; }
+.sc-pill-success .sc-pill-dot { background: #0d9488; }
 
 .sc-pill-warning {
-  background: rgba(234, 88, 12, 0.13);
-  color: #ea580c;
+  background: rgba(245, 158, 11, 0.15); /* Amber tint */
+  color: #b45309; /* Amber 700 */
 }
-.sc-pill-warning .sc-pill-dot { background: #ea580c; }
+.sc-pill-warning .sc-pill-dot { background: #d97706; }
 
 .sc-pill-active {
   background: rgba(var(--primary-rgb), 0.15);
@@ -1276,9 +1275,9 @@ body.dark-mode .student-card-item.active {
 .sc-pill-active .sc-pill-dot { background: var(--primary); }
 
 .sc-pill-inactive {
-  background: var(--bg-input);
-  color: var(--text-muted);
-  font-weight: 500;
+  background: rgba(100, 116, 139, 0.12); /* Slate tint */
+  color: #475569; /* Slate 600 */
+  font-weight: 600;
 }
 
 .sc-last-edit {
@@ -1357,7 +1356,7 @@ body.dark-mode .sc-btn-more:hover, body.dark-mode .sc-btn-more.active {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.15), 0 8px 12px -6px rgba(0, 0, 0, 0.1);
   z-index: 999;
   min-width: 170px;
   display: flex;
@@ -1532,7 +1531,7 @@ body.dark-mode .sc-btn-more:hover, body.dark-mode .sc-btn-more.active {
 /* Toast System */
 .toast-container {
   position: fixed;
-  bottom: 24px;
+  bottom: 90px;
   right: 24px;
   z-index: 2000;
   display: flex;
@@ -1544,8 +1543,9 @@ body.dark-mode .sc-btn-more:hover, body.dark-mode .sc-btn-more.active {
   position: relative;
   overflow: hidden;
   background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-left: 4px solid var(--primary);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.15), 0 8px 12px -6px rgba(0, 0, 0, 0.1);
   color: var(--text-main);
   padding: 14px 20px;
   border-radius: var(--radius-md);
@@ -1554,9 +1554,9 @@ body.dark-mode .sc-btn-more:hover, body.dark-mode .sc-btn-more.active {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  transform: translateY(100px);
+  transform: translateX(100px);
   opacity: 0;
-  animation: slideInUp 0.3s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: slideInRight 0.3s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .toast-progress-bar {
@@ -1577,9 +1577,9 @@ body.dark-mode .sc-btn-more:hover, body.dark-mode .sc-btn-more.active {
   to { width: 0%; }
 }
 
-@keyframes slideInUp {
+@keyframes slideInRight {
   to {
-    transform: translateY(0);
+    transform: translateX(0);
     opacity: 1;
   }
 }
@@ -2305,7 +2305,7 @@ body.dark-mode .student-card-item.active {
   flex-wrap: wrap;
 }
 
-.btn-md3-filled, .btn-md3-outlined, .btn-md3-tonal {
+.btn-md3-filled, .btn-md3-outlined, .btn-md3-tonal, .btn-md3-success, .btn-md3-success-outlined {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2323,8 +2323,16 @@ body.dark-mode .student-card-item.active {
   color: var(--text-on-primary);
 }
 .btn-md3-filled:hover {
-  background-color: var(--primary-light);
-  color: var(--primary);
+  background-color: var(--primary-hover);
+  color: var(--text-on-primary);
+}
+.btn-md3-success {
+  background-color: var(--success);
+  color: #ffffff;
+}
+.btn-md3-success:hover {
+  background-color: var(--success-hover);
+  color: #ffffff;
 }
 .btn-md3-outlined {
   background-color: transparent;
@@ -2335,6 +2343,16 @@ body.dark-mode .student-card-item.active {
   background-color: rgba(var(--primary-rgb), 0.06);
   border-color: var(--primary-hover);
   color: var(--primary-hover);
+}
+.btn-md3-success-outlined {
+  background-color: transparent;
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+.btn-md3-success-outlined:hover {
+  background-color: rgba(13, 148, 136, 0.08);
+  border-color: var(--success-hover);
+  color: var(--success-hover);
 }
 .btn-md3-tonal {
   background-color: var(--secondary-container);
@@ -2528,7 +2546,7 @@ body.dark-mode .student-card-item.active {
   flex-wrap: wrap;
 }
 
-.btn-md3-filled, .btn-md3-outlined, .btn-md3-tonal {
+.btn-md3-filled, .btn-md3-outlined, .btn-md3-tonal, .btn-md3-success, .btn-md3-success-outlined {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2546,8 +2564,16 @@ body.dark-mode .student-card-item.active {
   color: var(--text-on-primary);
 }
 .btn-md3-filled:hover {
-  background-color: var(--primary-light);
-  color: var(--primary);
+  background-color: var(--primary-hover);
+  color: var(--text-on-primary);
+}
+.btn-md3-success {
+  background-color: var(--success);
+  color: #ffffff;
+}
+.btn-md3-success:hover {
+  background-color: var(--success-hover);
+  color: #ffffff;
 }
 .btn-md3-outlined {
   background-color: transparent;
@@ -2558,6 +2584,16 @@ body.dark-mode .student-card-item.active {
   background-color: rgba(var(--primary-rgb), 0.06);
   border-color: var(--primary-hover);
   color: var(--primary-hover);
+}
+.btn-md3-success-outlined {
+  background-color: transparent;
+  color: var(--success);
+  border: 1px solid var(--success);
+}
+.btn-md3-success-outlined:hover {
+  background-color: rgba(13, 148, 136, 0.08);
+  border-color: var(--success-hover);
+  color: var(--success-hover);
 }
 .btn-md3-tonal {
   background-color: var(--secondary-container);
@@ -3646,8 +3682,8 @@ body.dark-mode .signature-modal-content {
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  box-shadow: 0 4px 18px -4px rgba(15, 23, 42, 0.04), 0 2px 6px -2px rgba(15, 23, 42, 0.04);
-  transition: all var(--transition-normal);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .student-card-item.menu-open {
@@ -3655,9 +3691,9 @@ body.dark-mode .signature-modal-content {
 }
 
 .student-card-item:hover {
-  transform: translateY(-2px);
-  border-color: #94a3b8;
-  box-shadow: 0 12px 24px -10px rgba(15, 23, 42, 0.08), 0 4px 12px -4px rgba(15, 23, 42, 0.04);
+  transform: translateY(-4px);
+  border-color: #cbd5e1;
+  box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
 }
 
 .student-card-item.active {
@@ -3670,13 +3706,13 @@ body.dark-mode .signature-modal-content {
 body.dark-mode .student-card-item, body.dark-mode .md3-card {
   background-color: var(--bg-card) !important;
   border-color: var(--border-color) !important;
-  box-shadow: 0 4px 18px -4px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4) !important;
 }
 
 body.dark-mode .student-card-item:hover {
-  background-color: #27272a !important; /* Zinc 800 */
-  border-color: #52525b !important; /* Zinc 600 */
-  box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.7) !important;
+  background-color: #27272a !important;
+  border-color: #52525b !important;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.6) !important;
 }
 
 body.dark-mode .student-card-item.active {
@@ -3758,16 +3794,15 @@ body.dark-mode .sc-btn-deselect:hover {
   font-size: 0.8rem;
   font-weight: 600;
   border-radius: 20px;
-  border: 1px solid var(--border-color);
-  background: transparent;
-  color: var(--text-main);
+  border: 1px solid transparent;
+  background-color: #64748b;
+  color: #ffffff;
   cursor: pointer;
   white-space: nowrap;
   transition: all var(--transition-fast);
 }
 .btn-edit-teacher:hover {
-  background-color: var(--bg-input);
-  border-color: var(--text-muted);
+  background-color: #475569;
 }
 
 .btn-delete-teacher {
@@ -3780,19 +3815,18 @@ body.dark-mode .sc-btn-deselect:hover {
   font-size: 0.8rem;
   font-weight: 600;
   border-radius: 20px;
-  border: 1px solid var(--danger);
-  background: transparent;
-  color: var(--danger);
+  border: 1px solid transparent;
+  background-color: var(--danger);
+  color: #ffffff;
   cursor: pointer;
   white-space: nowrap;
   transition: all var(--transition-fast);
 }
 .btn-delete-teacher:hover {
-  background-color: var(--danger);
-  color: #ffffff;
+  background-color: #dc2626;
 }
 body.dark-mode .btn-delete-teacher:hover {
-  color: #09090b !important;
+  background-color: #ef4444;
 }
 
 /* Admin Mobile Cards Styling */

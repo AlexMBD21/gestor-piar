@@ -65,12 +65,12 @@ export default function Anexo2Form({ showToast, switchTab }) {
             display: 'flex', 
             alignItems: 'center', 
             gap: '12px',
-            color: 'var(--text-color, #1e293b)'
+            color: 'var(--text-main)'
           }}>
             <span className="material-symbols-outlined" style={{ color: 'var(--warning)', fontSize: '24px' }}>info</span>
             <div>
               <strong style={{ display: 'block', marginBottom: '2px' }}>Vista de Formulario en Blanco (Solo Lectura)</strong>
-              <span style={{ fontSize: '0.9rem', color: 'var(--text-muted, #64748b)' }}>
+              <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
                 No has seleccionado ningún estudiante. Estás viendo la estructura vacía del Anexo 2. Selecciona un estudiante en el Panel de Control para poder editarlo.
               </span>
             </div>

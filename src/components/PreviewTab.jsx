@@ -62,6 +62,35 @@ export default function PreviewTab({ showToast }) {
     window.print();
   };
 
+  const handleExportWord = () => {
+    const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Documento PIAR</title></head><body>";
+    const footer = "</body></html>";
+    
+    const content = document.querySelector('.preview-container');
+    if (!content) {
+      if (showToast) showToast('Error al exportar a Word', 'danger');
+      return;
+    }
+    
+    const sourceHTML = header + content.innerHTML + footer;
+    
+    const blob = new Blob(['\ufeff', sourceHTML], {
+      type: 'application/msword'
+    });
+    
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'documento_piar.doc';
+    document.body.appendChild(link);
+    link.click();
+    
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    if (showToast) showToast('Documento exportado a Word');
+  };
+
   return (
     <div className="card">
       <div className="card-title-container no-print">
@@ -70,6 +99,10 @@ export default function PreviewTab({ showToast }) {
           {isBlankTemplate ? 'Vista Previa (Formulario en Blanco)' : 'Vista Previa del Documento PIAR'}
         </h3>
         <div style={{ display: 'flex', gap: 10 }}>
+          <button className="btn btn-primary btn-sm" onClick={handleExportWord}>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>description</span>
+            Guardar en Word
+          </button>
           <button className="btn btn-primary btn-sm" onClick={handlePrint}>
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>
             Imprimir / Guardar PDF
@@ -90,12 +123,12 @@ export default function PreviewTab({ showToast }) {
           display: 'flex', 
           alignItems: 'center', 
           gap: '12px',
-          color: 'var(--text-color, #1e293b)'
+          color: 'var(--text-main)'
         }}>
           <span className="material-symbols-outlined" style={{ color: 'var(--warning)', fontSize: '24px' }}>info</span>
           <div>
             <strong style={{ display: 'block', marginBottom: '2px' }}>Modo Documento en Blanco</strong>
-            <span style={{ fontSize: '0.9rem', color: 'var(--text-muted, #64748b)' }}>
+            <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
               No has seleccionado ningún estudiante. Estás viendo la plantilla vacía del formulario PIAR. Puedes visualizar su formato o imprimirla/guardarla en blanco para rellenarla manualmente.
             </span>
           </div>
@@ -110,6 +143,10 @@ export default function PreviewTab({ showToast }) {
           <p>
             El documento oficial tiene formato de hoja de impresión (A4/Carta) y contiene tablas amplias. Para visualizarlo y guardarlo, por favor utiliza el botón de abajo.
           </p>
+          <button className="btn btn-primary" onClick={handleExportWord} style={{ width: '100%', justifyContent: 'center', marginTop: '16px', gap: '8px' }}>
+            <span className="material-symbols-outlined">description</span>
+            Guardar en Word
+          </button>
           <button className="btn btn-primary" onClick={handlePrint} style={{ width: '100%', justifyContent: 'center', marginTop: '8px', gap: '8px' }}>
             <span className="material-symbols-outlined">print</span>
             Imprimir / Guardar PDF
