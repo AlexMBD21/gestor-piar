@@ -1,7 +1,17 @@
 import CollaborativeSection from './CollaborativeSection';
 
-export default function ActividadesTable({ studentData, onUpdate }) {
-  const actividades = studentData?.anexo3?.actividadesHogar || [];
+export default function ActividadesTable({ list, studentData, onUpdate }) {
+  const actividades = list || studentData?.anexo3?.actividadesHogar || [];
+
+  const handleUpdate = (updated) => {
+    if (typeof onUpdate === 'function') {
+      if (onUpdate.length >= 3) {
+        onUpdate('anexo3', 'actividadesHogar', updated);
+      } else {
+        onUpdate(updated);
+      }
+    }
+  };
 
   const handleAddField = () => {
     const newAct = {
@@ -11,20 +21,20 @@ export default function ActividadesTable({ studentData, onUpdate }) {
       frecuencia: 'D'
     };
     const updated = [...actividades, newAct];
-    onUpdate('anexo3', 'actividadesHogar', updated);
+    handleUpdate(updated);
   };
 
   const handleChange = (id, field, value) => {
     const updated = actividades.map(item =>
       item.id === id ? { ...item, [field]: value } : item
     );
-    onUpdate('anexo3', 'actividadesHogar', updated);
+    handleUpdate(updated);
   };
 
   const handleDelete = (id) => {
     if (confirm('¿Está seguro de eliminar esta actividad?')) {
       const updated = actividades.filter(item => item.id !== id);
-      onUpdate('anexo3', 'actividadesHogar', updated);
+      handleUpdate(updated);
     }
   };
 
@@ -32,9 +42,9 @@ export default function ActividadesTable({ studentData, onUpdate }) {
     <CollaborativeSection sectionKey="anexo3-actividades" className="print-page">
       <div className="card-title-container">
         <h3 className="card-title">Y en casa apoyará con las siguientes actividades:</h3>
-        <button type="button" id="btn-add-actividad" className="btn btn-success btn-sm no-print" onClick={handleAddField}>
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          Agregar Actividad
+        <button type="button" id="btn-add-actividad" className="btn btn-primary btn-sm no-print" onClick={handleAddField}>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>
+          <span>Agregar Actividad</span>
         </button>
       </div>
       <p className="card-description no-print" style={{ marginBottom: 16 }}>

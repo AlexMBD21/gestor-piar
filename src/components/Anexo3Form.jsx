@@ -216,7 +216,6 @@ export default function Anexo3Form({ showToast, switchTab }) {
             />
           </div>
 
-          <h5 className="section-subtitle">Actividades de Apoyo en Casa (Familia)</h5>
           <ActividadesTable
             list={data.anexo3.actividadesHogar || []}
             onUpdate={newList => handleTableUpdate('anexo3', 'actividadesHogar', newList)}

@@ -490,6 +490,13 @@ body.dark-mode .sidebar-profile-card {
   background-color: var(--primary-hover);
 }
 
+.btn-sm {
+  padding: 6px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 20px;
+}
+
 .btn-secondary {
   background-color: var(--bg-input);
   color: var(--text-main);
@@ -4408,5 +4415,32 @@ body.dark-mode .btn-wizard-save:hover {
 body.dark-mode .btn-wizard-save:active {
   transform: translateY(0);
   background-color: #0f766e;
+}
+
+/* Dynamic Tables & PMI Form Textareas */
+.table-textarea {
+  width: 100%;
+  min-height: 64px;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--text-main);
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  resize: vertical;
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.table-textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(43, 87, 154, 0.15);
+  background-color: var(--bg-card);
+}
+body.dark-mode .table-textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
 }
 

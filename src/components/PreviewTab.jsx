@@ -32,7 +32,18 @@ export default function PreviewTab({ showToast, switchTab }) {
   const gen2 = s.anexo2.general;
   const gen3 = s.anexo3.general;
   const ajustes = s.anexo2.ajustesRazonables || [];
-  const pmi = s.anexo2.pmiRecomendaciones || [];
+  const rawPmi = s.anexo2.pmiRecomendaciones || [];
+  const defaultPmiActors = [
+    { actor: "FAMILIA, CUIDADORES O CON QUIENES VIVE", acciones: "", estrategias: "" },
+    { actor: "DOCENTES", acciones: "", estrategias: "" },
+    { actor: "DIRECTIVOS", acciones: "", estrategias: "" },
+    { actor: "ADMINISTRATIVOS", acciones: "", estrategias: "" },
+    { actor: "PARES (Sus compañeros)", acciones: "", estrategias: "" }
+  ];
+  const pmi = defaultPmiActors.map(defaultItem => {
+    const existing = rawPmi.find(r => r.actor && r.actor.trim().toUpperCase() === defaultItem.actor.toUpperCase());
+    return existing ? { ...defaultItem, ...existing } : defaultItem;
+  });
   const actividades = s.anexo3.actividadesHogar || [];
   const firmaA1 = s.anexo1.firmas || [{}, {}, {}];
   const firmaA2 = s.anexo2.firmas || [{}, {}, {}];

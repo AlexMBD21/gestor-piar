@@ -1,8 +1,18 @@
 import { escHtml } from '../lib/piarTemplates';
 import CollaborativeSection from './CollaborativeSection';
 
-export default function AjustesTable({ studentData, onUpdate }) {
-  const ajustes = studentData?.anexo2?.ajustesRazonables || [];
+export default function AjustesTable({ list, studentData, onUpdate }) {
+  const ajustes = list || studentData?.anexo2?.ajustesRazonables || [];
+
+  const handleUpdate = (updated) => {
+    if (typeof onUpdate === 'function') {
+      if (onUpdate.length >= 3) {
+        onUpdate('anexo2', 'ajustesRazonables', updated);
+      } else {
+        onUpdate(updated);
+      }
+    }
+  };
 
   const handleAddField = () => {
     const newAjuste = {
@@ -16,18 +26,18 @@ export default function AjustesTable({ studentData, onUpdate }) {
       evaluacion: ''
     };
     const updated = [...ajustes, newAjuste];
-    onUpdate('anexo2', 'ajustesRazonables', updated);
+    handleUpdate(updated);
   };
 
   const handleChange = (id, field, value) => {
     const updated = ajustes.map(item => item.id === id ? { ...item, [field]: value } : item);
-    onUpdate('anexo2', 'ajustesRazonables', updated);
+    handleUpdate(updated);
   };
 
   const handleDelete = (id) => {
     if (confirm('¿Está seguro de eliminar esta asignatura del PIAR?')) {
       const updated = ajustes.filter(item => item.id !== id);
-      onUpdate('anexo2', 'ajustesRazonables', updated);
+      handleUpdate(updated);
     }
   };
 
@@ -35,9 +45,9 @@ export default function AjustesTable({ studentData, onUpdate }) {
     <CollaborativeSection sectionKey="anexo2-ajustes" className="print-page">
       <div className="card-title-container">
         <h3 className="card-title">6. Ajustes Razonables</h3>
-        <button type="button" id="btn-add-ajuste" className="btn btn-success btn-sm no-print" onClick={handleAddField}>
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-          Agregar Área / Asignatura
+        <button type="button" id="btn-add-ajuste" className="btn btn-primary btn-sm no-print" onClick={handleAddField}>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>add</span>
+          <span>Agregar Área / Asignatura</span>
         </button>
       </div>
       <p className="card-description no-print" style={{ marginBottom: 16 }}>

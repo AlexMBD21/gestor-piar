@@ -177,13 +177,11 @@ export default function Anexo2Form({ showToast, switchTab }) {
             />
           </div>
 
-          <h5 className="section-subtitle">2. Ajustes Razonables</h5>
           <AjustesTable
             list={data.anexo2.ajustesRazonables || []}
             onUpdate={newList => handleTableUpdate('anexo2', 'ajustesRazonables', newList)}
           />
 
-          <h5 className="section-subtitle">3. Recomendaciones PMI (Plan de Mejoramiento Institucional)</h5>
           <PmiTable
             list={data.anexo2.pmiRecomendaciones || []}
             onUpdate={newList => handleTableUpdate('anexo2', 'pmiRecomendaciones', newList)}
