@@ -19,23 +19,25 @@
   --danger: #ef4444;
   --danger-hover: #dc2626;
 
-  --bg-app: #eef2f6;
+  --bg-app: #f1f5f9;
   --bg-sidebar: #ffffff;
   --bg-card: #ffffff;
-  --bg-input: #f8fafc;
+  --bg-card-subtle: #f8fafc;
+  --bg-input: #ffffff;
 
   --text-main: #0f172a;
   --text-muted: #475569;
   --text-on-primary: #ffffff;
 
-  --border-color: #e2e8f0;
+  --border-color: #cbd5e1;
+  --border-subtle: #e2e8f0;
   --border-focus: #2b579a;
 
-  --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
-  --shadow-lg: 0 10px 25px -3px rgba(15, 23, 42, 0.06), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
+  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 12px -2px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  --shadow-lg: 0 12px 28px -4px rgba(15, 23, 42, 0.09), 0 4px 8px -4px rgba(15, 23, 42, 0.04);
   
-  --shadow-glow: 0 4px 14px 0 rgba(var(--primary-rgb), 0.15);
+  --shadow-glow: 0 4px 14px 0 rgba(var(--primary-rgb), 0.18);
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -687,7 +689,7 @@ body.dark-mode .sidebar-profile-card {
   align-items: center;
   padding: 0 0 0 32px;
   background: var(--bg-app);
-  border-bottom: 1px solid rgba(140, 144, 159, 0.2);
+  border-bottom: 1px solid var(--border-color);
   transition: background var(--transition-normal), border-color var(--transition-normal);
 }
 
@@ -703,12 +705,13 @@ body.dark-mode .sidebar-profile-card {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 28px 10px 20px;
+  padding: 8px 24px 8px 18px;
   border-radius: 24px 0 0 24px;
-  background-color: var(--bg-sidebar);
-  border: 1px solid rgba(140, 144, 159, 0.3);
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
   border-right: none;
-  transition: background-color var(--transition-fast);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05);
+  transition: all var(--transition-fast);
   cursor: pointer;
 }
 .header-profile-chip:hover {
@@ -1204,13 +1207,19 @@ body.dark-mode .student-card-item.active {
   align-items: center;
   padding: 3px 10px;
   border-radius: 6px;
-  font-size: 0.73rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  background: var(--bg-input);
-  color: var(--text-muted);
-  border: 1px solid var(--border-color);
+  background: #e2e8f0;
+  color: #1e293b;
+  border: 1px solid #cbd5e1;
   flex-shrink: 0;
   letter-spacing: 0.02em;
+}
+
+body.dark-mode .sc-grade-badge {
+  background: #27272a;
+  color: #f4f4f5;
+  border-color: #3f3f46;
 }
 
 /* Row 2: Meta info */
@@ -1529,8 +1538,8 @@ body:has(.modal-overlay.active) {
 
 .modal-close {
   background: var(--bg-input);
-  border: 1px solid var(--border-color);
-  color: var(--text-muted);
+  border: 1.5px solid rgba(100, 116, 139, 0.25);
+  color: var(--text-main);
   cursor: pointer;
   font-size: 1.1rem;
   display: inline-flex;
@@ -1542,11 +1551,12 @@ body:has(.modal-overlay.active) {
   min-height: 36px;
   border-radius: 50%;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
 .modal-close:hover {
   background-color: var(--border-color);
+  border-color: rgba(100, 116, 139, 0.45);
   color: var(--text-main);
   transform: scale(1.06);
 }
@@ -2049,25 +2059,29 @@ body:has(.modal-overlay.active) {
 .preview-page-break {
   display: block;
   height: 1px;
-  border-bottom: 2px dashed var(--border-color);
-  margin: 32px 0;
+  border-bottom: 2px dashed #64748b;
+  margin: 36px 0;
   position: relative;
 }
 
 .preview-page-break::after {
-  content: 'Salto de PÃ¡gina (ImpresiÃ³n)';
+  content: '✂ SALTO DE PÁGINA (IMPRESIÓN)';
   position: absolute;
-  top: -9px;
+  top: -13px;
   left: 50%;
   transform: translateX(-50%);
-  background: var(--bg-card);
-  padding: 0 12px;
-  font-size: 7.5pt;
-  color: var(--text-muted);
-  font-family: sans-serif;
+  background: #1e293b;
+  border: 1px solid #0f172a;
+  border-radius: 9999px;
+  padding: 4px 18px;
+  font-size: 8pt;
+  color: #ffffff;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  font-weight: 600;
+  letter-spacing: 0.75px;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
+  white-space: nowrap;
 }
 
 @media print {
@@ -3152,12 +3166,12 @@ body.dark-mode .student-card-item.active {
   .modal-container::before {
     content: '';
     display: block;
-    width: 36px;
-    height: 4px;
-    background-color: var(--border-color);
-    border-radius: 4px;
-    margin: 0 auto 14px auto;
-    opacity: 0.8;
+    width: 44px;
+    height: 5px;
+    background-color: var(--text-muted);
+    border-radius: 9999px;
+    margin: 0 auto 16px auto;
+    opacity: 0.38;
   }
   .modal-overlay.active .modal-container {
     transform: none; /* overrides desktop scale transform */
@@ -3942,14 +3956,35 @@ body.dark-mode .signature-modal-content {
 /* =============================================
    CARDS & SHADOWS OVERRIDES (Day & Night)
    ============================================= */
-.student-card-item, .md3-card {
+.md3-card {
   position: relative;
   z-index: 1;
   background-color: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.05), 0 2px 4px -1px rgba(15, 23, 42, 0.03);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dashboard-col-right .md3-card {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+}
+
+.student-card-item {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 18px 22px;
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: var(--radius-lg);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .student-card-item.menu-open {
@@ -3957,22 +3992,33 @@ body.dark-mode .signature-modal-content {
 }
 
 .student-card-item:hover {
-  transform: translateY(-4px);
-  border-color: #cbd5e1;
-  box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  background-color: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 10px 22px -4px rgba(43, 87, 154, 0.14), 0 4px 8px -2px rgba(15, 23, 42, 0.04);
 }
 
 .student-card-item.active {
-  background-color: var(--bg-card);
-  border-color: #0f172a;
-  box-shadow: 0 8px 20px -6px rgba(15, 23, 42, 0.12), 0 2px 8px -2px rgba(15, 23, 42, 0.08);
+  background-color: #eff6ff;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1.5px var(--primary), 0 6px 16px -3px rgba(43, 87, 154, 0.16);
 }
 
 /* Dark Mode Card Customizations */
-body.dark-mode .student-card-item, body.dark-mode .md3-card {
+body.dark-mode .md3-card {
   background-color: var(--bg-card) !important;
   border-color: var(--border-color) !important;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4) !important;
+}
+
+body.dark-mode .dashboard-col-right .md3-card {
+  background: var(--bg-card) !important;
+}
+
+body.dark-mode .student-card-item {
+  background-color: #1a1b1e !important;
+  border-color: #27272a !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
 }
 
 body.dark-mode .student-card-item:hover {
@@ -3983,8 +4029,8 @@ body.dark-mode .student-card-item:hover {
 
 body.dark-mode .student-card-item.active {
   background-color: #1e293b !important; /* Slate 800 active contrast */
-  border-color: #fafafa !important;
-  box-shadow: 0 8px 20px -6px rgba(255, 255, 255, 0.15) !important;
+  border-color: #60a5fa !important;
+  box-shadow: 0 8px 20px -6px rgba(96, 165, 250, 0.25) !important;
 }
 
 /* Deselect Button Style (Solid Red) */
