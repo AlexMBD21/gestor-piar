@@ -3117,19 +3117,72 @@ body.dark-mode .student-card-item.active {
   }
 
   .options-group-horizontal {
-    flex-direction: column;
-    gap: 8px;
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 12px !important;
+    width: 100% !important;
   }
 
   .radio-card {
-    padding: 12px;
-    font-size: 0.85rem;
+    flex: 1 !important;
+    padding: 12px 10px !important;
+    font-size: 0.9rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
   }
 
   .info-banner {
-    padding: 12px !important;
-    font-size: 0.8rem !important;
-    margin-bottom: 16px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+    padding: 14px 16px !important;
+    font-size: 0.82rem !important;
+    line-height: 1.45 !important;
+    margin-bottom: 18px !important;
+    border-radius: var(--radius-md) !important;
+  }
+
+  .info-banner svg {
+    margin-top: 2px !important;
+    flex-shrink: 0 !important;
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  /* Toast en mobile: centrado, respetando márgenes y sobre el bottom nav */
+  .toast-container {
+    left: 16px !important;
+    right: 16px !important;
+    bottom: 80px !important;
+    width: auto !important;
+    max-width: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    z-index: 9999 !important;
+  }
+
+  .toast {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    font-size: 0.85rem !important;
+    padding: 12px 16px !important;
+    opacity: 1 !important;
+    animation: toastSlideUpMobile 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) forwards !important;
+  }
+
+  @keyframes toastSlideUpMobile {
+    from {
+      transform: translateY(16px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
 
   /* Hacer que cualquier tabla en los anexos sea scrollable de forma independiente */
