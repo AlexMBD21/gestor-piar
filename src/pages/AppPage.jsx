@@ -171,7 +171,9 @@ export default function AppPage() {
             className={`mobile-bottom-nav__item ${activeTab === item.tab ? 'active' : ''}`}
             onClick={() => switchTab(item.tab)}
           >
-            <span className="material-symbols-outlined">{item.icon}</span>
+            <div className="mobile-bottom-nav__icon-box">
+              <span className="material-symbols-outlined">{item.icon}</span>
+            </div>
             <span className="mobile-bottom-nav__label">{item.label}</span>
           </button>
         ))}
@@ -180,7 +182,9 @@ export default function AppPage() {
             className={`mobile-bottom-nav__item ${activeTab === 'tab-admin' ? 'active' : ''}`}
             onClick={() => switchTab('tab-admin')}
           >
-            <span className="material-symbols-outlined">settings</span>
+            <div className="mobile-bottom-nav__icon-box">
+              <span className="material-symbols-outlined">settings</span>
+            </div>
             <span className="mobile-bottom-nav__label">Admin</span>
           </button>
         )}
