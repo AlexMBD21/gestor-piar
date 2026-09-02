@@ -1465,10 +1465,10 @@ body:has(.modal-overlay.active) {
 
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
   background-color: rgba(15, 23, 42, 0.5);
   backdrop-filter: blur(4px);
   z-index: 10000;
@@ -1477,6 +1477,7 @@ body:has(.modal-overlay.active) {
   justify-content: center;
   opacity: 0;
   transition: opacity 0.25s ease;
+  box-sizing: border-box;
 }
 
 .modal-overlay.active {
@@ -1568,10 +1569,13 @@ body:has(.modal-overlay.active) {
 @media (max-width: 768px) {
   .modal-footer {
     flex-direction: column-reverse;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 16px;
   }
   .modal-footer button {
     width: 100%;
-    margin-top: 8px;
+    margin-top: 0;
   }
   .modal-footer button:last-child {
     margin-top: 0;
@@ -3128,17 +3132,32 @@ body.dark-mode .student-card-item.active {
   /* Modal Bottom Sheet for Mobile */
   .modal-overlay {
     align-items: flex-end;
+    padding: 0;
   }
   .modal-container {
-    width: 100%;
-    max-width: 100%;
+    width: 100% !important;
+    max-width: 100% !important;
     border-radius: 24px 24px 0 0;
     border: none;
     border-top: 1px solid var(--border-color);
-    padding: 24px;
-    padding-bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+    padding: 16px 20px calc(24px + env(safe-area-inset-bottom, 20px)) 20px;
     margin: 0;
+    max-height: 85dvh;
+    max-height: 85vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
     animation: bottomSheetIn 0.35s cubic-bezier(0.32, 0.72, 0, 1) forwards !important;
+  }
+  .modal-container::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    background-color: var(--border-color);
+    border-radius: 4px;
+    margin: 0 auto 14px auto;
+    opacity: 0.8;
   }
   .modal-overlay.active .modal-container {
     transform: none; /* overrides desktop scale transform */
