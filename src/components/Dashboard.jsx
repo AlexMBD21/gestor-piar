@@ -85,11 +85,6 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
                 <h3 className="font-headline-sm">Estudiantes en Gestión</h3>
               </div>
               <div className="md3-card-actions">
-
-                <button id="btn-import-trigger" className="btn-md3-outlined" onClick={() => document.getElementById('json-file-input').click()}>
-                  <span className="material-symbols-outlined text-[18px]">upload_file</span>
-                  <span className="hidden md:inline">Importar</span>
-                </button>
                 <button id="btn-new-student" className="btn-md3-filled" onClick={onNewStudent}>
                   <span className="material-symbols-outlined text-[18px]">add</span>
                   <span>Nuevo</span>
@@ -97,10 +92,8 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
               </div>
             </div>
             
-            <input type="file" id="json-file-input" style={{ display: 'none' }} accept=".json" onChange={handleImport} />
-            
-            <p className="md3-card-description">
-              Seleccione un estudiante para gestionar su Plan Individual de Ajustes Razonables (PIAR).
+            <p className="md3-card-description" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+              Total registrados: <strong style={{ color: 'var(--text-main)' }}>{validPiars.length}</strong>
             </p>
 
             <div id="dashboard-student-list" className="student-list-container">
@@ -299,18 +292,7 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
                               Ver Historial
                             </button>
                           )}
-                          <button
-                            className="sc-dropdown-item"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleExport(piar);
-                              setActiveDropdownId(null);
-                            }}
-                          >
-                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>download</span>
-                            Exportar JSON
-                          </button>
-                          <hr className="sc-dropdown-divider" />
+
                           <button
                             className="sc-dropdown-item sc-dropdown-item-danger"
                             onClick={(e) => {
@@ -336,20 +318,18 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
 
         {/* Right Column (Activity/Widgets) */}
         <div className="dashboard-col-right">
-          <div className="stat-indicator-card">
-            <p className="stat-indicator-label">TOTAL REGISTRADOS</p>
-            <p className="stat-indicator-number">{validPiars.length}</p>
-            <p className="stat-indicator-desc">Planes Individuales de Ajustes Razonables en el sistema.</p>
-          </div>
+
 
           <div className="md3-card">
-            <h4 className="md3-card-title-small text-primary mb-4">Guía de Uso Rápido</h4>
+            <h4 className="md3-card-title-small text-primary mb-3">Guía de Uso Rápido</h4>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.5' }}>
+              Seleccione un estudiante de la lista para gestionar su Plan Individual de Ajustes Razonables (PIAR).
+            </p>
             <ul className="dashboard-guide-list">
               <li>Haz clic en <strong>"Nuevo"</strong> para crear el registro en blanco de un estudiante.</li>
               <li>Usa las pestañas laterales para diligenciar los 3 Anexos requeridos.</li>
               <li>Los datos se <strong>auto-guardan</strong> automáticamente en la nube.</li>
               <li>Haz clic en <strong>"Imprimir / PDF"</strong> para generar el documento oficial.</li>
-              <li>Puedes descargar el archivo <strong>JSON</strong> para respaldo e importarlo en otro equipo.</li>
             </ul>
           </div>
         </div>

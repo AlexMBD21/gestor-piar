@@ -2937,7 +2937,12 @@ body.dark-mode .student-card-item.active {
   }
 
   .md3-card-actions {
-    gap: 6px;
+    gap: 8px;
+    width: 100%;
+  }
+  .md3-card-actions button {
+    flex: 1;
+    justify-content: center;
   }
 
   .student-card-item,
