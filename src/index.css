@@ -1653,7 +1653,7 @@ body:has(.modal-overlay.active) {
   border-top: 1px solid var(--border-color);
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
   .modal-footer {
     flex-direction: column-reverse;
     gap: 10px;
@@ -2154,13 +2154,23 @@ body:has(.modal-overlay.active) {
   .no-print,
   .actions-row,
   .btn,
+  .btn-md3-filled,
+  .wizard-nav-container,
+  .btn-wizard-next,
+  .btn-wizard-prev,
+  .btn-wizard-save,
+  .mobile-top-bar,
+  .mobile-bottom-nav,
+  .mobile-print-notice,
+  .scroll-to-top,
   .theme-toggle-container,
   .toast-container {
     display: none !important;
   }
 
   #tab-preview .card-title-container,
-  #tab-preview .card-description {
+  #tab-preview .card-description,
+  #tab-preview .wizard-nav-container {
     display: none !important;
   }
 
@@ -2468,7 +2478,7 @@ body.dark-mode .student-card-item.active {
   grid-template-columns: repeat(1, 1fr);
   gap: 16px;
 }
-@media (min-width: 768px) {
+@media screen and (min-width: 768px) {
   .dashboard-stats-row {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -2514,7 +2524,7 @@ body.dark-mode .student-card-item.active {
   grid-template-columns: 1fr;
   gap: 24px;
 }
-@media (min-width: 1024px) {
+@media screen and (min-width: 1024px) {
   .dashboard-main-grid {
     grid-template-columns: 2fr 1fr;
   }
@@ -2545,7 +2555,7 @@ body.dark-mode .student-card-item.active {
   gap: 16px;
   margin-bottom: 24px;
 }
-@media (min-width: 768px) {
+@media screen and (min-width: 768px) {
   .md3-card-header {
     flex-direction: row;
     align-items: center;
@@ -2721,7 +2731,7 @@ body.dark-mode .btn-md3-success:hover {
   grid-template-columns: repeat(1, 1fr);
   gap: 16px;
 }
-@media (min-width: 768px) {
+@media screen and (min-width: 768px) {
   .dashboard-stats-row {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -2767,7 +2777,7 @@ body.dark-mode .btn-md3-success:hover {
   grid-template-columns: 1fr;
   gap: 24px;
 }
-@media (min-width: 1024px) {
+@media screen and (min-width: 1024px) {
   .dashboard-main-grid {
     grid-template-columns: 2fr 1fr;
   }
@@ -2798,7 +2808,7 @@ body.dark-mode .btn-md3-success:hover {
   gap: 16px;
   margin-bottom: 24px;
 }
-@media (min-width: 768px) {
+@media screen and (min-width: 768px) {
   .md3-card-header {
     flex-direction: row;
     align-items: center;
@@ -4415,7 +4425,7 @@ body.dark-mode .sc-btn-deselect:active {
   display: block !important;
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
   .show-mobile-only {
     display: flex !important;
   }
@@ -4549,7 +4559,7 @@ body.dark-mode .btn-delete-teacher:hover {
   white-space: nowrap;
 }
 
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
   .wizard-nav-container {
     display: flex !important;
     flex-direction: column !important;
@@ -4729,4 +4739,41 @@ body.dark-mode .table-textarea:focus {
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
 }
+
+/* ==========================================================
+   GLOBAL PRINT SAFEGUARDS (Ensure buttons/nav are never printed)
+   ========================================================== */
+@media print {
+  .no-print,
+  .no-print *,
+  .wizard-nav-container,
+  .wizard-nav-container *,
+  .btn-wizard-next,
+  .btn-wizard-prev,
+  .btn-wizard-save,
+  .btn-md3-filled,
+  .btn,
+  .card-title-container,
+  .card-description,
+  .mobile-print-notice,
+  .mobile-top-bar,
+  .mobile-bottom-nav,
+  .sidebar,
+  .app-header,
+  .toast-container,
+  .scroll-to-top {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    overflow: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+}
+
 
