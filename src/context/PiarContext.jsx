@@ -16,10 +16,22 @@ export function PiarProvider({ children }) {
     if (!user) { setPiars([]); setEditLogs({}); return; }
     setLoading(true);
     // Todos los profesores ven todos los PIARs (RLS en Supabase controla el acceso)
-    const { data: piarsData, error } = await supabase
+    let { data: piarsData, error } = await supabase
       .from('piars')
       .select('*')
       .order('created_at', { ascending: true });
+
+    // Handle potential race condition immediately after login where JWT isn't fully propagated yet
+    if (error || !piarsData) {
+      console.warn('[PiarContext] Error fetching piars, retrying...', error);
+      await new Promise(resolve => setTimeout(resolve, 800));
+      const retryResult = await supabase
+        .from('piars')
+        .select('*')
+        .order('created_at', { ascending: true });
+      piarsData = retryResult.data;
+      error = retryResult.error;
+    }
 
     if (!error && piarsData) {
       // Fetch teacher profiles to resolve owner name/email
