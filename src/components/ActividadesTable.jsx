@@ -75,6 +75,7 @@ export default function ActividadesTable({ list, studentData, onUpdate }) {
                     <input
                       type="text"
                       className="table-input"
+                      style={{ width: '100%', boxSizing: 'border-box' }}
                       value={item.actividad || ''}
                       onChange={e => handleChange(item.id, 'actividad', e.target.value)}
                       placeholder="Ej. Rutina de repaso"
@@ -83,6 +84,7 @@ export default function ActividadesTable({ list, studentData, onUpdate }) {
                   <td data-label="Descripción">
                     <textarea
                       className="table-textarea"
+                      style={{ width: '100%', boxSizing: 'border-box' }}
                       value={item.descripcion || ''}
                       onChange={e => handleChange(item.id, 'descripcion', e.target.value)}
                       placeholder="Descripción breve..."
@@ -93,7 +95,7 @@ export default function ActividadesTable({ list, studentData, onUpdate }) {
                       className="form-control table-input"
                       value={item.frecuencia || 'D'}
                       onChange={e => handleChange(item.id, 'frecuencia', e.target.value)}
-                      style={{ padding: 4 }}
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '6px 8px' }}
                     >
                       <option value="D">D (Diaria)</option>
                       <option value="S">S (Semanal)</option>

@@ -72,28 +72,20 @@ export default function Anexo1Form({ showToast, switchTab }) {
       </div>
 
       {/* Botones de Navegación del Wizard */}
-      <div className="no-print" style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginTop: '32px', 
-        paddingTop: '16px', 
-        borderTop: '1px solid var(--border-color)',
-        gap: '12px'
-      }}>
+      <div className="wizard-nav-container no-print">
         <button type="button" className="btn-wizard-prev" onClick={() => switchTab('tab-dashboard')}>
           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_back</span>
           <span>Volver a Estudiantes</span>
         </button>
 
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-          {unsavedChanges && !isBlankTemplate && (
+        {unsavedChanges && !isBlankTemplate && (
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', animation: 'fadeIn 0.3s ease-in-out' }}>
               <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'var(--warning)', animation: 'pulse 1.5s infinite ease-in-out' }} />
               <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--warning)' }}>Tienes aportaciones sin guardar</span>
             </div>
-          )}
-        </div>
+          </div>
+        )}
         
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           {!isBlankTemplate && (

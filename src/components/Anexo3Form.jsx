@@ -222,9 +222,9 @@ export default function Anexo3Form({ showToast, switchTab }) {
           />
 
           <h5 className="section-subtitle">Firma de los Actores Comprometidos (Pizarra de Firma)</h5>
-          <div className="signature-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginTop: 16 }}>
+          <div className="signature-grid">
             {/* Estudiante */}
-            <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '16px', backgroundColor: 'var(--bg-input)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="signature-input-card">
               <SignaturePad
                 label="Firma del Estudiante"
                 savedSignature={firmas?.estudianteSignature || ''}
@@ -234,7 +234,7 @@ export default function Anexo3Form({ showToast, switchTab }) {
             </div>
 
             {/* Acudiente */}
-            <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '16px', backgroundColor: 'var(--bg-input)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="signature-input-card">
               <SignaturePad
                 label="Firma de la Familia o Acudiente"
                 savedSignature={firmas?.acudienteSignature || ''}
@@ -244,7 +244,7 @@ export default function Anexo3Form({ showToast, switchTab }) {
             </div>
 
             {/* Docentes */}
-            <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '16px', backgroundColor: 'var(--bg-input)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="signature-input-card">
               <SignaturePad
                 label="Firma de Docentes comprometidos"
                 savedSignature={firmas?.docentesSignature || ''}
@@ -254,7 +254,7 @@ export default function Anexo3Form({ showToast, switchTab }) {
             </div>
 
             {/* Directivo */}
-            <div style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '16px', backgroundColor: 'var(--bg-input)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div className="signature-input-card">
               <SignaturePad
                 label="Firma de Directivo docente"
                 savedSignature={firmas?.directivoSignature || ''}
@@ -267,27 +267,20 @@ export default function Anexo3Form({ showToast, switchTab }) {
       </div>
 
       {/* Botones de Navegación del Wizard */}
-      <div className="no-print" style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginTop: '32px', 
-        paddingTop: '16px', 
-        borderTop: '1px solid var(--border-color)'
-      }}>
+      <div className="wizard-nav-container no-print">
         <button type="button" className="btn-wizard-prev" onClick={() => switchTab('tab-anexo2')}>
           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_back</span>
           <span>Anterior Anexo 2</span>
         </button>
         
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-          {unsavedChanges && !isBlankTemplate && (
+        {unsavedChanges && !isBlankTemplate && (
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', animation: 'fadeIn 0.3s ease-in-out' }}>
               <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'var(--warning)', animation: 'pulse 1.5s infinite ease-in-out' }} />
               <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--warning)' }}>Tienes aportaciones sin guardar</span>
             </div>
-          )}
-        </div>
+          </div>
+        )}
         
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           {!isBlankTemplate && (

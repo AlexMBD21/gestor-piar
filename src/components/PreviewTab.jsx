@@ -73,17 +73,123 @@ export default function PreviewTab({ showToast, switchTab }) {
     window.print();
   };
 
-  const handleExportWord = () => {
-    const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Documento PIAR</title></head><body>";
-    const footer = "</body></html>";
+  const handleExportWord = async () => {
+    const cssStyles = `
+      <style>
+        body { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; margin: 0; padding: 0; }
+        @page WordSection1 {
+          size: 8.5in 11.0in;
+          margin: 0.45in 0.7in 0.4in 0.7in;
+          mso-header-margin: 0.3in;
+          mso-footer-margin: 0.3in;
+          mso-paper-source: 0;
+          mso-footer: f1;
+        }
+        div.WordSection1 { page: WordSection1; }
+
+        /* Normalizar parrafos para evitar espacios fantasma en Word */
+        p { margin: 0; padding: 0; mso-margin-top-alt: 0; mso-margin-bottom-alt: 0; }
+
+        /* Header con logos */
+        .piar-official-header { width: 100%; border-collapse: collapse; border: 1px solid #000; background-color: #fff; margin-bottom: 8pt; mso-keep-together: yes; page-break-inside: avoid; }
+        .piar-official-header td { border: 1px solid #000; padding: 8pt 10pt; vertical-align: middle; text-align: center; }
+        .piar-official-header .title-cell { text-align: center; font-family: Arial, Helvetica, sans-serif; vertical-align: middle; padding: 8pt 6pt; }
+        .piar-official-header .logo-cell { text-align: center; vertical-align: middle; padding: 6pt 8pt; }
+        .piar-official-header .piar-text { font-size: 11pt; font-weight: bold; color: #000; display: block; margin: 0; padding: 0; line-height: 1.2; text-align: center; }
+        .piar-official-header .decreto-text { font-size: 8.5pt; font-weight: 600; color: #000; margin: 3pt 0 0 0; padding: 0; display: block; line-height: 1.2; text-align: center; }
+        .piar-official-header img { vertical-align: middle; display: inline-block; margin: 0 auto; max-width: 330px; height: auto; }
+
+        /* Encabezados de sección */
+        .piar-section-header { font-family: Arial, Helvetica, sans-serif; font-size: 9.5pt; font-weight: bold; text-decoration: underline; margin: 6pt 0 2pt 0; color: #000; display: block; }
+
+        /* Saltos de página */
+        .preview-page-break { page-break-before: always; clear: both; }
+
+        /* Tablas del documento */
+        .piar-official-table { width: 100%; border-collapse: collapse; border: 1px solid #000; margin-bottom: 4pt; background-color: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 8.5pt; page-break-inside: avoid; mso-keep-together: yes; }
+        .piar-official-table td, .piar-official-table th { border: 1px solid #000; padding: 2.5pt 4.5pt; vertical-align: top; color: #000; line-height: 1.25; }
+        .piar-official-table td strong { font-weight: bold; font-size: 8pt; color: #000; display: inline; }
+        .piar-official-table .field-label { font-size: 8pt; font-weight: normal; color: #000; display: block; margin-bottom: 1pt; }
+        .piar-official-table .table-info-note { font-style: normal; color: #000; font-size: 7.5pt; }
+        .piar-official-table h2 { font-family: Arial, Helvetica, sans-serif; font-size: 10.5pt; font-weight: bold; color: #000; margin: 1pt 0; text-transform: uppercase; line-height: 1.2; }
+        .piar-official-table h3 { font-family: Arial, Helvetica, sans-serif; font-size: 9pt; font-weight: bold; color: #000; margin: 1pt 0 0 0; line-height: 1.2; }
+
+        /* Ocultar elementos de pantalla que no van en Word */
+        .preview-container > *:not(.preview-document) { display: none !important; }
+        .no-print { display: none !important; }
+        .mobile-print-notice { display: none !important; }
+        .piar-official-footer { display: none !important; }
+      </style>
+    `;
+    const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Documento PIAR</title>${cssStyles}</head><body>`;
     
-    const content = document.querySelector('.preview-container');
-    if (!content) {
-      if (showToast) showToast('Error al exportar a Word', 'danger');
+    // Clonar solo el .preview-document (no el container gris con fondo)
+    const documentElement = document.querySelector('.preview-document');
+    if (!documentElement) {
+      showToast('No hay contenido para exportar', 'error');
       return;
     }
-    
-    const sourceHTML = header + content.innerHTML + footer;
+
+    const clone = documentElement.cloneNode(true);
+
+    // Convertir preview-page-break a parrafos de salto de pagina que Word respeta
+    const pageBreaks = clone.querySelectorAll('.preview-page-break');
+    pageBreaks.forEach(pb => {
+      const p = document.createElement('p');
+      p.setAttribute('style', 'page-break-before:always;mso-break-type:section-break;margin:0;padding:0;border:0;font-size:1pt;line-height:1pt;');
+      p.innerHTML = '<span style="mso-special-character:line-break">&nbsp;</span>';
+      pb.parentNode.replaceChild(p, pb);
+    });
+
+    // Asegurar centrado vertical nativo en headers para Word
+    const headerTables = clone.querySelectorAll('.piar-official-header');
+    headerTables.forEach(ht => {
+      ht.querySelectorAll('td').forEach(td => {
+        td.setAttribute('valign', 'middle');
+        td.setAttribute('align', 'center');
+      });
+    });
+
+    // Convert block divs to inline spans con <br> para eliminar espaciado extra de Word
+    const tables = clone.querySelectorAll('.piar-official-table');
+    tables.forEach(table => {
+      const tds = table.querySelectorAll('td, th');
+      tds.forEach(td => {
+        const divs = Array.from(td.children).filter(child => child.tagName === 'DIV');
+        divs.forEach((div, index) => {
+          const span = document.createElement('span');
+          span.innerHTML = div.innerHTML;
+          if (div.className) span.className = div.className;
+          if (div.style.cssText) span.style.cssText = div.style.cssText;
+          
+          td.insertBefore(span, div);
+          if (index < divs.length - 1) {
+            td.insertBefore(document.createElement('br'), div);
+          }
+          td.removeChild(div);
+        });
+      });
+    });
+
+    let htmlContent = clone.outerHTML;
+
+    if (htmlContent.includes('Imagen1.png')) {
+      const baseUrl = window.location.origin;
+      htmlContent = htmlContent.replace(/src="\/Imagen1\.png"/g, `src="${baseUrl}/Imagen1.png"`);
+    } else {
+      htmlContent = htmlContent.replace(/<img[^>]*src="\/Imagen1\.png"[^>]*>/g, '<strong>Mineducación y Gobierno de Colombia</strong>');
+    }
+
+    const footerHtml = `
+      <div style="mso-element:footer" id="f1">
+        <p class="MsoFooter" style="text-align: center; font-size: 8pt; color: #555; font-family: Arial, sans-serif; line-height: 1.3; margin: 0; padding: 0;">
+          V14.16/02/2018. - Ver documento de instrucciones.<br/>
+          Ministerio de Educación Nacional – Viceministerio de Educación Preescolar, Básica y Media – Decreto 1421 de 2017
+        </p>
+      </div>
+    `;
+
+    const sourceHTML = header + `<div class="WordSection1">${htmlContent}</div>` + footerHtml + `</body></html>`;
     
     const blob = new Blob(['\ufeff', sourceHTML], {
       type: 'application/msword'
@@ -102,21 +208,23 @@ export default function PreviewTab({ showToast, switchTab }) {
     if (showToast) showToast('Documento exportado a Word');
   };
 
+
   return (
-    <div className="card">
+    <>
+      <div className="card">
       <div className="card-title-container no-print">
         <h3 className="card-title">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
           {isBlankTemplate ? 'Vista Previa (Formulario en Blanco)' : 'Vista Previa del Documento PIAR'}
         </h3>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn btn-primary btn-sm" onClick={handleExportWord}>
+          <button className="btn-md3-filled" onClick={handleExportWord} style={{ padding: '8px 16px', fontSize: '13px' }}>
             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>description</span>
-            Guardar en Word
+            <span>Guardar en Word</span>
           </button>
-          <button className="btn btn-primary btn-sm" onClick={handlePrint}>
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>
-            Imprimir / Guardar PDF
+          <button className="btn-md3-filled" onClick={handlePrint} style={{ padding: '8px 16px', fontSize: '13px' }}>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>print</span>
+            <span>Imprimir / Guardar PDF</span>
           </button>
         </div>
       </div>
@@ -154,13 +262,13 @@ export default function PreviewTab({ showToast, switchTab }) {
           <p>
             El documento oficial tiene formato de hoja de impresión (A4/Carta) y contiene tablas amplias. Para visualizarlo y guardarlo, por favor utiliza el botón de abajo.
           </p>
-          <button className="btn btn-primary" onClick={handleExportWord} style={{ width: '100%', justifyContent: 'center', marginTop: '16px', gap: '8px' }}>
+          <button className="btn-md3-filled" onClick={handleExportWord} style={{ width: '100%', justifyContent: 'center', marginTop: '16px', gap: '8px', padding: '12px' }}>
             <span className="material-symbols-outlined">description</span>
-            Guardar en Word
+            <span>Guardar en Word</span>
           </button>
-          <button className="btn btn-primary" onClick={handlePrint} style={{ width: '100%', justifyContent: 'center', marginTop: '8px', gap: '8px' }}>
+          <button className="btn-md3-filled" onClick={handlePrint} style={{ width: '100%', justifyContent: 'center', marginTop: '8px', gap: '8px', padding: '12px' }}>
             <span className="material-symbols-outlined">print</span>
-            Imprimir / Guardar PDF
+            <span>Imprimir / Guardar PDF</span>
           </button>
         </div>
       </div>
@@ -168,36 +276,55 @@ export default function PreviewTab({ showToast, switchTab }) {
       <div className="preview-container">
         <div id="preview-document-content" className="preview-document">
           {/* ==================== ANEXO 1 ==================== */}
-          <table className="piar-official-header">
+          <table className="piar-official-header" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <tbody>
               <tr>
-                <td className="logo-cell">
-                  <img src="/Imagen1.png" alt="Mineducación y Gobierno de Colombia" />
+                <td className="logo-cell" style={{ textAlign: 'center', verticalAlign: 'middle', width: '70%' }}>
+                  <img src="/Imagen1.png" alt="Mineducación y Gobierno de Colombia" style={{ width: '350px', height: 'auto', display: 'block', margin: '0 auto' }} />
                 </td>
-                <td className="title-cell">
+                <td className="title-cell" style={{ verticalAlign: 'middle', width: '30%' }}>
                   <div className="piar-text">PIAR</div>
                   <div className="decreto-text">Decreto 1421/2017</div>
                 </td>
               </tr>
             </tbody>
           </table>
-
-          <div className="piar-official-title-box">
-            <h2>INFORMACIÓN GENERAL DEL ESTUDIANTE</h2>
-            <h3>(Información para la matrícula – Anexo 1 PIAR)</h3>
-          </div>
+          <p style={{ margin: '18px 0 12px 0', fontSize: '5pt' }}>&nbsp;</p>
 
           <table className="piar-official-table">
             <tbody>
               <tr>
-                <td style={{ width: '50%' }}>
-                  <strong>Fecha y Lugar de Diligenciamiento:</strong> {v(gen1.fechaDiligenciamiento ? fmtDate(gen1.fechaDiligenciamiento) : '')} {v(gen1.lugarDiligenciamiento)}
+                <td colSpan="2" style={{ textAlign: 'center', padding: '4px' }}>
+                  <div style={{ margin: 0, fontSize: '11pt', fontWeight: 'bold' }}>INFORMACIÓN GENERAL DEL ESTUDIANTE</div>
+                  <div style={{ margin: '2px 0 0 0', fontSize: '10pt', fontWeight: 'bold' }}>(Información para la matrícula – Anexo 1 PIAR)</div>
                 </td>
-                <td style={{ width: '50%', color: '#888', textAlign: 'right', fontSize: '8.5pt' }}>DD/MM/AAAA</td>
               </tr>
               <tr>
-                <td style={{ width: '50%' }}><strong>Nombre de la Persona que diligencia:</strong> {v(gen1.nombreDiligencia)}</td>
-                <td style={{ width: '50%' }}><strong>Rol que desempeña en la SE o la IE:</strong> {v(gen1.rolDiligencia)}</td>
+                <td colSpan="2">
+                  <div className="field-label">Fecha y Lugar de Diligenciamiento</div>
+                  <table style={{ width: '100%', border: 'none', margin: 0, padding: 0 }}>
+                    <tbody>
+                      <tr>
+                        <td style={{ border: 'none', padding: 0, verticalAlign: 'bottom' }}>
+                          {v(gen1.fechaDiligenciamiento ? fmtDate(gen1.fechaDiligenciamiento) : '')} {v(gen1.lugarDiligenciamiento)}
+                        </td>
+                        <td style={{ border: 'none', padding: 0, textAlign: 'right', verticalAlign: 'bottom', color: '#888' }}>
+                          DD/MM/AAAA
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+              <tr>
+                <td style={{ width: '50%' }}>
+                  <div className="field-label">Nombre de la Persona que diligencia:</div>
+                  <div style={{}}>{v(gen1.nombreDiligencia)}</div>
+                </td>
+                <td style={{ width: '50%' }}>
+                  <div className="field-label">Rol que desempeña en la SE o la IE:</div>
+                  <div style={{}}>{v(gen1.rolDiligencia)}</div>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -206,111 +333,178 @@ export default function PreviewTab({ showToast, switchTab }) {
           <table className="piar-official-table">
             <tbody>
               <tr>
-                <td style={{ width: '50%' }}><strong>Nombres:</strong> {v(est.nombres)}</td>
-                <td style={{ width: '50%' }}><strong>Apellidos:</strong> {v(est.apellidos)}</td>
-              </tr>
-              <tr>
-                <td style={{ width: '35%' }}><strong>Lugar de nacimiento:</strong> {v(est.lugarNacimiento)}</td>
-                <td style={{ width: '15%' }}><strong>Edad:</strong> {v(est.edad)}</td>
-                <td style={{ width: '50%' }}><strong>Fecha de nacimiento:</strong> {fmtDate(est.fechaNacimiento)} <span style={{ color: '#888', fontSize: '8pt', float: 'right' }}>DD/MM/AAAA</span></td>
-              </tr>
-              <tr>
-                <td style={{ width: '35%' }}>
-                  <strong>Tipo: TI__ CC__ RC_ otro: ¿cuál?</strong> {v(est.tipoIdentificacion)}
+                <td style={{ width: '50%' }}>
+                  <div className="field-label">Nombres</div>
+                  <div>{v(est.nombres)}</div>
                 </td>
-                <td colSpan="2" style={{ width: '65%' }}>
-                  <strong>No de identificación:</strong> {v(est.numeroIdentificacion)}
+                <td colSpan="2" style={{ width: '50%' }}>
+                  <div className="field-label">Apellidos</div>
+                  <div>{v(est.apellidos)}</div>
                 </td>
-              </tr>
-              <tr>
-                <td style={{ width: '50%' }}><strong>Departamento donde vive:</strong> {v(est.departamento)}</td>
-                <td colSpan="2" style={{ width: '50%' }}><strong>Municipio:</strong> {v(est.municipio)}</td>
-              </tr>
-              <tr>
-                <td style={{ width: '50%' }}><strong>Dirección de vivienda:</strong> {v(est.direccion)}</td>
-                <td colSpan="2" style={{ width: '50%' }}><strong>Barrio/vereda:</strong> {v(est.barrioVereda)}</td>
-              </tr>
-              <tr>
-                <td style={{ width: '50%' }}><strong>Teléfono:</strong> {v(est.telefono)}</td>
-                <td colSpan="2" style={{ width: '50%' }}><strong>Correo electrónico:</strong> {v(est.email)}</td>
               </tr>
               <tr>
                 <td style={{ width: '50%' }}>
-                  <strong>¿Está en centro de protección? NO_ SI _ ¿dónde?</strong> {v(est.centroProteccion)} {est.centroProteccion === 'SI' ? `— ${v(est.centroProteccionDonde)}` : ''}
+                  <div className="field-label">Lugar de nacimiento:</div>
+                  <div>{v(est.lugarNacimiento)}</div>
                 </td>
-                <td colSpan="2" style={{ width: '50%' }}>
-                  <strong>Grado al que aspira ingresar:</strong> {v(est.gradoAspirado)}
+                <td style={{ width: '15%' }}>
+                  <div className="field-label">Edad</div>
+                  <div>{v(est.edad)}</div>
+                </td>
+                <td style={{ width: '35%' }}>
+                  <div className="field-label">Fecha de nacimiento <span style={{ color: '#888', fontWeight: 'normal' }}>DD/MM/AAAA</span></div>
+                  <div>{fmtDate(est.fechaNacimiento)}</div>
                 </td>
               </tr>
               <tr>
-                <td colSpan="3" className="table-info-note">
+                <td style={{ width: '50%' }}>
+                  <div className="field-label">Tipo: TI. {est.tipoIdentificacion === 'TI' ? 'X' : '_'} CC {est.tipoIdentificacion === 'CC' ? 'X' : '_'} RC {est.tipoIdentificacion === 'RC' ? 'X' : '_'} otro: ¿cuál? {!['TI','CC','RC',''].includes(est.tipoIdentificacion) ? est.tipoIdentificacion : ''}</div>
+                </td>
+                <td colSpan="2" style={{ width: '50%' }}>
+                  <div className="field-label">No de identificación</div>
+                  <div>{v(est.numeroIdentificacion)}</div>
+                </td>
+              </tr>
+              <tr>
+                <td style={{ width: '50%' }}>
+                  <div className="field-label">Departamento donde vive</div>
+                  <div>{v(est.departamento)}</div>
+                </td>
+                <td colSpan="2" style={{ width: '50%' }}>
+                  <div className="field-label">Municipio</div>
+                  <div>{v(est.municipio)}</div>
+                </td>
+              </tr>
+              <tr>
+                <td style={{ width: '50%' }}>
+                  <div className="field-label">Dirección de vivienda</div>
+                  <div>{v(est.direccion)}</div>
+                </td>
+                <td colSpan="2" style={{ width: '50%' }}>
+                  <div className="field-label">Barrio/vereda:</div>
+                  <div>{v(est.barrioVereda)}</div>
+                </td>
+              </tr>
+              <tr>
+                <td style={{ width: '50%' }}>
+                  <div className="field-label">Teléfono</div>
+                  <div>{v(est.telefono)}</div>
+                </td>
+                <td colSpan="2" style={{ width: '50%' }}>
+                  <div className="field-label">Correo electrónico</div>
+                  <div>{v(est.email)}</div>
+                </td>
+              </tr>
+              <tr>
+                <td style={{ width: '50%' }}>
+                  <div className="field-label">¿Está en centro de protección? NO {(!isBlankTemplate && est.centroProteccion === 'NO') ? 'X' : '_'} SI {(!isBlankTemplate && est.centroProteccion === 'SI') ? 'X' : '_'} ¿dónde?</div>
+                  <div>{est.centroProteccion === 'SI' ? v(est.centroProteccionDonde) : ''}</div>
+                </td>
+                <td colSpan="2" style={{ width: '50%' }}>
+                  <div className="field-label">Grado al que aspira ingresar:</div>
+                  <div>{v(est.gradoAspirado)}</div>
+                </td>
+              </tr>
+              <tr>
+                <td colSpan="3">
                   Si el estudiante no tiene registro civil debe iniciarse la gestión con la familia y la Registraduría
                 </td>
               </tr>
               <tr>
                 <td colSpan="3">
-                  <strong>¿Se reconoce o pertenece a un grupo étnico? ¿Cuál?</strong> {v(est.grupoEtnico)}
+                  <div className="field-label">¿Se reconoce o pertenece a un grupo étnico? ¿Cuál?</div>
+                  <div style={{}}>{v(est.grupoEtnico)}</div>
                 </td>
               </tr>
               <tr>
                 <td colSpan="3">
-                  <strong>¿Se reconoce como víctima del conflicto armado? Si__ No__ (Cuenta con el respectivo registro? Si__ No__)</strong> {v(est.victimaConflicto)} {est.victimaConflicto === 'SI' ? `— Registro: ${v(est.victimaConflictoRegistro)}` : ''}
+                  <div className="field-label">¿Se reconoce como víctima del conflicto armado? Si {(!isBlankTemplate && est.victimaConflicto === 'SI') ? 'X' : '__'} No {(!isBlankTemplate && est.victimaConflicto === 'NO') ? 'X' : '__'} (Cuenta con el respectivo registro? Si {(!isBlankTemplate && est.victimaConflictoRegistro === 'SI') ? 'X' : '__'} No {(!isBlankTemplate && est.victimaConflictoRegistro === 'NO') ? 'X' : '_'})</div>
                 </td>
               </tr>
             </tbody>
           </table>
-
-          <div className="preview-page-break"></div>
 
           <div className="piar-section-header">2) Entorno Salud:</div>
           <table className="piar-official-table">
             <tbody>
               <tr>
                 <td style={{ width: '45%' }}>
-                  <strong>Afiliación al sistema de salud</strong> SI {(!isBlankTemplate && sal.afiliacionSalud === 'SI') ? '✔' : '___'} No {(!isBlankTemplate && sal.afiliacionSalud === 'NO') ? '✔' : '___'}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '100%' }}>
+                    <span>Afiliación al sistema de salud</span>
+                    <span>SI {(!isBlankTemplate && sal.afiliacionSalud === 'SI') ? 'X' : '_'}</span>
+                    <span>No {(!isBlankTemplate && sal.afiliacionSalud === 'NO') ? 'X' : '___'}</span>
+                  </div>
                 </td>
-                <td style={{ width: '25%' }}><strong>EPS:</strong> {v(sal.eps)}</td>
-                <td style={{ width: '15%' }}><strong>Contributivo:</strong> {(!isBlankTemplate && sal.regimen === 'Contributivo') ? '✔' : ''}</td>
-                <td style={{ width: '15%' }}><strong>Subsidiado:</strong> {(!isBlankTemplate && sal.regimen === 'Subsidiado') ? '✔' : ''}</td>
+                <td style={{ width: '25%' }}>
+                  <div className="field-label">EPS</div>
+                  <div style={{}}>{v(sal.eps)}</div>
+                </td>
+                <td style={{ width: '15%', verticalAlign: 'middle' }}>
+                  Contributivo {(!isBlankTemplate && sal.regimen === 'Contributivo') ? 'X' : ''}
+                </td>
+                <td style={{ width: '15%', verticalAlign: 'middle' }}>
+                  Subsidiado {(!isBlankTemplate && sal.regimen === 'Subsidiado') ? 'X' : ''}
+                </td>
               </tr>
               <tr>
-                <td colSpan="4"><strong>Lugar donde le atienden en caso de emergencia:</strong> {v(sal.lugarEmergencia)}</td>
+                <td colSpan="4">
+                  <div className="field-label">Lugar donde le atienden en caso de emergencia:</div>
+                  <div style={{}}>{v(sal.lugarEmergencia)}</div>
+                </td>
               </tr>
             </tbody>
           </table>
 
-          <table className="piar-official-table" style={{ marginTop: -15 }}>
+          <table className="piar-official-table" style={{ marginTop: -13 }}>
             <tbody>
               <tr>
-                <td style={{ width: '35%' }}><strong>¿El niño está siendo atendido por el sector salud?</strong></td>
-                <td style={{ width: '8%', textAlign: 'center' }}>Si<br />{(!isBlankTemplate && sal.atendidoSectorSalud === 'SI') ? '✔' : ''}</td>
-                <td style={{ width: '8%', textAlign: 'center' }}>No<br />{(!isBlankTemplate && sal.atendidoSectorSalud === 'NO') ? '✔' : ''}</td>
-                <td style={{ width: '49%' }}><strong>Frecuencia:</strong><br />{v(sal.frecuenciaAtencion)}</td>
+                <td style={{ width: '35%' }}>¿El niño está siendo atendido<br />por el sector salud?</td>
+                <td style={{ width: '8%', textAlign: 'center' }}>Si<br />{(!isBlankTemplate && sal.atendidoSectorSalud === 'SI') ? 'X' : ''}</td>
+                <td style={{ width: '8%', textAlign: 'center' }}>No<br />{(!isBlankTemplate && sal.atendidoSectorSalud === 'NO') ? 'X' : ''}</td>
+                <td style={{ width: '49%' }}>
+                  <div className="field-label">Frecuencia:</div>
+                  <div style={{}}>{v(sal.frecuenciaAtencion)}</div>
+                </td>
               </tr>
               <tr>
-                <td><strong>Tiene diagnóstico médico:</strong></td>
-                <td style={{ textAlign: 'center' }}>Si<br />{(!isBlankTemplate && sal.diagnosticoMedico === 'SI') ? '✔' : ''}</td>
-                <td style={{ textAlign: 'center' }}>No<br />{(!isBlankTemplate && sal.diagnosticoMedico === 'NO') ? '✔' : ''}</td>
-                <td><strong>Cuál:</strong><br />{v(sal.diagnosticoCual)}</td>
+                <td>Tiene diagnóstico médico:</td>
+                <td style={{ textAlign: 'center' }}>Si<br />{(!isBlankTemplate && sal.diagnosticoMedico === 'SI') ? 'X' : ''}</td>
+                <td style={{ textAlign: 'center' }}>No<br />{(!isBlankTemplate && sal.diagnosticoMedico === 'NO') ? 'X' : ''}</td>
+                <td>
+                  <div className="field-label">Cuál:</div>
+                  <div style={{}}>{v(sal.diagnosticoCual)}</div>
+                </td>
               </tr>
               <tr>
-                <td rowSpan="3" style={{ verticalAlign: 'middle' }}><strong>¿El niño está asistiendo a terapias?</strong></td>
-                <td rowSpan="3" style={{ textAlign: 'center', verticalAlign: 'middle' }}>Si<br />{(!isBlankTemplate && sal.atendidoTerapias === 'SI') ? '✔' : ''}</td>
-                <td rowSpan="3" style={{ textAlign: 'center', verticalAlign: 'middle' }}>No<br />{(!isBlankTemplate && sal.atendidoTerapias === 'NO') ? '✔' : ''}</td>
+                <td rowSpan="3" style={{ verticalAlign: 'middle' }}>¿El niño está asistiendo a<br />terapias?</td>
+                <td rowSpan="3" style={{ textAlign: 'center', verticalAlign: 'middle' }}>Si<br />{(!isBlankTemplate && sal.atendidoTerapias === 'SI') ? 'X' : ''}</td>
+                <td rowSpan="3" style={{ textAlign: 'center', verticalAlign: 'middle' }}>No<br />{(!isBlankTemplate && sal.atendidoTerapias === 'NO') ? 'X' : ''}</td>
                 <td style={{ padding: 0 }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none' }}>
                     <tbody>
                       <tr>
-                        <td style={{ border: 'none', borderRight: '1px solid #000', borderBottom: '1px solid #000', width: '60%', padding: '4px 6px' }}><strong>¿Cuál?</strong> {v(sal.terapias?.[0]?.cual)}</td>
-                        <td style={{ border: 'none', borderBottom: '1px solid #000', width: '40%', padding: '4px 6px' }}><strong>Frecuencia:</strong> {v(sal.terapias?.[0]?.frecuencia)}</td>
+                        <td style={{ border: 'none', borderRight: '1px solid #000', borderBottom: '1px solid #000', width: '60%', padding: '4px 6px' }}>
+                          <span className="field-label" style={{ display: 'inline', marginRight: '4px' }}>¿Cuál?</span>{v(sal.terapias?.[0]?.cual)}
+                        </td>
+                        <td style={{ border: 'none', borderBottom: '1px solid #000', width: '40%', padding: '4px 6px' }}>
+                          <span className="field-label" style={{ display: 'inline', marginRight: '4px' }}>Frecuencia</span>{v(sal.terapias?.[0]?.frecuencia)}
+                        </td>
                       </tr>
                       <tr>
-                        <td style={{ border: 'none', borderRight: '1px solid #000', borderBottom: '1px solid #000', padding: '4px 6px' }}><strong>¿Cuál?</strong> {v(sal.terapias?.[1]?.cual)}</td>
-                        <td style={{ border: 'none', borderBottom: '1px solid #000', padding: '4px 6px' }}><strong>Frecuencia:</strong> {v(sal.terapias?.[1]?.frecuencia)}</td>
+                        <td style={{ border: 'none', borderRight: '1px solid #000', borderBottom: '1px solid #000', padding: '4px 6px' }}>
+                          <span className="field-label" style={{ display: 'inline', marginRight: '4px' }}>¿Cuál?</span>{v(sal.terapias?.[1]?.cual)}
+                        </td>
+                        <td style={{ border: 'none', borderBottom: '1px solid #000', padding: '4px 6px' }}>
+                          <span className="field-label" style={{ display: 'inline', marginRight: '4px' }}>Frecuencia</span>{v(sal.terapias?.[1]?.frecuencia)}
+                        </td>
                       </tr>
                       <tr>
-                        <td style={{ border: 'none', borderRight: '1px solid #000', borderBottom: 'none', padding: '4px 6px' }}><strong>¿Cuál?</strong> {v(sal.terapias?.[2]?.cual)}</td>
-                        <td style={{ border: 'none', borderBottom: 'none', padding: '4px 6px' }}><strong>Frecuencia:</strong> {v(sal.terapias?.[2]?.frecuencia)}</td>
+                        <td style={{ border: 'none', borderRight: '1px solid #000', borderBottom: 'none', padding: '4px 6px' }}>
+                          <span className="field-label" style={{ display: 'inline', marginRight: '4px' }}>¿Cuál?</span>{v(sal.terapias?.[2]?.cual)}
+                        </td>
+                        <td style={{ border: 'none', borderBottom: 'none', padding: '4px 6px' }}>
+                          <span className="field-label" style={{ display: 'inline', marginRight: '4px' }}>Frecuencia</span>{v(sal.terapias?.[2]?.frecuencia)}
+                        </td>
                       </tr>
                     </tbody>
                   </table>
@@ -319,128 +513,147 @@ export default function PreviewTab({ showToast, switchTab }) {
             </tbody>
           </table>
 
-          <table className="piar-official-table" style={{ marginTop: -15 }}>
+          <table className="piar-official-table" style={{ marginTop: -13 }}>
             <tbody>
               <tr>
                 <td style={{ width: '50%' }}>
-                  <strong>¿Actualmente recibe tratamiento médico por alguna enfermedad en particular?</strong> SI {(!isBlankTemplate && sal.tratamientoMedico === 'SI') ? '✔' : '___'} NO {(!isBlankTemplate && sal.tratamientoMedico === 'NO') ? '✔' : '___'}
+                  <div style={{ marginBottom: '8px' }}>¿Actualmente recibe tratamiento médico por alguna<br />enfermedad en particular? SI {(!isBlankTemplate && sal.tratamientoMedico === 'SI') ? 'X' : '___'} NO {(!isBlankTemplate && sal.tratamientoMedico === 'NO') ? 'X' : '___'}</div>
                 </td>
                 <td style={{ width: '50%' }}>
-                  <strong>¿Cuál?</strong> <span style={{ fontSize: '8pt', color: '#666', fontWeight: 'normal' }}>Ejemplo: para epilepsia, oxígeno, insulina, etc.</span><br />
-                  {v(sal.tratamientoCual)}
+                  <div className="field-label">¿Cuál? <span style={{ color: '#888', fontWeight: 'normal' }}>Ejemplo: para controlar epilepsia, uso de oxígeno, insulina, etc.)</span></div>
+                  <div>{v(sal.tratamientoCual)}</div>
                 </td>
               </tr>
               <tr>
                 <td colSpan="2">
-                  <strong>¿Consume medicamentos? Si {(!isBlankTemplate && sal.consumeMedicamentos === 'SI') ? '✔' : '___'} No {(!isBlankTemplate && sal.consumeMedicamentos === 'NO') ? '✔' : '___'} Frecuencia y horario:</strong> <span style={{ fontSize: '8pt', color: '#666', fontWeight: 'normal' }}>(Si debe consumirlo en horario de clases)</span><br />
-                  {v(sal.medicamentosFrecuencia)}
+                  <div className="field-label">¿Consume medicamentos? Si {(!isBlankTemplate && sal.consumeMedicamentos === 'SI') ? 'X' : '__'} No {(!isBlankTemplate && sal.consumeMedicamentos === 'NO') ? 'X' : '__'} Frecuencia y horario <span style={{ color: '#888', fontWeight: 'normal' }}>(Nombre medicamento y si debe consumirlo en horario de clases)</span></div>
+                  <div style={{}}>{v(sal.medicamentosFrecuencia)}</div>
                 </td>
               </tr>
               <tr>
                 <td colSpan="2">
-                  <strong>¿Cuenta con productos de apoyo para favorecer su movilidad, comunicación e independencia?</strong> NO {(!isBlankTemplate && sal.productosApoyo === 'NO') ? '✔' : '___'} SI {(!isBlankTemplate && sal.productosApoyo === 'SI') ? '✔' : '___'} <strong>¿Cuáles?</strong> <span style={{ fontSize: '8pt', color: '#666', fontWeight: 'normal' }}>(Silla de ruedas, bastón, audífonos, etc.)</span><br />
-                  {v(sal.productosApoyoCuales)}
+                  <div className="field-label">¿Cuenta con productos de apoyo para favorecer su movilidad, comunicación e independencia? NO {(!isBlankTemplate && sal.productosApoyo === 'NO') ? 'X' : '____'} SI {(!isBlankTemplate && sal.productosApoyo === 'SI') ? 'X' : '____'} ¿Cuáles? <span style={{ color: '#888', fontWeight: 'normal' }}>Ejemplos: Sillas de ruedas, bastones, tableros de comunicación, audifonos etc.</span></div>
+                  <div style={{}}>{v(sal.productosApoyoCuales)}</div>
                 </td>
               </tr>
             </tbody>
           </table>
 
-          <div className="piar-section-header">3) Entorno Hogar:</div>
-          <table className="piar-official-table">
-            <tbody>
-              <tr>
-                <td style={{ width: '25%' }}><strong>Nombre de la madre:</strong></td>
-                <td style={{ width: '25%' }}>{v(hog.nombreMadre)}</td>
-                <td style={{ width: '25%' }}><strong>Nombre del padre:</strong></td>
-                <td style={{ width: '25%' }}>{v(hog.nombrePadre)}</td>
-              </tr>
-              <tr>
-                <td><strong>Ocupación de la madre:</strong></td>
-                <td>{v(hog.ocupacionMadre)}</td>
-                <td><strong>Ocupación del padre:</strong></td>
-                <td>{v(hog.ocupacionPadre)}</td>
-              </tr>
-              <tr>
-                <td><strong>Nivel educativo alcanzado:</strong></td>
-                <td>{v(hog.nivelMadre)}<span style={{ fontSize: '7pt', color: '#888', display: 'block' }}>Prim/Sec/Tec/Tecn/Univ</span></td>
-                <td><strong>Nivel educativo alcanzado:</strong></td>
-                <td>{v(hog.nivelPadre)}<span style={{ fontSize: '7pt', color: '#888', display: 'block' }}>Prim/Sec/Tec/Tecn/Univ</span></td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div style={{ marginTop: 15, borderTop: '1px solid #000', paddingTop: 5, fontSize: '7.5pt', color: '#000', fontFamily: 'sans-serif', lineHeight: 1.3, marginBottom: 20 }}>
-            <span style={{ float: 'right', fontWeight: 'bold' }}>V14.16/02/2018. - Ver documento de instrucciones.</span>
-            Ministerio de Educación Nacional – Viceministerio de Educación Preescolar, Básica y Media – Decreto 1421 de 2017
+          <div className="piar-official-footer">
+            <div>V14.16/02/2018. - Ver documento de instrucciones.</div>
+            <div>Ministerio de Educación Nacional – Viceministerio de Educación Preescolar, Básica y Media – Decreto 1421 de 2017</div>
           </div>
 
           <div className="preview-page-break"></div>
 
-          <table className="piar-official-header" style={{ marginTop: 20 }}>
+          <table className="piar-official-header" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <tbody>
               <tr>
-                <td className="logo-cell">
-                  <img src="/Imagen1.png" alt="Mineducación y Gobierno de Colombia" />
+                <td className="logo-cell" style={{ textAlign: 'center', verticalAlign: 'middle', width: '70%' }}>
+                  <img src="/Imagen1.png" alt="Mineducación y Gobierno de Colombia" style={{ width: '350px', height: 'auto', display: 'block', margin: '0 auto' }} />
                 </td>
-                <td className="title-cell">
+                <td className="title-cell" style={{ verticalAlign: 'middle', width: '30%' }}>
                   <div className="piar-text">PIAR</div>
                   <div className="decreto-text">Decreto 1421/2017</div>
                 </td>
               </tr>
             </tbody>
           </table>
+          <p style={{ margin: '8px 0 4px 0', fontSize: '5pt' }}>&nbsp;</p>
+
+          <div className="piar-section-header">3) Entorno Hogar:</div>
+          <table className="piar-official-table">
+            <tbody>
+              <tr>
+                <td style={{ width: '25%' }}><div className="field-label">Nombre de la madre</div><div style={{}}>{v(hog.nombreMadre)}</div></td>
+                <td style={{ width: '25%' }}><div className="field-label">Nombre del padre</div><div style={{}}>{v(hog.nombrePadre)}</div></td>
+                <td style={{ width: '50%' }}></td>
+              </tr>
+              <tr>
+                <td><div className="field-label">Ocupación de la madre</div><div style={{}}>{v(hog.ocupacionMadre)}</div></td>
+                <td><div className="field-label">Ocupación del padre</div><div style={{}}>{v(hog.ocupacionPadre)}</div></td>
+                <td></td>
+              </tr>
+              <tr>
+                <td><div className="field-label">Nivel educativo alcanzado <span style={{ color: '#888', fontWeight: 'normal', fontSize: '7pt' }}>Prim/Bto/Téc/Tecn/univ.</span></div><div>{v(hog.nivelMadre)}</div></td>
+                <td><div className="field-label">Nivel educativo alcanzado <span style={{ color: '#888', fontWeight: 'normal', fontSize: '7pt' }}>Prim/Bto/Téc/Tecn/univ.</span></div><div>{v(hog.nivelPadre)}</div></td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
 
           <table className="piar-official-table">
             <tbody>
               <tr>
-                <td style={{ width: '25%' }}><strong>Nombre Cuidador:</strong><br />{v(hog.nombreCuidador)}</td>
-                <td style={{ width: '25%' }}><strong>Parentesco cuidador:</strong><br />{v(hog.parentescoCuidador)}</td>
-                <td style={{ width: '25%' }}><strong>Nivel educativo cuidador:</strong><br />{v(hog.nivelCuidador)}<span style={{ fontSize: '7pt', color: '#888', display: 'block' }}>Prim/Sec/Tec/Tecn/Univ</span></td>
-                <td style={{ width: '25%' }}><strong>Teléfono / Correo:</strong><br />{v(hog.telefonoCuidador)} / {v(hog.emailCuidador)}</td>
+                <td style={{ width: '25%' }}><div className="field-label">Nombre Cuidador</div><div style={{}}>{v(hog.nombreCuidador)}</div></td>
+                <td style={{ width: '25%' }}>
+                  <div className="field-label">Parentesco con el estudiante:</div>
+                  <div style={{}}>{v(hog.parentescoCuidador)}</div>
+                </td>
+                <td style={{ width: '25%' }}>
+                  <div className="field-label">Nivel educativo cuidador <span style={{ color: '#888', fontWeight: 'normal', fontSize: '7pt' }}>Prim/Bto/Téc/Tecn/univ.</span></div>
+                  <div>{v(hog.nivelCuidador)}</div>
+                </td>
+                <td style={{ width: '25%' }}>
+                  <div className="field-label">Teléfono</div>
+                  <div>{v(hog.telefonoCuidador)}</div>
+                  <div className="field-label" style={{ marginTop: '4px' }}>Correo electrónico:</div>
+                  <div>{v(hog.emailCuidador)}</div>
+                </td>
               </tr>
               <tr>
-                <td><strong>No. Hermanos:</strong><br />{v(hog.numHermanos)}</td>
-                <td><strong>Lugar que ocupa:</strong><br />{v(hog.lugarHermanos)}</td>
-                <td colSpan="2"><strong>¿Quiénes apoyan la crianza del estudiante?</strong><br />{v(hog.apoyanCrianza)}</td>
+                <td><div className="field-label">No. Hermanos</div><div style={{}}>{v(hog.numHermanos)}</div></td>
+                <td><div className="field-label">Lugar que ocupa:</div><div style={{}}>{v(hog.lugarHermanos)}</div></td>
+                <td colSpan="2"><div className="field-label">¿Quiénes apoyan la crianza del estudiante?</div><div style={{}}>{v(hog.apoyanCrianza)}</div></td>
               </tr>
               <tr>
-                <td colSpan="4"><strong>Personas con quien vive:</strong><br />{v(hog.personasConQuienVive)}</td>
+                <td colSpan="2"><div className="field-label">Personas con quien vive:</div><div style={{}}>{v(hog.personasConQuienVive)}</div></td>
+                <td colSpan="2"></td>
               </tr>
               <tr>
-                <td colSpan="2"><strong>¿Está bajo protección?</strong> Si {(!isBlankTemplate && hog.bajoProteccion === 'SI') ? '✔' : '___'} No {(!isBlankTemplate && hog.bajoProteccion === 'NO') ? '✔' : '___'}</td>
+                <td colSpan="2"><div className="field-label">¿Está bajo protección? Si {(!isBlankTemplate && hog.bajoProteccion === 'SI') ? 'X' : '_'} No {(!isBlankTemplate && hog.bajoProteccion === 'NO') ? 'X' : '_'}</div></td>
                 <td colSpan="2"></td>
               </tr>
               <tr>
                 <td colSpan="4">
-                  <strong>La familia recibe algún subsidio de alguna entidad:</strong> SI {(!isBlankTemplate && hog.recibeSubsidio === 'SI') ? '✔' : '___'} NO {(!isBlankTemplate && hog.recibeSubsidio === 'NO') ? '✔' : '___'} <strong>¿Cuál?</strong> {v(hog.subsidioCual)}
+                  <div className="field-label">La familia recibe algún subsidio de alguna entidad o institución: SI {(!isBlankTemplate && hog.recibeSubsidio === 'SI') ? 'X' : '__'} NO {(!isBlankTemplate && hog.recibeSubsidio === 'NO') ? 'X' : '__'} ¿Cuál? <span style={{ color: '#888', fontWeight: 'normal' }}>(Ejemplos: Prosperidad Social, ICBF, Fundaciones, ONG, etc.)</span></div>
+                  <div style={{}}>{v(hog.subsidioCual)}</div>
                 </td>
               </tr>
             </tbody>
           </table>
 
           <div className="piar-section-header">4. Entorno Educativo:</div>
-          <div style={{ fontWeight: 700, fontSize: '9.5pt', textDecoration: 'underline', marginTop: 3, marginBottom: 3 }}>Información de la Trayectoria Educativa</div>
+          <div style={{ fontWeight: 'bold', fontSize: '9pt', textDecoration: 'underline', marginTop: 3, marginBottom: 3 }}>Información de la Trayectoria Educativa</div>
           <table className="piar-official-table" style={{ marginBottom: 8 }}>
             <tbody>
               <tr>
                 <td style={{ width: '50%', padding: '4px 8px' }}>
-                  <strong>¿Ha estado vinculado en otra institución, fundación o educación inicial?</strong> SI {(!isBlankTemplate && tra.vinculadoAntes === 'SI') ? '✔' : '___'} NO {(!isBlankTemplate && tra.vinculadoAntes === 'NO') ? '✔' : '___'}
+                  <div className="field-label">¿Ha estado vinculado en otra institución educativa, fundación o modalidad de educación inicial?</div>
                 </td>
                 <td style={{ width: '50%', padding: '4px 8px' }}>
-                  <strong>NO___ ¿Por qué?</strong> {(!isBlankTemplate && tra.vinculadoAntes === 'NO') ? v(tra.observaciones) : ''}<br />
-                  <strong>SI___ ¿Cuáles?</strong> {(!isBlankTemplate && tra.vinculadoAntes === 'SI') ? v(tra.vinculadoCuales) : ''}
+                  <div className="field-label">NO {(!isBlankTemplate && tra.vinculadoAntes === 'NO') ? 'X' : '___'} ¿Por qué?</div>
+                  <div style={{ marginBottom: '4px' }}>{(!isBlankTemplate && tra.vinculadoAntes === 'NO') ? v(tra.observaciones) : ''}</div>
+                  <div className="field-label">SI {(!isBlankTemplate && tra.vinculadoAntes === 'SI') ? 'X' : '___'} ¿Cuáles?</div>
+                  <div style={{}}>{(!isBlankTemplate && tra.vinculadoAntes === 'SI') ? v(tra.vinculadoCuales) : ''}</div>
                 </td>
               </tr>
               <tr>
-                <td style={{ width: '35%', padding: '4px 8px' }}><strong>Ultimo grado cursado:</strong><br />{v(tra.ultimoGrado)}</td>
-                <td style={{ width: '65%', padding: 0 }} colSpan="2">
-                  <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none' }}>
+                <td style={{ width: '35%', padding: '4px 8px' }}>
+                  <div className="field-label">Ultimo grado cursado</div>
+                  <div style={{}}>{v(tra.ultimoGrado)}</div>
+                </td>
+                <td style={{ width: '65%', padding: 0 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', border: 'none', height: '100%' }}>
                     <tbody>
                       <tr>
                         <td style={{ border: 'none', borderRight: '1px solid #000', width: '40%', padding: '4px 6px' }}>
-                          <strong>¿Aprobó?</strong> SI {(!isBlankTemplate && tra.aprobo === 'SI') ? '✔' : '___'} NO {(!isBlankTemplate && tra.aprobo === 'NO') ? '✔' : '___'}
+                          <div className="field-label">¿Aprobó? SI {(!isBlankTemplate && tra.aprobo === 'SI') ? 'X' : '___'} NO {(!isBlankTemplate && tra.aprobo === 'NO') ? 'X' : '___'}</div>
                         </td>
-                        <td style={{ border: 'none', width: '60%', padding: '4px 6px' }}><strong>Observaciones:</strong> {v(tra.observaciones)}</td>
+                        <td style={{ border: 'none', width: '60%', padding: '4px 6px' }}>
+                          <div className="field-label">Observaciones: <span style={{ color: '#888', fontWeight: 'normal' }}>(incluir motivos del cambio de la modalidad o de la institución educativa)</span></div>
+                          <div style={{}}>{v(tra.observaciones)}</div>
+                        </td>
                       </tr>
                     </tbody>
                   </table>
@@ -448,31 +661,47 @@ export default function PreviewTab({ showToast, switchTab }) {
               </tr>
               <tr>
                 <td style={{ width: '50%', padding: '4px 8px' }}>
-                  <strong>¿Se recibe informe pedagógico cualitativo o PIAR previo?</strong> NO {(!isBlankTemplate && tra.recibeInforme === 'NO') ? '✔' : '___'} SI {(!isBlankTemplate && tra.recibeInforme === 'SI') ? '✔' : '___'}
+                  <div className="field-label">¿Se recibe informe pedagógico cualitativo que describa el proceso de desarrollo y aprendizaje del estudiante y/o PIAR?<br/>NO {(!isBlankTemplate && tra.recibeInforme === 'NO') ? 'X' : '___'} SI {(!isBlankTemplate && tra.recibeInforme === 'SI') ? 'X' : '___'}</div>
                 </td>
-                <td style={{ width: '50%', padding: '4px 8px' }}><strong>¿De qué institución proviene el informe?</strong><br />{v(tra.informeProcedencia)}</td>
+                <td style={{ width: '50%', padding: '4px 8px' }}>
+                  <div className="field-label">¿De qué institución o modalidad proviene el informe?</div>
+                  <div style={{}}>{v(tra.informeProcedencia)}</div>
+                </td>
               </tr>
               <tr>
                 <td style={{ width: '50%', padding: '4px 8px' }}>
-                  <strong>¿Está asistiendo en la actualidad a programas complementarios?</strong> NO {(!isBlankTemplate && tra.programasComplementarios === 'NO') ? '✔' : '___'} SI {(!isBlankTemplate && tra.programasComplementarios === 'SI') ? '✔' : '___'}
+                  <div className="field-label">¿Está asistiendo en la actualidad a programas complementarios? NO {(!isBlankTemplate && tra.programasComplementarios === 'NO') ? 'X' : '___'} SI {(!isBlankTemplate && tra.programasComplementarios === 'SI') ? 'X' : '___'}</div>
                 </td>
-                <td style={{ width: '50%', padding: '4px 8px' }}><strong>¿Cuáles?</strong><br />{v(tra.programasCuales)}</td>
+                <td style={{ width: '50%', padding: '4px 8px' }}>
+                  <div className="field-label">¿Cuáles? <span style={{ color: '#888', fontWeight: 'normal' }}>(Ejemplo: Deportes, danzas, música, pintura, recreación, otros cursos)</span></div>
+                  <div style={{}}>{v(tra.programasCuales)}</div>
+                </td>
               </tr>
             </tbody>
           </table>
 
-          <div className="preview-page-break"></div>
-
-          <div style={{ fontWeight: 700, fontSize: '9.5pt', textDecoration: 'underline', marginTop: 6, marginBottom: 3 }}>Información de la institución educativa en la que se matricula:</div>
+          <div style={{ fontWeight: 'bold', fontSize: '9pt', textDecoration: 'underline', marginTop: 6, marginBottom: 3 }}>Información de la institución educativa en la que se matricula:</div>
           <table className="piar-official-table" style={{ marginBottom: 8 }}>
             <tbody>
               <tr>
-                <td style={{ width: '60%', padding: '4px 8px' }}><strong>Nombre de la Institución educativa:</strong><br />{v(ins.nombreIE)}</td>
-                <td style={{ width: '40%', padding: '4px 8px' }}><strong>Sede:</strong><br />{v(ins.sede)}</td>
+                <td style={{ width: '60%', padding: '4px 8px' }}>
+                  <div className="field-label">Nombre de la Institución educativa a la que se matricula:</div>
+                  <div style={{}}>{v(ins.nombreIE)}</div>
+                </td>
+                <td style={{ width: '40%', padding: '4px 8px' }}>
+                  <div className="field-label">Sede:</div>
+                  <div style={{}}>{v(ins.sede)}</div>
+                </td>
               </tr>
               <tr>
-                <td style={{ padding: '4px 8px' }}><strong>Medio que usará para transportarse:</strong><br />{v(ins.medioTransporte)}</td>
-                <td style={{ padding: '4px 8px' }}><strong>Distancia y tiempo estimado:</strong><br />{v(ins.distanciaTiempo)}</td>
+                <td style={{ padding: '4px 8px' }}>
+                  <div className="field-label">Medio que usará el estudiante para transportarse a la institución educativa.</div>
+                  <div style={{}}>{v(ins.medioTransporte)}</div>
+                </td>
+                <td style={{ padding: '4px 8px' }}>
+                  <div className="field-label">Distancia entre la institución educativa o sede y el hogar del estudiante (Tiempo)</div>
+                  <div style={{}}>{v(ins.distanciaTiempo)}</div>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -480,55 +709,92 @@ export default function PreviewTab({ showToast, switchTab }) {
           <table className="piar-official-table" style={{ marginTop: 10, minHeight: 60 }}>
             <tbody>
               <tr>
-                <td style={{ width: '33.3%', height: 50, verticalAlign: 'bottom', borderBottom: 'none' }}><strong>Nombre y firma:</strong> {v(firmaA1?.[0]?.nombre)}</td>
-                <td style={{ width: '33.3%', height: 50, verticalAlign: 'bottom', borderBottom: 'none' }}><strong>Nombre y firma:</strong> {v(firmaA1?.[1]?.nombre)}</td>
-                <td style={{ width: '33.3%', height: 50, verticalAlign: 'bottom', borderBottom: 'none' }}><strong>Nombre y firma:</strong> {v(firmaA1?.[2]?.nombre)}</td>
+                <td style={{ width: '33.3%', height: 50, verticalAlign: 'bottom', borderBottom: 'none' }}>
+                  <div className="field-label" style={{ marginBottom: '30px' }}>Nombre y firma</div>
+                  <div>{v(firmaA1?.[0]?.nombre)}</div>
+                </td>
+                <td style={{ width: '33.3%', height: 50, verticalAlign: 'bottom', borderBottom: 'none' }}>
+                  <div className="field-label" style={{ marginBottom: '30px' }}>Nombre y firma</div>
+                  <div>{v(firmaA1?.[1]?.nombre)}</div>
+                </td>
+                <td style={{ width: '33.3%', height: 50, verticalAlign: 'bottom', borderBottom: 'none' }}>
+                  <div className="field-label" style={{ marginBottom: '30px' }}>Nombre y firma</div>
+                  <div>{v(firmaA1?.[2]?.nombre)}</div>
+                </td>
               </tr>
               <tr>
-                <td style={{ borderTop: 'none' }}><strong>Área:</strong> {v(firmaA1?.[0]?.area)}</td>
-                <td style={{ borderTop: 'none' }}><strong>Área:</strong> {v(firmaA1?.[1]?.area)}</td>
-                <td style={{ borderTop: 'none' }}><strong>Área:</strong> {v(firmaA1?.[2]?.area)}</td>
+                <td style={{ borderTop: 'none' }}>
+                  <div className="field-label">Área</div>
+                  <div>{v(firmaA1?.[0]?.area)}</div>
+                </td>
+                <td style={{ borderTop: 'none' }}>
+                  <div className="field-label">Área</div>
+                  <div>{v(firmaA1?.[1]?.area)}</div>
+                </td>
+                <td style={{ borderTop: 'none' }}>
+                  <div className="field-label">Área</div>
+                  <div>{v(firmaA1?.[2]?.area)}</div>
+                </td>
               </tr>
             </tbody>
           </table>
 
-          <div style={{ marginTop: 15, borderTop: '1px solid #000', paddingTop: 5, fontSize: '7.5pt', color: '#000', fontFamily: 'sans-serif', lineHeight: 1.3 }}>
-            <span style={{ float: 'right', fontWeight: 'bold' }}>V14.16/02/2018. - Ver documento de instrucciones.</span>
-            Ministerio de Educación Nacional – Viceministerio de Educación Preescolar, Básica y Media – Decreto 1421 de 2017
-          </div>
+
 
           {/* ==================== ANEXO 2 ==================== */}
+                    <div className="piar-official-footer">
+            <div>V14.16/02/2018. - Ver documento de instrucciones.</div>
+            <div>Ministerio de Educación Nacional – Viceministerio de Educación Preescolar, Básica y Media – Decreto 1421 de 2017</div>
+          </div>
+
           <div className="preview-page-break"></div>
 
-          <table className="piar-official-header" style={{ marginTop: 20 }}>
+          <table className="piar-official-header" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <tbody>
               <tr>
-                <td className="logo-cell">
-                  <img src="/Imagen1.png" alt="Mineducación y Gobierno de Colombia" />
+                <td className="logo-cell" style={{ textAlign: 'center', verticalAlign: 'middle', width: '70%' }}>
+                  <img src="/Imagen1.png" alt="Mineducación y Gobierno de Colombia" style={{ width: '350px', height: 'auto', display: 'block', margin: '0 auto' }} />
                 </td>
-                <td className="title-cell">
+                <td className="title-cell" style={{ verticalAlign: 'middle', width: '30%' }}>
                   <div className="piar-text">PIAR</div>
                   <div className="decreto-text">Decreto 1421/2017</div>
                 </td>
               </tr>
             </tbody>
           </table>
-
-          <div className="piar-official-title-box">
-            <h2>Plan Individual de Ajustes Razonables – PIAR –</h2>
-            <h3>ANEXO 2</h3>
-          </div>
+          <p style={{ margin: '18px 0 12px 0', fontSize: '5pt' }}>&nbsp;</p>
 
           <table className="piar-official-table">
             <tbody>
               <tr>
-                <td style={{ width: '25%' }}><strong>Fecha de elaboración:</strong><br />{fmtDate(gen2.fechaElaboracion)} <span style={{ color: '#888', fontSize: '8pt', float: 'right' }}>DD/MM/AA</span></td>
-                <td style={{ width: '35%' }}><strong>Institución educativa:</strong><br />{v(gen2.institucion)}</td>
-                <td style={{ width: '20%' }}><strong>Sede:</strong><br />{v(gen2.sede)}</td>
-                <td style={{ width: '20%' }}><strong>Jornada:</strong><br />{v(gen2.jornada)}</td>
+                <td colSpan="4" style={{ textAlign: 'center', padding: '12px' }}>
+                  <div style={{ margin: 0, fontSize: '11pt', fontWeight: 'bold' }}>Plan Individual de Ajustes Razonables – PIAR –</div>
+                  <div style={{ margin: '2px 0 0 0', fontSize: '10pt', fontWeight: 'bold' }}>ANEXO 2</div>
+                </td>
               </tr>
               <tr>
-                <td colSpan="4"><strong>Docentes que elaboran:</strong><br />{v(gen2.docentesElaboran)}</td>
+                <td style={{ width: '25%' }}>
+                  <div className="field-label">Fecha de elaboración:</div>
+                  <div style={{ minHeight: '16px' }}>{fmtDate(gen2.fechaElaboracion)} <span style={{ color: '#888', fontWeight: 'normal' }}>DD/MM/AA</span></div>
+                </td>
+                <td style={{ width: '35%' }}>
+                  <div className="field-label">Institución educativa:</div>
+                  <div style={{}}>{v(gen2.institucion)}</div>
+                </td>
+                <td style={{ width: '20%' }}>
+                  <div className="field-label">Sede:</div>
+                  <div style={{}}>{v(gen2.sede)}</div>
+                </td>
+                <td style={{ width: '20%' }}>
+                  <div className="field-label">Jornada:</div>
+                  <div style={{}}>{v(gen2.jornada)}</div>
+                </td>
+              </tr>
+              <tr>
+                <td colSpan="4">
+                  <div className="field-label">Docentes que elaboran y cargo:</div>
+                  <div style={{}}>{v(gen2.docentesElaboran)}</div>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -536,70 +802,84 @@ export default function PreviewTab({ showToast, switchTab }) {
           <table className="piar-official-table">
             <tbody>
               <tr>
-                <td colSpan="2" style={{ textAlign: 'center', fontWeight: 'bold', backgroundColor: '#f1f5f9' }}>DATOS DEL ESTUDIANTE</td>
+                <td colSpan="2" style={{ textAlign: 'center', fontWeight: 'bold' }}>DATOS DEL ESTUDIANTE</td>
               </tr>
               <tr>
-                <td style={{ width: '50%' }}><strong>Nombre del estudiante:</strong><br />{isBlankTemplate ? '' : v(activeStudent?.nombre)}</td>
-                <td style={{ width: '50%' }}><strong>Documento de Identificación:</strong><br />{v(est.numeroIdentificacion)}</td>
+                <td style={{ width: '50%' }}>
+                  <div className="field-label">Nombre del estudiante:</div>
+                  <div style={{ minHeight: '16px' }}>{isBlankTemplate ? '' : v(activeStudent?.nombre)}</div>
+                </td>
+                <td style={{ width: '50%' }}>
+                  <div className="field-label">Documento de Identificación:</div>
+                  <div style={{}}>{v(est.numeroIdentificacion)}</div>
+                </td>
               </tr>
               <tr>
-                <td style={{ width: '50%' }}><strong>Edad:</strong><br />{v(est.edad)}</td>
-                <td style={{ width: '50%' }}><strong>Grado:</strong><br />{isBlankTemplate ? '' : v(activeStudent?.grado)}</td>
+                <td style={{ width: '50%' }}>
+                  <div className="field-label">Edad:</div>
+                  <div style={{}}>{v(est.edad)}</div>
+                </td>
+                <td style={{ width: '50%' }}>
+                  <div className="field-label">Grado:</div>
+                  <div style={{ minHeight: '16px' }}>{isBlankTemplate ? '' : v(activeStudent?.grado)}</div>
+                </td>
               </tr>
             </tbody>
           </table>
 
-          <div style={{ fontWeight: 700, fontSize: '10pt', marginTop: 15, marginBottom: 8 }}>1. Características del Estudiante:</div>
+          <div style={{ fontWeight: 'bold', fontSize: '10pt', marginTop: 15, marginBottom: 8 }}>1. Características del Estudiante:</div>
           <table className="piar-official-table">
             <tbody>
               <tr>
                 <td style={{ height: 100 }}>
-                  <strong>Descripción general del estudiante con énfasis en gustos, intereses o aspectos que le desagradan, expectativas de la familia:</strong><br />
-                  <span style={{ fontSize: '9pt', color: '#444' }}>
+                  <div className="field-label" style={{ color: '#666', fontStyle: 'italic', marginBottom: '10px' }}>Descripción general del estudiante con énfasis en gustos e intereses o aspectos que le desagradan, expectativas del estudiante y la familia.</div>
+                  <div style={{ minHeight: '16px' }}>
                     {est.nombres ? `Expectativas de la familia y el estudiante: Acompañamiento en el hogar, fortalecimiento académico y desarrollo de habilidades sociales.` : ''}
-                  </span>
+                  </div>
                 </td>
               </tr>
               <tr>
                 <td style={{ height: 180 }}>
-                  <strong>Descripción en términos de lo que hace, puede hacer o requiere apoyo el estudiante para favorecer su proceso educativo.</strong><br />
-                  <span style={{ fontSize: '8.5pt', color: '#666', display: 'block', marginBottom: 6 }}>Habilidades, competencias, cualidades y aprendizajes con las que cuenta el estudiante.</span>
-                  {v(s.anexo2.caracteristicasEstudiante)}
+                  <div className="field-label" style={{ color: '#666', fontStyle: 'italic', marginBottom: '10px' }}>Descripción en términos de lo que hace, puede hacer o requiere apoyo el estudiante para favorecer su proceso educativo.<br/><br/>Indique las habilidades, competencias, cualidades, aprendizajes con las que cuenta el estudiante para el grado en el que fue matriculado.</div>
+                  <div style={{}}>{v(s.anexo2.caracteristicasEstudiante)}</div>
                 </td>
               </tr>
             </tbody>
           </table>
 
-          <div style={{ marginTop: 15, borderTop: '1px solid #000', paddingTop: 5, fontSize: '7.5pt', color: '#000', fontFamily: 'sans-serif', lineHeight: 1.3 }}>
-            <span style={{ float: 'right', fontWeight: 'bold' }}>V14.16/02/2018. - Ver documento de instrucciones.</span>
-            Ministerio de Educación Nacional – Viceministerio de Educación Preescolar, Básica y Media – Decreto 1421 de 2017
+
+
+                    <div className="piar-official-footer">
+            <div>V14.16/02/2018. - Ver documento de instrucciones.</div>
+            <div>Ministerio de Educación Nacional – Viceministerio de Educación Preescolar, Básica y Media – Decreto 1421 de 2017</div>
           </div>
 
           <div className="preview-page-break"></div>
 
-          <table className="piar-official-header" style={{ marginTop: 20 }}>
+          <table className="piar-official-header" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <tbody>
               <tr>
-                <td className="logo-cell">
-                  <img src="/Imagen1.png" alt="Mineducación y Gobierno de Colombia" />
+                <td className="logo-cell" style={{ textAlign: 'center', verticalAlign: 'middle', width: '70%' }}>
+                  <img src="/Imagen1.png" alt="Mineducación y Gobierno de Colombia" style={{ width: '350px', height: 'auto', display: 'block', margin: '0 auto' }} />
                 </td>
-                <td className="title-cell">
+                <td className="title-cell" style={{ verticalAlign: 'middle', width: '30%' }}>
                   <div className="piar-text">PIAR</div>
                   <div className="decreto-text">Decreto 1421/2017</div>
                 </td>
               </tr>
             </tbody>
           </table>
+          <p style={{ margin: '5px 0', fontSize: '5pt' }}>&nbsp;</p>
 
-          <div style={{ fontWeight: 700, fontSize: '10pt', marginTop: 15, marginBottom: 8 }}>2. Ajustes Razonables.</div>
-          <table className="piar-official-table" style={{ fontSize: '8.5pt' }}>
+          <div style={{ fontWeight: 'bold', fontSize: '10pt', marginTop: 15, marginBottom: 8, pageBreakAfter: 'avoid', breakAfter: 'avoid' }}>2. Ajustes Razonables.</div>
+          <table className="piar-official-table" style={{ fontSize: '8pt' }}>
             <thead>
-              <tr style={{ backgroundColor: '#f1f5f9', fontWeight: 'bold', textAlign: 'center' }}>
-                <td style={{ width: '12%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>ÁREA / APRENDIZAJE</td>
-                <td style={{ width: '25%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>OBJETIVOS/PROPÓSITOS<br /><span style={{ fontWeight: 'normal', fontSize: '7.5pt' }}>(EBC / DBA)<br /><strong>Primer cuatrimestre/trimestre</strong></span></td>
-                <td style={{ width: '21%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>BARRERAS QUE SE EVIDENCIAN</td>
-                <td style={{ width: '21%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>AJUSTES RAZONABLES<br /><span style={{ fontWeight: 'normal', fontSize: '7.5pt' }}>(Apoyos/estrategias)</span></td>
-                <td style={{ width: '21%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>EVALUACIÓN DE LOS AJUSTES<br /><span style={{ fontWeight: 'normal', fontSize: '7.5pt' }}>(Observaciones de seguimiento)</span></td>
+              <tr style={{ textAlign: 'center', backgroundColor: '#fff' }}>
+                <th style={{ width: '12%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>ÁREA S/ A P R E N D I Z A J E S</th>
+                <th style={{ width: '22%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>OBJETIVOS/PROPÓSITOS<br /><span style={{ fontWeight: 'normal', fontSize: '7.5pt' }}>(Estas son para todo el grado, de acuerdo con los EBC y los DBA)<br /><br /><strong>Primer trimestre</strong></span></th>
+                <th style={{ width: '22%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>BARRERAS QUE SE EVIDENCIAN EN EL CONTEXTO SOBRE LAS QUE SE DEBEN TRABAJAR</th>
+                <th style={{ width: '22%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>AJUSTES RAZONABLES<br /><span style={{ fontWeight: 'normal', fontSize: '7.5pt' }}>(Apoyos/estrategias)</span></th>
+                <th style={{ width: '22%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>EVALUACIÓN DE LOS AJUSTES<br /><br /><span style={{ fontWeight: 'normal', fontSize: '7.5pt' }}>(Dejar espacio para observaciones. Realizar seguimiento 3 veces en el año como mínimo- de acuerdo con la periodicidad establecida en el Sistema Institucional de Evaluación de los Estudiantes SIEE)</span></th>
               </tr>
             </thead>
             <tbody>
@@ -657,20 +937,22 @@ export default function PreviewTab({ showToast, switchTab }) {
             Las Instituciones educativas podrán ajustar de acuerdo con los avances en educación inclusiva y con el SIEE.
           </div>
 
-          <div style={{ marginTop: 15, borderTop: '1px solid #000', paddingTop: 5, fontSize: '7.5pt', color: '#000', fontFamily: 'sans-serif', lineHeight: 1.3 }}>
-            <span style={{ float: 'right', fontWeight: 'bold' }}>V14.16/02/2018. - Ver documento de instrucciones.</span>
-            Ministerio de Educación Nacional – Viceministerio de Educación Preescolar, Básica y Media – Decreto 1421 de 2017
+
+
+                    <div className="piar-official-footer">
+            <div>V14.16/02/2018. - Ver documento de instrucciones.</div>
+            <div>Ministerio de Educación Nacional – Viceministerio de Educación Preescolar, Básica y Media – Decreto 1421 de 2017</div>
           </div>
 
           <div className="preview-page-break"></div>
 
-          <table className="piar-official-header" style={{ marginTop: 20 }}>
+          <table className="piar-official-header" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <tbody>
               <tr>
-                <td className="logo-cell">
-                  <img src="/Imagen1.png" alt="Mineducación y Gobierno de Colombia" />
+                <td className="logo-cell" style={{ textAlign: 'center', verticalAlign: 'middle', width: '70%' }}>
+                  <img src="/Imagen1.png" alt="Mineducación y Gobierno de Colombia" style={{ width: '350px', height: 'auto', display: 'block', margin: '0 auto' }} />
                 </td>
-                <td className="title-cell">
+                <td className="title-cell" style={{ verticalAlign: 'middle', width: '30%' }}>
                   <div className="piar-text">PIAR</div>
                   <div className="decreto-text">Decreto 1421/2017</div>
                 </td>
@@ -678,22 +960,22 @@ export default function PreviewTab({ showToast, switchTab }) {
             </tbody>
           </table>
 
-          <div style={{ fontWeight: 700, fontSize: '9pt', marginTop: 15, marginBottom: 8, textDecoration: 'underline' }}>
-            7). RECOMENDACIONES PARA EL PLAN DE MEJORAMIENTO INSTITUCIONAL PARA LA ELIMINACIÓN DE BARRERAS Y LA CREACIÓN DE PROCESOS PARA LA PARTICIPACIÓN, EL APRENDIZAJE Y EL PROGRESO DE LOS ESTUDIANTES:
-          </div>
 
+          <div style={{ fontWeight: 'bold', fontSize: '9pt', marginTop: 8, marginBottom: 4 }}>
+            3. Recomendaciones para el Plan de Mejoramiento Institucional (PMI) para la eliminación de barreras y la creación de procesos para la participación, el aprendizaje y el progreso de los estudiantes:
+          </div>
           <table className="piar-official-table">
             <thead>
-              <tr style={{ backgroundColor: '#f1f5f9', fontWeight: 'bold', textAlign: 'center' }}>
-                <th style={{ width: '25%', border: '1px solid #000', padding: 6 }}>ACTORES</th>
-                <th style={{ width: '35%', border: '1px solid #000', padding: 6 }}>ACCIONES</th>
-                <th style={{ width: '40%', border: '1px solid #000', padding: 6 }}>ESTRATEGIAS A IMPLEMENTAR</th>
+              <tr style={{ backgroundColor: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+                <th style={{ width: '25%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>ACTORES</th>
+                <th style={{ width: '35%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>ACCIONES</th>
+                <th style={{ width: '40%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>ESTRATEGIAS A IMPLEMENTAR</th>
               </tr>
             </thead>
             <tbody>
               {pmi.map(p => (
                 <tr key={p.actor}>
-                  <td><strong>{p.actor}</strong></td>
+                  <td style={{ fontWeight: 'bold' }}>{p.actor}</td>
                   <td>{v(p.acciones)}</td>
                   <td>{v(p.estrategias)}</td>
                 </tr>
@@ -701,91 +983,141 @@ export default function PreviewTab({ showToast, switchTab }) {
             </tbody>
           </table>
 
-          <div style={{ fontSize: '8.5pt', color: '#000', lineHeight: 1.4, marginTop: 15 }}>
+          <div style={{ fontSize: '8.5pt', color: '#000', lineHeight: 1.4, marginTop: 8 }}>
             <strong>Firma y cargo de quienes realizan el proceso de valoración:</strong> Docentes, coordinadores, docente de apoyo, etc.
           </div>
 
-          <table className="piar-official-table" style={{ marginTop: 25, minHeight: 80 }}>
+          <table className="piar-official-table" style={{ marginTop: 8 }}>
             <tbody>
               <tr>
-                <td style={{ width: '33.3%', height: 80, verticalAlign: 'top', borderBottom: 'none', padding: '6px' }}>
-                  <strong>Nombre y firma:</strong>
-                  {firmaA2?.[0]?.signature ? (
-                    <img src={firmaA2[0].signature} alt="Firma" style={{ maxHeight: '50px', maxWidth: '100%', objectFit: 'contain', display: 'block', marginTop: '4px' }} />
-                  ) : <div style={{ height: '50px' }} />}
+                <td style={{ width: '33.3%', height: 35, verticalAlign: 'bottom', borderBottom: 'none' }}>
+                  <div className="field-label" style={{ marginBottom: '18px' }}>Nombre y firma</div>
+                  <div>
+                    {firmaA2?.[0]?.signature ? (
+                      <img src={firmaA2[0].signature} alt="Firma" style={{ maxHeight: '30px', maxWidth: '100%', objectFit: 'contain', display: 'block' }} />
+                    ) : ''}
+                    {v(firmaA2?.[0]?.nombre)}
+                  </div>
                 </td>
-                <td style={{ width: '33.3%', height: 80, verticalAlign: 'top', borderBottom: 'none', padding: '6px' }}>
-                  <strong>Nombre y firma:</strong>
-                  {firmaA2?.[1]?.signature ? (
-                    <img src={firmaA2[1].signature} alt="Firma" style={{ maxHeight: '50px', maxWidth: '100%', objectFit: 'contain', display: 'block', marginTop: '4px' }} />
-                  ) : <div style={{ height: '50px' }} />}
+                <td style={{ width: '33.3%', height: 35, verticalAlign: 'bottom', borderBottom: 'none' }}>
+                  <div className="field-label" style={{ marginBottom: '18px' }}>Nombre y firma</div>
+                  <div>
+                    {firmaA2?.[1]?.signature ? (
+                      <img src={firmaA2[1].signature} alt="Firma" style={{ maxHeight: '30px', maxWidth: '100%', objectFit: 'contain', display: 'block' }} />
+                    ) : ''}
+                    {v(firmaA2?.[1]?.nombre)}
+                  </div>
                 </td>
-                <td style={{ width: '33.3%', height: 80, verticalAlign: 'top', borderBottom: 'none', padding: '6px' }}>
-                  <strong>Nombre y firma:</strong>
-                  {firmaA2?.[2]?.signature ? (
-                    <img src={firmaA2[2].signature} alt="Firma" style={{ maxHeight: '50px', maxWidth: '100%', objectFit: 'contain', display: 'block', marginTop: '4px' }} />
-                  ) : <div style={{ height: '50px' }} />}
+                <td style={{ width: '33.3%', height: 35, verticalAlign: 'bottom', borderBottom: 'none' }}>
+                  <div className="field-label" style={{ marginBottom: '18px' }}>Nombre y firma</div>
+                  <div>
+                    {firmaA2?.[2]?.signature ? (
+                      <img src={firmaA2[2].signature} alt="Firma" style={{ maxHeight: '30px', maxWidth: '100%', objectFit: 'contain', display: 'block' }} />
+                    ) : ''}
+                    {v(firmaA2?.[2]?.nombre)}
+                  </div>
                 </td>
               </tr>
               <tr>
-                <td style={{ borderTop: 'none' }}><strong>Área:</strong> {v(firmaA2?.[0]?.area)}</td>
-                <td style={{ borderTop: 'none' }}><strong>Área:</strong> {v(firmaA2?.[1]?.area)}</td>
-                <td style={{ borderTop: 'none' }}><strong>Área:</strong> {v(firmaA2?.[2]?.area)}</td>
+                <td style={{ borderTop: 'none' }}>
+                  <div className="field-label">Área</div>
+                  <div>{v(firmaA2?.[0]?.area)}</div>
+                </td>
+                <td style={{ borderTop: 'none' }}>
+                  <div className="field-label">Área</div>
+                  <div>{v(firmaA2?.[1]?.area)}</div>
+                </td>
+                <td style={{ borderTop: 'none' }}>
+                  <div className="field-label">Área</div>
+                  <div>{v(firmaA2?.[2]?.area)}</div>
+                </td>
               </tr>
             </tbody>
           </table>
 
-          <div style={{ marginTop: 15, borderTop: '1px solid #000', paddingTop: 5, fontSize: '7.5pt', color: '#000', fontFamily: 'sans-serif', lineHeight: 1.3 }}>
-            <span style={{ float: 'right', fontWeight: 'bold' }}>V14.16/02/2018. - Ver documento de instrucciones.</span>
-            Ministerio de Educación Nacional – Viceministerio de Educación Preescolar, Básica y Media – Decreto 1421 de 2017
+          {/* ==================== ANEXO 3 ==================== */}
+                    <div className="piar-official-footer">
+            <div>V14.16/02/2018. - Ver documento de instrucciones.</div>
+            <div>Ministerio de Educación Nacional – Viceministerio de Educación Preescolar, Básica y Media – Decreto 1421 de 2017</div>
           </div>
 
-          {/* ==================== ANEXO 3 ==================== */}
           <div className="preview-page-break"></div>
 
-          <table className="piar-official-header" style={{ marginTop: 20 }}>
+          <table className="piar-official-header" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <tbody>
               <tr>
-                <td className="logo-cell">
-                  <img src="/Imagen1.png" alt="Mineducación y Gobierno de Colombia" />
+                <td className="logo-cell" style={{ textAlign: 'center', verticalAlign: 'middle', width: '70%' }}>
+                  <img src="/Imagen1.png" alt="Mineducación y Gobierno de Colombia" style={{ width: '350px', height: 'auto', display: 'block', margin: '0 auto' }} />
                 </td>
-                <td className="title-cell">
+                <td className="title-cell" style={{ verticalAlign: 'middle', width: '30%' }}>
                   <div className="piar-text">PIAR</div>
                   <div className="decreto-text">Decreto 1421/2017</div>
                 </td>
               </tr>
             </tbody>
           </table>
-
-          <div className="piar-official-title-box">
-            <h2>ACTA DE ACUERDO</h2>
-            <h3>Plan Individual de Ajustes Razonables – PIAR – ANEXO 3</h3>
-          </div>
+          <p style={{ margin: '18px 0 12px 0', fontSize: '5pt' }}>&nbsp;</p>
 
           <table className="piar-official-table">
             <tbody>
               <tr>
-                <td style={{ width: '35%' }}><strong>Fecha:</strong><br />{fmtDate(gen3.fecha)} <span style={{ color: '#888', fontSize: '8pt', float: 'right' }}>DD/MM/AAAA</span></td>
-                <td style={{ width: '65%' }} colSpan="2"><strong>Institución educativa y Sede:</strong><br />{v(gen3.institucionSede)}</td>
+                <td colSpan="3" style={{ textAlign: 'center', padding: '12px' }}>
+                  <div style={{ margin: 0, fontSize: '11pt', fontWeight: 'bold' }}>ACTA DE ACUERDO</div>
+                  <div style={{ margin: '2px 0 0 0', fontSize: '10pt', fontWeight: 'bold' }}>Plan Individual de Ajustes Razonables – PIAR – ANEXO 3</div>
+                </td>
               </tr>
               <tr>
-                <td style={{ width: '35%' }}><strong>Nombre del estudiante:</strong><br />{isBlankTemplate ? '' : v(activeStudent?.nombre)}</td>
-                <td style={{ width: '35%' }}><strong>Documento de Identificación:</strong><br />{v(est.numeroIdentificacion)}</td>
-                <td style={{ width: '30%' }}><strong>Edad:</strong> {v(est.edad)}<br /><strong>Grado:</strong> {isBlankTemplate ? '' : v(activeStudent?.grado)}</td>
+                <td style={{ width: '35%' }}>
+                  <div className="field-label">Fecha:</div>
+                  <table style={{ width: '100%', border: 'none', margin: 0, padding: 0 }}>
+                    <tbody>
+                      <tr>
+                        <td style={{ border: 'none', padding: 0 }}>{fmtDate(gen3.fecha)}</td>
+                        <td style={{ border: 'none', padding: 0, textAlign: 'right', color: '#888', fontWeight: 'normal' }}>DD/MM/AAAA</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
+                <td style={{ width: '65%' }} colSpan="2">
+                  <div className="field-label">Institución educativa y Sede:</div>
+                  <div style={{}}>{v(gen3.institucionSede)}</div>
+                </td>
               </tr>
               <tr>
-                <td style={{ width: '35%' }}><strong>Nombres equipo directivo y docentes:</strong></td>
+                <td style={{ width: '35%' }}>
+                  <div className="field-label">Nombre del estudiante:</div>
+                  <div style={{ minHeight: '16px' }}>{isBlankTemplate ? '' : v(activeStudent?.nombre)}</div>
+                </td>
+                <td style={{ width: '35%' }}>
+                  <div className="field-label">Documento de Identificación:</div>
+                  <div style={{}}>{v(est.numeroIdentificacion)}</div>
+                </td>
+                <td style={{ width: '30%' }}>
+                  <div className="field-label" style={{ display: 'inline', marginRight: '8px' }}>Edad:</div>{v(est.edad)}<br />
+                  <div className="field-label" style={{ display: 'inline', marginRight: '8px' }}>Grado:</div>{isBlankTemplate ? '' : v(activeStudent?.grado)}
+                </td>
+              </tr>
+              <tr>
+                <td style={{ width: '35%' }}>
+                  <div className="field-label">Nombres equipo directivo y docentes:</div>
+                </td>
                 <td colSpan="2" style={{ verticalAlign: 'middle' }}>{v(gen3.docentesEquipo)}</td>
               </tr>
               <tr>
-                <td style={{ width: '35%' }}><strong>Nombres familia del estudiante:</strong></td>
+                <td style={{ width: '35%' }}>
+                  <div className="field-label">Nombres familia del estudiante:</div>
+                </td>
                 <td style={{ width: '35%' }}>{v(gen3.familiaEstudiante?.[0]?.nombre)}</td>
-                <td style={{ width: '30%' }}><strong>Parentesco:</strong> {v(gen3.familiaEstudiante?.[0]?.parentesco)}</td>
+                <td style={{ width: '30%' }}>
+                  <div className="field-label" style={{ display: 'inline', marginRight: '8px' }}>Parentesco:</div>{v(gen3.familiaEstudiante?.[0]?.parentesco)}
+                </td>
               </tr>
               <tr>
                 <td style={{ width: '35%' }}></td>
                 <td style={{ width: '35%' }}>{v(gen3.familiaEstudiante?.[1]?.nombre)}</td>
-                <td style={{ width: '30%' }}><strong>Parentesco:</strong> {v(gen3.familiaEstudiante?.[1]?.parentesco)}</td>
+                <td style={{ width: '30%' }}>
+                  <div className="field-label" style={{ display: 'inline', marginRight: '8px' }}>Parentesco:</div>{v(gen3.familiaEstudiante?.[1]?.parentesco)}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -808,26 +1140,27 @@ export default function PreviewTab({ showToast, switchTab }) {
             </tbody>
           </table>
 
-          <div style={{ marginTop: 15, borderTop: '1px solid #000', paddingTop: 5, fontSize: '7.5pt', color: '#000', fontFamily: 'sans-serif', lineHeight: 1.3 }}>
-            <span style={{ float: 'right', fontWeight: 'bold' }}>V14.16/02/2018. - Ver documento de instrucciones.</span>
-            Ministerio de Educación Nacional – Viceministerio de Educación Preescolar, Básica y Media – Decreto 1421 de 2017
+                    <div className="piar-official-footer">
+            <div>V14.16/02/2018. - Ver documento de instrucciones.</div>
+            <div>Ministerio de Educación Nacional – Viceministerio de Educación Preescolar, Básica y Media – Decreto 1421 de 2017</div>
           </div>
 
           <div className="preview-page-break"></div>
 
-          <table className="piar-official-header" style={{ marginTop: 20 }}>
+          <table className="piar-official-header" style={{ width: '100%', borderCollapse: 'collapse' }}>
             <tbody>
               <tr>
-                <td className="logo-cell">
-                  <img src="/Imagen1.png" alt="Mineducación y Gobierno de Colombia" />
+                <td className="logo-cell" style={{ textAlign: 'center', verticalAlign: 'middle', width: '70%' }}>
+                  <img src="/Imagen1.png" alt="Mineducación y Gobierno de Colombia" style={{ width: '350px', height: 'auto', display: 'block', margin: '0 auto' }} />
                 </td>
-                <td className="title-cell">
+                <td className="title-cell" style={{ verticalAlign: 'middle', width: '30%' }}>
                   <div className="piar-text">PIAR</div>
                   <div className="decreto-text">Decreto 1421/2017</div>
                 </td>
               </tr>
             </tbody>
           </table>
+          <p style={{ margin: '5px 0', fontSize: '5pt' }}>&nbsp;</p>
 
           <div style={{ fontSize: '9.5pt', color: '#000', marginTop: 15, marginBottom: 10, fontWeight: 'bold' }}>
             Y en casa apoyará con las siguientes actividades:
@@ -835,10 +1168,10 @@ export default function PreviewTab({ showToast, switchTab }) {
 
           <table className="piar-official-table" style={{ fontSize: '9pt' }}>
             <thead>
-              <tr style={{ backgroundColor: '#f1f5f9', fontWeight: 'bold', textAlign: 'center' }}>
-                <th style={{ width: '25%', border: '1px solid #000', padding: 6 }}>Nombre de la Actividad</th>
-                <th style={{ width: '55%', border: '1px solid #000', padding: 6 }}>Descripción de la estrategia</th>
-                <th style={{ width: '20%', border: '1px solid #000', padding: 6 }}>Frecuencia (D / S / P)</th>
+              <tr style={{ backgroundColor: '#fff', fontWeight: 'bold', textAlign: 'center' }}>
+                <th style={{ width: '25%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>Nombre de la Actividad</th>
+                <th style={{ width: '55%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>Descripción de la estrategia</th>
+                <th style={{ width: '20%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>Frecuencia (D / S / P)</th>
               </tr>
             </thead>
             <tbody>
@@ -866,90 +1199,115 @@ export default function PreviewTab({ showToast, switchTab }) {
             Firma de los Actores comprometidos:
           </div>
 
-          <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: 20, fontSize: '9.5pt', color: '#000' }}>
+          <table className="piar-official-table" style={{ marginTop: 20, minHeight: 60, border: 'none' }}>
             <tbody>
               <tr>
-                <td style={{ width: '45%', borderBottom: '1px solid #000', height: 65, verticalAlign: 'bottom', paddingBottom: 4, textAlign: 'center' }}>
-                  {firmas?.estudianteSignature ? (
-                    <img src={firmas.estudianteSignature} alt="Firma Estudiante" style={{ maxHeight: '55px', maxWidth: '100%', objectFit: 'contain', display: 'block', margin: '0 auto 4px auto' }} />
-                  ) : (
-                    <div style={{ height: '45px' }} />
-                  )}
+                <td style={{ width: '45%', height: 50, verticalAlign: 'bottom', border: 'none', borderBottom: '1px solid #000', padding: '0 8px 4px 8px' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    {firmas?.estudianteSignature ? (
+                      <img src={firmas.estudianteSignature} alt="Firma Estudiante" style={{ maxHeight: '30px', maxWidth: '100%', objectFit: 'contain', display: 'inline-block' }} />
+                    ) : (
+                      <div style={{ height: '30px' }} />
+                    )}
+                  </div>
                 </td>
-                <td style={{ width: '10%' }}></td>
-                <td style={{ width: '45%', borderBottom: '1px solid #000', height: 65, verticalAlign: 'bottom', paddingBottom: 4, textAlign: 'center' }}>
-                  {firmas?.acudienteSignature ? (
-                    <img src={firmas.acudienteSignature} alt="Firma Acudiente" style={{ maxHeight: '55px', maxWidth: '100%', objectFit: 'contain', display: 'block', margin: '0 auto 4px auto' }} />
-                  ) : (
-                    <div style={{ height: '45px' }} />
-                  )}
-                </td>
-              </tr>
-              <tr>
-                <td style={{ paddingTop: 4, fontWeight: 'bold' }}>Estudiante</td>
-                <td></td>
-                <td style={{ paddingTop: 4, fontWeight: 'bold' }}>Acudiente / familia</td>
-              </tr>
-              <tr>
-                <td style={{ width: '45%', borderBottom: '1px solid #000', height: 65, verticalAlign: 'bottom', paddingBottom: 4, textAlign: 'center' }}>
-                  {firmas?.docentesSignature ? (
-                    <img src={firmas.docentesSignature} alt="Firma Docentes" style={{ maxHeight: '55px', maxWidth: '100%', objectFit: 'contain', display: 'block', margin: '0 auto 4px auto' }} />
-                  ) : (
-                    <div style={{ height: '45px' }} />
-                  )}
-                </td>
-                <td></td>
-                <td style={{ width: '45%', borderBottom: '1px solid #000', height: 65, verticalAlign: 'bottom', paddingBottom: 4 }}>
-                  {/* Secondary docente signature line */}
+                <td style={{ width: '10%', border: 'none' }}></td>
+                <td style={{ width: '45%', height: 50, verticalAlign: 'bottom', border: 'none', borderBottom: '1px solid #000', padding: '0 8px 4px 8px' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    {firmas?.acudienteSignature ? (
+                      <img src={firmas.acudienteSignature} alt="Firma Acudiente" style={{ maxHeight: '30px', maxWidth: '100%', objectFit: 'contain', display: 'inline-block' }} />
+                    ) : (
+                      <div style={{ height: '30px' }} />
+                    )}
+                  </div>
                 </td>
               </tr>
               <tr>
-                <td style={{ paddingTop: 4, fontWeight: 'bold' }}>Docentes</td>
-                <td></td>
-                <td style={{ paddingTop: 4, fontWeight: 'bold' }}>Docentes</td>
+                <td style={{ border: 'none', paddingTop: 4 }}>
+                  <div className="field-label">Estudiante</div>
+                </td>
+                <td style={{ border: 'none' }}></td>
+                <td style={{ border: 'none', paddingTop: 4 }}>
+                  <div className="field-label">Acudiente / familia</div>
+                </td>
               </tr>
+
               <tr>
-                <td colSpan="3" style={{ width: '100%', borderBottom: '1px solid #000', height: 65, verticalAlign: 'bottom', paddingBottom: 4, textAlign: 'center' }}>
-                  {firmas?.directivoSignature ? (
-                    <img src={firmas.directivoSignature} alt="Firma Directivo" style={{ maxHeight: '55px', maxWidth: '100%', objectFit: 'contain', display: 'block', margin: '0 auto 4px auto' }} />
-                  ) : (
-                    <div style={{ height: '45px' }} />
-                  )}
+                <td style={{ width: '45%', height: 50, verticalAlign: 'bottom', border: 'none', borderBottom: '1px solid #000', padding: '0 8px 4px 8px', paddingTop: '30px' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    {firmas?.docentesSignature ? (
+                      <img src={firmas.docentesSignature} alt="Firma Docentes" style={{ maxHeight: '30px', maxWidth: '100%', objectFit: 'contain', display: 'inline-block' }} />
+                    ) : (
+                      <div style={{ height: '30px' }} />
+                    )}
+                  </div>
+                </td>
+                <td style={{ width: '10%', border: 'none' }}></td>
+                <td style={{ width: '45%', height: 50, verticalAlign: 'bottom', border: 'none', borderBottom: '1px solid #000', padding: '0 8px 4px 8px', paddingTop: '30px' }}>
                 </td>
               </tr>
               <tr>
-                <td colSpan="3" style={{ paddingTop: 4, fontWeight: 'bold' }}>Directivo docente</td>
+                <td style={{ border: 'none', paddingTop: 4 }}>
+                  <div className="field-label">Docentes</div>
+                </td>
+                <td style={{ border: 'none' }}></td>
+                <td style={{ border: 'none', paddingTop: 4 }}>
+                  <div className="field-label">Docentes</div>
+                </td>
+              </tr>
+
+              <tr>
+                <td style={{ width: '45%', height: 50, verticalAlign: 'bottom', border: 'none', borderBottom: '1px solid #000', padding: '0 8px 4px 8px', paddingTop: '30px' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    {firmas?.directivoSignature ? (
+                      <img src={firmas.directivoSignature} alt="Firma Directivo" style={{ maxHeight: '30px', maxWidth: '100%', objectFit: 'contain', display: 'inline-block' }} />
+                    ) : (
+                      <div style={{ height: '30px' }} />
+                    )}
+                  </div>
+                </td>
+                <td style={{ width: '10%', border: 'none' }}></td>
+                <td style={{ width: '45%', border: 'none' }}></td>
+              </tr>
+              <tr>
+                <td style={{ border: 'none', paddingTop: 4 }}>
+                  <div className="field-label">Directivo docente</div>
+                </td>
+                <td style={{ border: 'none' }}></td>
+                <td style={{ border: 'none' }}></td>
               </tr>
             </tbody>
           </table>
 
-          <div style={{ marginTop: 15, borderTop: '1px solid #000', paddingTop: 5, fontSize: '7.5pt', color: '#000', fontFamily: 'sans-serif', lineHeight: 1.3 }}>
-            <span style={{ float: 'right', fontWeight: 'bold' }}>V14.16/02/2018. - Ver documento de instrucciones.</span>
-            Ministerio de Educación Nacional – Viceministerio de Educación Preescolar, Básica y Media – Decreto 1421 de 2017
+          <div className="piar-official-footer">
+            <div>V14.16/02/2018. - Ver documento de instrucciones.</div>
+            <div>Ministerio de Educación Nacional – Viceministerio de Educación Preescolar, Básica y Media – Decreto 1421 de 2017</div>
+          </div>
+
+          {/* Footer fijo repetido al fondo de todas las hojas impresas / PDF */}
+          <div className="piar-official-footer-print" aria-hidden="true">
+            <div>V14.16/02/2018. - Ver documento de instrucciones.</div>
+            <div>Ministerio de Educación Nacional – Viceministerio de Educación Preescolar, Básica y Media – Decreto 1421 de 2017</div>
           </div>
         </div>
       </div>
+      </div>
 
-      {/* Botones de Navegación del Wizard en Vista Previa */}
-      <div className="no-print" style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginTop: '32px', 
-        paddingTop: '16px', 
-        borderTop: '1px solid var(--border-color)',
-        gap: '12px'
-      }}>
+      {/* Botones de Navegación del Wizard */}
+      <div className="wizard-nav-container no-print">
         <button type="button" className="btn-wizard-prev" onClick={() => switchTab && switchTab('tab-anexo3')}>
           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_back</span>
           <span>Anterior Anexo 3</span>
         </button>
 
-        <button type="button" className="btn-wizard-next" onClick={() => switchTab && switchTab('tab-dashboard')}>
-          <span>Finalizar y Salir</span>
-          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>check_circle</span>
-        </button>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <button type="button" className="btn-wizard-next" onClick={() => switchTab && switchTab('tab-dashboard')}>
+            <span>Finalizar y Salir</span>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>check_circle</span>
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
+

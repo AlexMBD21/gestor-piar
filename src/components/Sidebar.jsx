@@ -109,9 +109,7 @@ export default function Sidebar({ activeTab, switchTab, sidebarCollapsed, setSid
       {/* Student Avatar — solo visible cuando está contraído */}
       <div className="sidebar-student-avatar" title={activeStudent ? activeStudent.nombre : 'Sin estudiante'}>
         {activeStudent ? (
-          <span className="student-avatar-initials">
-            {activeStudent.nombre.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()}
-          </span>
+          <span className="material-symbols-outlined" style={{ fontSize: '20px', color: 'var(--primary)' }}>school</span>
         ) : (
           <span className="material-symbols-outlined" style={{ fontSize: '20px', color: 'var(--text-muted)' }}>person</span>
         )}

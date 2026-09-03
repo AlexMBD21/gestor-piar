@@ -227,7 +227,7 @@ export default function SignaturePad({ label, savedSignature, onSave, onClear })
   };
 
   return (
-    <div className="signature-pad-container" style={{ marginBottom: '16px', width: '100%' }}>
+    <div className="signature-pad-container" style={{ width: '100%', boxSizing: 'border-box' }}>
       <label style={{ fontSize: '0.85rem', fontWeight: 600, display: 'block', marginBottom: '8px', color: 'var(--text-main)' }}>
         {label}
       </label>

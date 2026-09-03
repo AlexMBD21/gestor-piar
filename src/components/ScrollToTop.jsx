@@ -14,7 +14,7 @@ export default function ScrollToTop() {
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
           setIsVisible(false);
-        }, 3000); // Se oculta tras 3 segundos de inactividad
+        }, 1000); // Se oculta tras 1 segundo de inactividad
       } else {
         setIsVisible(false);
         clearTimeout(timeoutId);
@@ -32,7 +32,7 @@ export default function ScrollToTop() {
           clearTimeout(timeoutId);
           timeoutId = setTimeout(() => {
             setIsVisible(false);
-          }, 3000);
+          }, 1000);
         } else {
           setIsVisible(false);
           clearTimeout(timeoutId);

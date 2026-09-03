@@ -6,19 +6,22 @@ export default function CollaborativeSection({ sectionKey, children, className =
   const { getActiveStudent, releaseSectionLock } = usePiar();
   const activeStudent = getActiveStudent();
 
-  if (!activeStudent) return <div className={`card ${className}`}>{children}</div>;
+  if (!activeStudent) return <div className={`collaborative-section ${className}`}>{children}</div>;
 
   const metadata = activeStudent.data?.sectionMetadata?.[sectionKey];
   const isLocked = metadata && metadata.editor_id !== user?.id && !isSuperAdmin;
 
   return (
     <div 
-      className={`card collaborative-section ${isLocked ? 'section-locked' : ''} ${className}`} 
+      className={`collaborative-section ${isLocked ? 'section-locked' : ''} ${className}`} 
       style={{ 
         position: 'relative', 
-        border: isLocked ? '2px solid var(--danger)' : '1px solid var(--border-color)',
+        border: isLocked ? '2px solid var(--danger)' : 'none',
+        borderRadius: 'var(--radius-md)',
         padding: 0,
-        overflow: 'hidden',
+        margin: '20px 0',
+        width: '100%',
+        boxSizing: 'border-box',
         transition: 'all 0.3s ease'
       }}
     >
@@ -29,13 +32,14 @@ export default function CollaborativeSection({ sectionKey, children, className =
             backgroundColor: 'rgba(239, 68, 68, 0.1)',
             borderBottom: '1px solid var(--border-color)',
             color: 'var(--danger)',
-            padding: '12px 24px',
+            padding: '12px 16px',
             fontSize: '0.88rem',
             fontWeight: 600,
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            gap: 12
+            gap: 12,
+            marginBottom: 16
           }}
         >
           <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -62,7 +66,7 @@ export default function CollaborativeSection({ sectionKey, children, className =
           </button>
         </div>
       )}
-      <fieldset disabled={isLocked} style={{ border: 'none', padding: '32px', margin: 0, width: '100%' }}>
+      <fieldset disabled={isLocked} style={{ border: 'none', padding: 0, margin: 0, width: '100%', boxSizing: 'border-box' }}>
         {children}
       </fieldset>
     </div>
