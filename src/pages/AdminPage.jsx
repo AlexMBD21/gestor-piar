@@ -72,9 +72,7 @@ export default function AdminPage() {
           <div className="header-actions">
             <div className="header-profile-card">
               <div className="profile-avatar">
-                {profile?.full_name
-                  ? profile.full_name.split(' ').filter(n => n.length > 0).map(n => n[0]).join('').substring(0, 2).toUpperCase()
-                  : (isSuperAdmin ? 'SA' : 'PF')}
+                <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>person</span>
               </div>
               <div className="profile-details">
                 <span className="profile-name">{profile?.full_name || 'Usuario'}</span>

@@ -708,9 +708,24 @@ export default function PreviewTab({ showToast, switchTab }) {
           <table className="piar-official-table" style={{ marginTop: 25, minHeight: 80 }}>
             <tbody>
               <tr>
-                <td style={{ width: '33.3%', height: 50, verticalAlign: 'bottom', borderBottom: 'none' }}><strong>Nombre y firma:</strong> {v(firmaA2?.[0]?.nombre)}</td>
-                <td style={{ width: '33.3%', height: 50, verticalAlign: 'bottom', borderBottom: 'none' }}><strong>Nombre y firma:</strong> {v(firmaA2?.[1]?.nombre)}</td>
-                <td style={{ width: '33.3%', height: 50, verticalAlign: 'bottom', borderBottom: 'none' }}><strong>Nombre y firma:</strong> {v(firmaA2?.[2]?.nombre)}</td>
+                <td style={{ width: '33.3%', height: 80, verticalAlign: 'top', borderBottom: 'none', padding: '6px' }}>
+                  <strong>Nombre y firma:</strong>
+                  {firmaA2?.[0]?.signature ? (
+                    <img src={firmaA2[0].signature} alt="Firma" style={{ maxHeight: '50px', maxWidth: '100%', objectFit: 'contain', display: 'block', marginTop: '4px' }} />
+                  ) : <div style={{ height: '50px' }} />}
+                </td>
+                <td style={{ width: '33.3%', height: 80, verticalAlign: 'top', borderBottom: 'none', padding: '6px' }}>
+                  <strong>Nombre y firma:</strong>
+                  {firmaA2?.[1]?.signature ? (
+                    <img src={firmaA2[1].signature} alt="Firma" style={{ maxHeight: '50px', maxWidth: '100%', objectFit: 'contain', display: 'block', marginTop: '4px' }} />
+                  ) : <div style={{ height: '50px' }} />}
+                </td>
+                <td style={{ width: '33.3%', height: 80, verticalAlign: 'top', borderBottom: 'none', padding: '6px' }}>
+                  <strong>Nombre y firma:</strong>
+                  {firmaA2?.[2]?.signature ? (
+                    <img src={firmaA2[2].signature} alt="Firma" style={{ maxHeight: '50px', maxWidth: '100%', objectFit: 'contain', display: 'block', marginTop: '4px' }} />
+                  ) : <div style={{ height: '50px' }} />}
+                </td>
               </tr>
               <tr>
                 <td style={{ borderTop: 'none' }}><strong>Área:</strong> {v(firmaA2?.[0]?.area)}</td>

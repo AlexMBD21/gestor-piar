@@ -70,9 +70,7 @@ export default function AppPage() {
   };
   const headerTitle = tabTitles[activeTab] || 'Gestor PIAR';
 
-  const profileInitials = profile?.full_name
-    ? profile.full_name.split(' ').filter(n => n.length > 0).map(n => n[0]).join('').substring(0, 2).toUpperCase()
-    : (isSuperAdmin ? 'SA' : 'PF');
+
 
   const mobileNavItems = [
     { tab: 'tab-dashboard', icon: 'dashboard', label: 'Inicio' },
@@ -102,7 +100,7 @@ export default function AppPage() {
       {/* MOBILE: Top Bar */}
       <header className="mobile-top-bar no-print">
         <div className="mobile-top-bar__avatar">
-          {profileInitials}
+          <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>person</span>
         </div>
         <div className="mobile-top-bar__titles">
           <span className="mobile-top-bar__title">{headerTitle}</span>
@@ -125,7 +123,9 @@ export default function AppPage() {
           <div><span style={{ display: 'none' }}>Gestor PIAR</span></div>
           <div className="header-actions">
             <div className="header-profile-chip">
-              <div className="profile-avatar">{profileInitials}</div>
+              <div className="profile-avatar">
+                <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>person</span>
+              </div>
               <div className="profile-details">
                 <span className="profile-name">{profile?.full_name || 'Usuario'}</span>
                 <span className="profile-role">

@@ -2,6 +2,7 @@ import { usePiar } from '../context/PiarContext';
 import { PLantillasPIAR } from '../lib/piarTemplates';
 import AjustesTable from './AjustesTable';
 import PmiTable from './PmiTable';
+import SignaturePad from './SignaturePad';
 
 export default function Anexo2Form({ showToast, switchTab }) {
   const { getActiveStudent, savePiar, updateLocalPiarData, saveActivePiar, unsavedChanges } = usePiar();
@@ -188,24 +189,24 @@ export default function Anexo2Form({ showToast, switchTab }) {
           />
 
           <h5 className="section-subtitle">Firmas de Responsables</h5>
-          <div className="form-grid-3">
+          <div className="signature-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginTop: 16 }}>
             {[0, 1, 2].map(idx => (
-              <div key={idx} className="signature-input-card">
-                <label style={{ fontWeight: 600, display: 'block', marginBottom: 8 }}>Responsable {idx + 1}</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Nombre completo"
-                  value={firmas?.[idx]?.nombre || ''}
-                  onChange={e => handleFirmaChange(idx, 'nombre', e.target.value)}
-                />
+              <div key={idx} className="signature-input-card" style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', padding: '16px', backgroundColor: 'var(--bg-input)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <label style={{ fontWeight: 600, display: 'block' }}>Responsable {idx + 1}</label>
+                <div style={{ marginTop: '4px' }}>
+                  <SignaturePad
+                    label={`Nombre y firma Responsable ${idx + 1}`}
+                    savedSignature={firmas?.[idx]?.signature || ''}
+                    onSave={val => handleFirmaChange(idx, 'signature', val)}
+                    onClear={() => handleFirmaChange(idx, 'signature', '')}
+                  />
+                </div>
                 <input
                   type="text"
                   className="form-control"
                   placeholder="Cargo / Área"
                   value={firmas?.[idx]?.area || ''}
                   onChange={e => handleFirmaChange(idx, 'area', e.target.value)}
-                  style={{ marginTop: 8 }}
                 />
               </div>
             ))}

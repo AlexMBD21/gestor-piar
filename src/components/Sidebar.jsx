@@ -37,7 +37,6 @@ export default function Sidebar({ activeTab, switchTab, sidebarCollapsed, setSid
 
       {/* Header */}
       <div className="sidebar-header">
-        <div className="sidebar-logo-icon">P</div>
         <div className="sidebar-logo-text">
           <h1>Gestor PIAR</h1>
           <p>DECRETO 1421 DE 2017</p>
