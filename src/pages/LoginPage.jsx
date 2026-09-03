@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
@@ -8,6 +8,16 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('piar_dark_mode') === 'enabled');
+
+  useEffect(() => {
+    if (darkMode) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.remove('dark-mode');
+    }
+    localStorage.setItem('piar_dark_mode', darkMode ? 'enabled' : 'disabled');
+  }, [darkMode]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -15,96 +25,129 @@ export default function LoginPage() {
     setLoading(true);
     const { error: signInError } = await signIn(email, password);
     if (signInError) {
-      setError('Correo o contraseña incorrectos. Intenta de nuevo.');
+      setError('Correo o contraseña incorrectos. Por favor, verifica tus datos.');
     }
     setLoading(false);
   };
 
   return (
     <div className="login-page">
+      {/* Decorative ambient background glows */}
+      <div className="login-ambient-glow glow-1" aria-hidden="true" />
+      <div className="login-ambient-glow glow-2" aria-hidden="true" />
+
+      {/* Theme toggle switch button */}
+      <button
+        type="button"
+        className="login-theme-toggle"
+        onClick={() => setDarkMode(!darkMode)}
+        title={darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+        aria-label="Cambiar tema"
+      >
+        <span className="material-symbols-outlined">
+          {darkMode ? 'light_mode' : 'dark_mode'}
+        </span>
+      </button>
+
       <div className="login-card">
+        {/* Header and Branding */}
         <div className="login-logo">
-          <div className="logo-icon" style={{ width: 56, height: 56, fontSize: '1.8rem', marginBottom: 16 }}>P</div>
-          <h1 style={{ fontSize: '2rem', background: 'linear-gradient(135deg, var(--primary), var(--secondary))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            Gestor PIAR
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: 4 }}>
-            Decreto 1421 de 2017 — Educación Inclusiva
-          </p>
+          <div className="logo-icon-wrapper">
+            <div className="logo-icon">P</div>
+          </div>
+          <h1 className="login-title">Gestor PIAR</h1>
+          <div className="login-badge">
+            <span className="material-symbols-outlined badge-icon">verified_user</span>
+            <span>Decreto 1421 de 2017 • Educación Inclusiva</span>
+          </div>
         </div>
 
+        {/* Login Form */}
         <form onSubmit={handleSubmit} className="login-form">
-          <div className="form-group">
-            <label htmlFor="login-email">Correo Electrónico</label>
+          {/* Floating Field: Correo Electrónico */}
+          <div className={`form-floating-group ${email ? 'has-value' : ''}`}>
+            <span className="material-symbols-outlined floating-field-icon">mail</span>
             <input
               id="login-email"
               type="email"
-              className="form-control"
-              placeholder="usuario@institución.edu.co"
+              className="form-floating-input"
               value={email}
               onChange={e => setEmail(e.target.value)}
+              placeholder=" "
               required
               autoComplete="email"
             />
-          </div>
-          <div className="form-group">
-            <label htmlFor="login-password">Contraseña</label>
-            <div className="password-input-wrapper">
-              <input
-                id="login-password"
-                type={showPassword ? 'text' : 'password'}
-                className="form-control"
-                placeholder="••••••••"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-              />
-              <button
-                type="button"
-                className="password-toggle-btn"
-                onClick={() => setShowPassword(v => !v)}
-                aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-              >
-                {showPassword ? (
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-                    <line x1="1" y1="1" x2="23" y2="23"/>
-                  </svg>
-                ) : (
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                    <circle cx="12" cy="12" r="3"/>
-                  </svg>
-                )}
-              </button>
-            </div>
+            <label htmlFor="login-email" className="form-floating-label">
+              Correo Electrónico
+            </label>
           </div>
 
+          {/* Floating Field: Contraseña */}
+          <div className={`form-floating-group ${password ? 'has-value' : ''}`}>
+            <span className="material-symbols-outlined floating-field-icon">lock</span>
+            <input
+              id="login-password"
+              type={showPassword ? 'text' : 'password'}
+              className="form-floating-input has-action-btn"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder=" "
+              required
+              autoComplete="current-password"
+            />
+            <label htmlFor="login-password" className="form-floating-label">
+              Contraseña
+            </label>
+            <button
+              type="button"
+              className="floating-action-btn"
+              onClick={() => setShowPassword(v => !v)}
+              aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              tabIndex={-1}
+            >
+              <span className="material-symbols-outlined">
+                {showPassword ? 'visibility_off' : 'visibility'}
+              </span>
+            </button>
+          </div>
+
+          {/* Error Message */}
           {error && (
             <div className="login-error">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-              {error}
+              <span className="material-symbols-outlined error-icon">error</span>
+              <span>{error}</span>
             </div>
           )}
 
-          <button type="submit" className="btn btn-primary" id="btn-login-submit" disabled={loading} style={{ width: '100%', marginTop: 8, padding: '12px' }}>
+          {/* Submit Button */}
+          <button
+            type="submit"
+            className="btn-login-submit"
+            id="btn-login-submit"
+            disabled={loading}
+          >
             {loading ? (
-              <span className="login-spinner" />
+              <>
+                <span className="login-spinner-sm" />
+                <span>Iniciando sesión...</span>
+              </>
             ) : (
               <>
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                Iniciar Sesión
+                <span className="material-symbols-outlined">login</span>
+                <span>Iniciar Sesión</span>
               </>
             )}
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 20 }}>
-          Sistema de gestión de Planes Individuales de Ajustes Razonables.<br />
-          Acceso exclusivo para personal autorizado.
-        </p>
+        {/* Security / System Footer Note */}
+        <footer className="login-card-footer">
+          <p>
+            Sistema de gestión de Planes Individuales de Ajustes Razonables.
+            <br />
+            Acceso exclusivo para personal autorizado.
+          </p>
+        </footer>
       </div>
     </div>
   );
