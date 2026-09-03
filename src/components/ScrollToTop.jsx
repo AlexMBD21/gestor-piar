@@ -86,7 +86,9 @@ export default function ScrollToTop() {
         opacity: isVisible ? 1 : 0,
         transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
         pointerEvents: isVisible ? 'auto' : 'none',
-        transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)'
+        transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)',
+        backgroundColor: '#1a1a1a',
+        color: '#ffffff'
       }}
       title="Subir al inicio"
     >

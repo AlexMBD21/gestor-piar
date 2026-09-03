@@ -1110,9 +1110,9 @@ body.dark-mode .info-banner {
 }
 
 .btn-icon-danger {
-  background: transparent;
+  background: rgba(239, 68, 68, 0.1);
   border: none;
-  color: var(--text-muted);
+  color: var(--danger);
   cursor: pointer;
   padding: 4px;
   border-radius: var(--radius-sm);
@@ -1123,8 +1123,7 @@ body.dark-mode .info-banner {
 }
 
 .btn-icon-danger:hover {
-  color: var(--danger);
-  background-color: rgba(239, 68, 68, 0.1);
+  background-color: rgba(239, 68, 68, 0.2);
 }
 
 .btn-icon-danger svg {
