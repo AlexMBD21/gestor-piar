@@ -59,7 +59,7 @@ body.dark-mode {
   --primary-rgb: 43, 87, 154;
 
   --secondary: #fb923c;
-  --tertiary: #34d399;
+  --tertiary: #10b981; /* Oscurecido para contraste con texto blanco */
   --success: #0d9488;
   --success-hover: #0f766e;
   --warning: #fb923c;
@@ -484,6 +484,28 @@ body.dark-mode .sidebar-profile-card {
 .btn-primary {
   background-color: var(--primary);
   color: var(--text-on-primary);
+}
+
+.btn-md3-outlined:active {
+  background-color: var(--primary-light);
+}
+
+body.dark-mode .btn-md3-outlined {
+  border-color: #60a5fa;
+  color: #60a5fa;
+}
+body.dark-mode .btn-md3-outlined:hover {
+  background-color: rgba(96, 165, 250, 0.1);
+}
+body.dark-mode .btn-md3-outlined:active {
+  background-color: rgba(96, 165, 250, 0.2);
+}
+
+.btn-md3-tonal {
+  padding: 6px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  border-radius: 20px;
 }
 
 .btn-primary:hover {
@@ -936,6 +958,17 @@ body.dark-mode .sidebar-profile-card {
   color: var(--text-muted);
   opacity: 0.6;
 }
+
+/* Prevenir inconsistencia de color por autocompletado del navegador (autofill) */
+.form-control:-webkit-autofill,
+.form-control:-webkit-autofill:hover,
+.form-control:-webkit-autofill:focus,
+.form-control:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0px 1000px var(--bg-input) inset !important;
+  -webkit-text-fill-color: var(--text-main) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 
 textarea.form-control {
   resize: vertical;
@@ -4872,7 +4905,7 @@ body.dark-mode .btn-delete-teacher:hover {
     flex-direction: column !important;
     gap: 10px !important;
     margin-top: 14px !important;
-    margin-bottom: 4px !important; /* Más pegado y ajustado a la barra inferior */
+    margin-bottom: -6px !important; /* Balancea el padding inferior de 16px de la tarjeta para que quede en 10px simétrico */
     padding-top: 10px !important;
     width: 100% !important;
     align-items: stretch !important;
@@ -5066,3 +5099,40 @@ body.dark-mode .table-textarea:focus {
 @keyframes spin { 
   100% { transform: rotate(360deg); } 
 }
+
+/* Password Input Wrapper and Toggle Button */
+.password-input-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper .form-control {
+  width: 100%;
+  padding-right: 44px;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #94a3b8);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 6px;
+  transition: color 0.2s ease, background-color 0.2s ease;
+  z-index: 2;
+}
+
+.password-toggle-btn:hover {
+  color: var(--text-main, #ffffff);
+  background: rgba(255, 255, 255, 0.1);
+}
+

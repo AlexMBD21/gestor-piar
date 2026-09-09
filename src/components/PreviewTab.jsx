@@ -277,6 +277,8 @@ export default function PreviewTab({ showToast, switchTab }) {
     
     setIsGeneratingWord(true);
 
+    // Añadimos un retraso artificial (1200ms) para que el usuario pueda apreciar
+    // el feedback visual de la animación "Generando...", ya que el Word se procesa instantáneamente.
     setTimeout(() => {
       const blob = new Blob(['\ufeff', sourceHTML], {
         type: 'application/msword'
@@ -294,7 +296,7 @@ export default function PreviewTab({ showToast, switchTab }) {
       
       if (showToast) showToast('Documento exportado a Word');
       setIsGeneratingWord(false);
-    }, 50);
+    }, 1200);
   };
 
 
@@ -384,13 +386,64 @@ export default function PreviewTab({ showToast, switchTab }) {
           <p>
             El documento oficial tiene formato de hoja de impresión (A4/Carta) y contiene tablas amplias. Para visualizarlo y guardarlo, por favor utiliza el botón de abajo.
           </p>
-          <button className="btn-md3-filled" onClick={handleExportWord} style={{ width: '100%', justifyContent: 'center', marginTop: '16px', gap: '8px', padding: '12px' }}>
-            <span className="material-symbols-outlined">description</span>
-            <span>Guardar en Word</span>
+          <button 
+            className="btn-md3-filled" 
+            onClick={handleExportWord} 
+            disabled={isGeneratingWord}
+            style={{ 
+              width: '100%', 
+              justifyContent: 'center', 
+              marginTop: '16px', 
+              gap: '8px', 
+              padding: '12px',
+              opacity: isGeneratingWord ? 0.8 : 1,
+              cursor: isGeneratingWord ? 'wait' : 'pointer'
+            }}
+          >
+            {isGeneratingWord ? (
+              <span className="material-symbols-outlined" style={{ animation: 'spin 1s linear infinite' }}>autorenew</span>
+            ) : (
+              <span className="material-symbols-outlined">description</span>
+            )}
+            <span>{isGeneratingWord ? 'Generando...' : 'Guardar en Word'}</span>
           </button>
-          <button className="btn-md3-filled" onClick={handlePrint} style={{ width: '100%', justifyContent: 'center', marginTop: '8px', gap: '8px', padding: '12px' }}>
+          
+          <button 
+            className="btn-md3-filled" 
+            onClick={handleExportPDF} 
+            disabled={isGeneratingPdf}
+            style={{ 
+              width: '100%', 
+              justifyContent: 'center', 
+              marginTop: '8px', 
+              gap: '8px', 
+              padding: '12px',
+              backgroundColor: 'var(--tertiary)',
+              opacity: isGeneratingPdf ? 0.8 : 1,
+              cursor: isGeneratingPdf ? 'wait' : 'pointer'
+            }}
+          >
+            {isGeneratingPdf ? (
+              <span className="material-symbols-outlined" style={{ animation: 'spin 1s linear infinite' }}>autorenew</span>
+            ) : (
+              <span className="material-symbols-outlined">picture_as_pdf</span>
+            )}
+            <span>{isGeneratingPdf ? 'Generando...' : 'Descargar PDF'}</span>
+          </button>
+
+          <button 
+            className="btn-md3-outlined" 
+            onClick={handlePrint} 
+            style={{ 
+              width: '100%', 
+              justifyContent: 'center', 
+              marginTop: '8px', 
+              gap: '8px', 
+              padding: '12px' 
+            }}
+          >
             <span className="material-symbols-outlined">print</span>
-            <span>Imprimir / Guardar PDF</span>
+            <span>Imprimir</span>
           </button>
         </div>
       </div>
