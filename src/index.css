@@ -2111,7 +2111,7 @@ body:has(.modal-overlay.active) {
 }
 
 .preview-page-break::after {
-  content: '✂ SALTO DE PÁGINA (IMPRESIÓN / PDF)';
+  content: '✂ SALTO DE PÁGINA';
   position: absolute;
   top: -12px;
   left: 50%;
@@ -4838,6 +4838,7 @@ body.dark-mode .btn-delete-teacher:hover {
   align-items: center;
   margin-top: 32px;
   padding-top: 16px;
+  margin-bottom: -16px; /* Balancea el padding de 32px de la tarjeta para que quede simétrico (16px) */
   border-top: 1px solid var(--border-color);
   gap: 12px;
   width: 100%;
@@ -4937,26 +4938,6 @@ body.dark-mode .btn-delete-teacher:hover {
   box-shadow: 0 1px 3px rgba(43, 87, 154, 0.2);
 }
 
-body.dark-mode .btn-wizard-next,
-body.dark-mode .btn-wizard-prev {
-  background-color: #2563eb;
-  border-color: #2563eb;
-  color: #ffffff;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
-}
-body.dark-mode .btn-wizard-next:hover,
-body.dark-mode .btn-wizard-prev:hover {
-  background-color: #3b82f6;
-  border-color: #3b82f6;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
-  color: #ffffff;
-  transform: translateY(-1px);
-}
-body.dark-mode .btn-wizard-next:active,
-body.dark-mode .btn-wizard-prev:active {
-  transform: translateY(0);
-  background-color: #1d4ed8;
-}
 
 .btn-wizard-save {
   display: inline-flex;
@@ -5082,4 +5063,6 @@ body.dark-mode .table-textarea:focus {
   }
 }
 
-
+@keyframes spin { 
+  100% { transform: rotate(360deg); } 
+}

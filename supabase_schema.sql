@@ -218,3 +218,25 @@ BEGIN
   DELETE FROM auth.users WHERE id = teacher_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- ==========================================
+-- 5. ACTUALIZACIONES PARCIALES (CONCURRENCIA)
+-- ==========================================
+
+CREATE OR REPLACE FUNCTION public.merge_piar_data(
+  p_piar_id UUID,
+  p_data JSONB,
+  p_nombre TEXT DEFAULT NULL,
+  p_grado TEXT DEFAULT NULL
+) RETURNS VOID AS $$
+BEGIN
+  -- Fusiona el JSONB a nivel raíz (top-level keys)
+  UPDATE public.piars
+  SET data = COALESCE(data, '{}'::jsonb) || p_data,
+      nombre = COALESCE(p_nombre, nombre),
+      grado = COALESCE(p_grado, grado),
+      diligenciado = true,
+      updated_at = NOW()
+  WHERE id = p_piar_id;
+END;
+$$ LANGUAGE plpgsql SECURITY INVOKER;

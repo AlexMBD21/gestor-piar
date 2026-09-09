@@ -41,6 +41,24 @@ function PublicRoute({ children }) {
   return children;
 }
 
+function AdminRoute({ children }) {
+  const { user, loading, isSuperAdmin } = useAuth();
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg-app)' }}>
+        <div className="login-spinner" style={{ width: 40, height: 40 }} />
+      </div>
+    );
+  }
+
+  if (!user || !isSuperAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -58,9 +76,9 @@ export default function App() {
             <Route
               path="/admin"
               element={
-                <ProtectedRoute>
+                <AdminRoute>
                   <AdminPage />
-                </ProtectedRoute>
+                </AdminRoute>
               }
             />
             <Route

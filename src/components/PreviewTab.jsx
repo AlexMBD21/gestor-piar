@@ -1,7 +1,11 @@
+import { useState } from 'react';
 import { usePiar } from '../context/PiarContext';
 import { escHtml, PLantillasPIAR } from '../lib/piarTemplates';
+import html2pdf from 'html2pdf.js';
 
 export default function PreviewTab({ showToast, switchTab }) {
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [isGeneratingWord, setIsGeneratingWord] = useState(false);
   const { getActiveStudent } = usePiar();
   const activeStudent = getActiveStudent();
   const isBlankTemplate = !activeStudent;
@@ -71,6 +75,86 @@ export default function PreviewTab({ showToast, switchTab }) {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleExportPDF = () => {
+    const originalElement = document.querySelector('.preview-document');
+    if (!originalElement) {
+      showToast('No hay contenido para exportar', 'error');
+      return;
+    }
+
+    // Clonar para limpiar elementos de UI (como los saltos de página visuales)
+    const element = originalElement.cloneNode(true);
+    
+    // Ocultar elementos no deseados en la exportación
+    element.querySelectorAll('.no-print').forEach(el => el.style.display = 'none');
+    element.querySelectorAll('.piar-official-footer').forEach(el => el.style.display = 'none');
+    element.querySelectorAll('.piar-official-footer-print').forEach(el => el.style.display = 'none');
+    element.querySelectorAll('.mobile-print-notice').forEach(el => el.style.display = 'none');
+    
+    // Reemplazar completamente el salto de página visual y asegurar que los bordes
+    // del siguiente elemento queden físicamente lejos de la línea de corte del PDF.
+    const pageBreaks = element.querySelectorAll('.preview-page-break');
+    pageBreaks.forEach(pb => {
+      const nextEl = pb.nextElementSibling;
+      if (nextEl) {
+        // Creamos un envoltorio que fuerza el salto de página Y agrega un relleno superior.
+        // Esto garantiza que entre el inicio matemático de la nueva página y el borde del
+        // elemento (ej. la tabla header) haya 10px de zona segura, haciendo imposible el "sangrado".
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'page-break-before: always; padding-top: 10px; display: block;';
+        pb.parentNode.insertBefore(wrapper, nextEl);
+        wrapper.appendChild(nextEl);
+      }
+      // Eliminamos el marcador visual original
+      pb.parentNode.removeChild(pb);
+    });
+
+    // Centrar encabezados como en la exportación a Word
+    const headerTables = element.querySelectorAll('.piar-official-header');
+    headerTables.forEach(ht => {
+      ht.querySelectorAll('td').forEach(td => {
+        td.style.verticalAlign = 'middle';
+        td.style.textAlign = 'center';
+      });
+    });
+
+    const opt = {
+      margin:       [15, 15, 15, 15], 
+      filename:     `${activeStudent?.nombre ? activeStudent.nombre.replace(/\s+/g, '_') : 'Formato_PIAR'}.pdf`,
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true },
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak:    { mode: ['css', 'legacy'], avoid: ['tr', 'h2', 'h3'] }
+    };
+
+    setIsGeneratingPdf(true);
+    
+    // Usamos setTimeout para permitir que React actualice la UI del botón antes de bloquear el hilo principal
+    setTimeout(() => {
+      html2pdf().set(opt).from(element).toPdf().get('pdf').then(function (pdf) {
+        // Agregar footer a cada página
+        const totalPages = pdf.internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+          pdf.setPage(i);
+          pdf.setFontSize(7);
+          pdf.setTextColor(100);
+          const footer1 = "V14.16/02/2018. - Ver documento de instrucciones.";
+          const footer2 = "Ministerio de Educación Nacional – Viceministerio de Educación Preescolar, Básica y Media – Decreto 1421 de 2017";
+          
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const pageHeight = pdf.internal.pageSize.getHeight();
+          
+          pdf.text(footer1, pageWidth / 2, pageHeight - 8, { align: 'center' });
+          pdf.text(footer2, pageWidth / 2, pageHeight - 5, { align: 'center' });
+        }
+      }).save().then(() => {
+        if (showToast) showToast('PDF descargado con éxito.');
+      }).finally(() => {
+        setIsGeneratingPdf(false);
+      });
+    }, 50);
   };
 
   const handleExportWord = async () => {
@@ -191,21 +275,26 @@ export default function PreviewTab({ showToast, switchTab }) {
 
     const sourceHTML = header + `<div class="WordSection1">${htmlContent}</div>` + footerHtml + `</body></html>`;
     
-    const blob = new Blob(['\ufeff', sourceHTML], {
-      type: 'application/msword'
-    });
-    
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'documento_piar.doc';
-    document.body.appendChild(link);
-    link.click();
-    
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    
-    if (showToast) showToast('Documento exportado a Word');
+    setIsGeneratingWord(true);
+
+    setTimeout(() => {
+      const blob = new Blob(['\ufeff', sourceHTML], {
+        type: 'application/msword'
+      });
+      
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'documento_piar.doc';
+      document.body.appendChild(link);
+      link.click();
+      
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      if (showToast) showToast('Documento exportado a Word');
+      setIsGeneratingWord(false);
+    }, 50);
   };
 
 
@@ -218,13 +307,46 @@ export default function PreviewTab({ showToast, switchTab }) {
           {isBlankTemplate ? 'Vista Previa (Formulario en Blanco)' : 'Vista Previa del Documento PIAR'}
         </h3>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button className="btn-md3-filled" onClick={handleExportWord} style={{ padding: '8px 16px', fontSize: '13px' }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>description</span>
-            <span>Guardar en Word</span>
+          <button 
+            className="btn-md3-filled" 
+            onClick={handleExportWord} 
+            disabled={isGeneratingWord}
+            style={{ 
+              padding: '8px 16px', 
+              fontSize: '13px',
+              opacity: isGeneratingWord ? 0.8 : 1,
+              cursor: isGeneratingWord ? 'wait' : 'pointer'
+            }}
+          >
+            {isGeneratingWord ? (
+              <span className="material-symbols-outlined" style={{ fontSize: '18px', animation: 'spin 1s linear infinite' }}>autorenew</span>
+            ) : (
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>description</span>
+            )}
+            <span>{isGeneratingWord ? 'Generando...' : 'Guardar en Word'}</span>
           </button>
-          <button className="btn-md3-filled" onClick={handlePrint} style={{ padding: '8px 16px', fontSize: '13px' }}>
+          <button 
+            className="btn-md3-filled" 
+            onClick={handleExportPDF} 
+            disabled={isGeneratingPdf}
+            style={{ 
+              padding: '8px 16px', 
+              fontSize: '13px', 
+              backgroundColor: 'var(--tertiary)',
+              opacity: isGeneratingPdf ? 0.8 : 1,
+              cursor: isGeneratingPdf ? 'wait' : 'pointer'
+            }}
+          >
+            {isGeneratingPdf ? (
+              <span className="material-symbols-outlined" style={{ fontSize: '18px', animation: 'spin 1s linear infinite' }}>autorenew</span>
+            ) : (
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>picture_as_pdf</span>
+            )}
+            <span>{isGeneratingPdf ? 'Generando...' : 'Descargar PDF'}</span>
+          </button>
+          <button className="btn-md3-outlined" onClick={handlePrint} style={{ padding: '8px 16px', fontSize: '13px' }}>
             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>print</span>
-            <span>Imprimir / Guardar PDF</span>
+            <span>Imprimir</span>
           </button>
         </div>
       </div>

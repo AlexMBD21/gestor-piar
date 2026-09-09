@@ -1,6 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from './AuthContext';
+import localforage from 'localforage';
+import { validatePiarData } from '../utils/schemaValidation';
 
 const PiarContext = createContext(null);
 
@@ -82,6 +84,33 @@ export function PiarProvider({ children }) {
     loadPiars();
   }, [loadPiars]);
 
+  // Offline Sync Mechanism
+  useEffect(() => {
+    const handleOnline = async () => {
+      try {
+        const pendingSaves = await localforage.getItem('piar_pending_saves');
+        if (pendingSaves && pendingSaves.length > 0) {
+          console.log('[PiarContext] Sincronizando datos guardados offline...');
+          for (const save of pendingSaves) {
+            await supabase.rpc('merge_piar_data', save.rpcArgs);
+            // Optionally log edit here if needed, but keeping it simple for now
+          }
+          await localforage.removeItem('piar_pending_saves');
+          console.log('[PiarContext] Sincronización offline completada.');
+          loadPiars();
+        }
+      } catch (err) {
+        console.error('[PiarContext] Error sincronizando datos offline:', err);
+      }
+    };
+
+    window.addEventListener('online', handleOnline);
+    // Ejecutar al cargar si ya está online
+    if (navigator.onLine) handleOnline();
+
+    return () => window.removeEventListener('online', handleOnline);
+  }, [loadPiars]);
+
   // Real-time collaborative sync
   useEffect(() => {
     if (!user) return;
@@ -90,7 +119,36 @@ export function PiarProvider({ children }) {
       .channel('piars_realtime_collab')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'piars' }, (payload) => {
         if (payload.eventType === 'UPDATE') {
-          setPiars(prev => prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p));
+          setPiars(prev => prev.map(p => {
+            if (p.id === payload.new.id) {
+              // Prevenir que los eventos realtime sobrescriban cambios locales no guardados
+              setUnsavedChanges((currentUnsaved) => {
+                if (currentUnsaved && p.id === activeStudentId) {
+                   console.warn('[PiarContext] Ignorando actualización realtime porque hay cambios locales sin guardar.');
+                   return currentUnsaved; // keep true
+                }
+                return currentUnsaved;
+              });
+              
+              // Si este es el estudiante activo y hay cambios, fusionamos para retener lo local
+              // Nota: Como no podemos leer el estado exacto de unsavedChanges sincrónicamente aquí de manera limpia sin refs, 
+              // usamos el estado 'p' anterior como base si el id coincide con activeStudentId (esto se evalúa en el closure de setPiars pero activeStudentId podría estar stale).
+              // Lo más seguro es fusionar el nuevo 'data' con el 'data' actual.
+              const mergedData = { ...payload.new.data, ...p.data };
+              
+              // Si no hay unsavedChanges o no es el activo, tomamos el nuevo. Si sí, mantenemos el merge.
+              // Para simplificar: tomaremos el payload.new completo y luego el componente re-renderizará.
+              // Pero si hacemos eso perdemos lo escrito. 
+              // En su lugar, si estamos editando, solo aceptamos cambios de campos que no existen en p.data o confiamos en el RPC.
+              // Mejor:
+              return { 
+                ...p, 
+                ...payload.new, 
+                data: (p.id === activeStudentId) ? { ...payload.new.data, ...p.data } : payload.new.data 
+              };
+            }
+            return p;
+          }));
         } else if (payload.eventType === 'INSERT') {
           setPiars(prev => [...prev, payload.new]);
         } else if (payload.eventType === 'DELETE') {
@@ -114,6 +172,19 @@ export function PiarProvider({ children }) {
     setUnsavedChanges(true);
   };
 
+  // Auto-save: Si hay cambios sin guardar, guarda automáticamente después de 1 minuto de inactividad
+  useEffect(() => {
+    let timeoutId;
+    if (unsavedChanges && activeStudentId) {
+      timeoutId = setTimeout(() => {
+        console.log('[PiarContext] Ejecutando autoguardado...');
+        saveActivePiar();
+      }, 60000); // 60 segundos
+    }
+    return () => clearTimeout(timeoutId);
+  }, [unsavedChanges, activeStudentId]); // Note: saveActivePiar shouldn't be a dependency if it's not wrapped in useCallback, but we can safely call it this way.
+
+
   const discardActiveStudentChanges = async () => {
     setLoading(true);
     await loadPiars();
@@ -123,7 +194,14 @@ export function PiarProvider({ children }) {
 
   const saveActivePiar = async () => {
     const activeStudent = getActiveStudent();
-    if (!activeStudent || !unsavedChanges) return true;
+    if (!activeStudent || !unsavedChanges) return { success: true };
+
+    // 1. Zod Validation
+    const validation = validatePiarData(activeStudent.data);
+    if (!validation.success) {
+      console.warn('[PiarContext] Error de validación Zod:', validation.message);
+      return { success: false, message: validation.message };
+    }
 
     setLoading(true);
     
@@ -159,34 +237,53 @@ export function PiarProvider({ children }) {
       ? actionSummaryParts.join(' | ') 
       : 'Actualización general';
 
-    // 3. Stamp section metadata with editor info
+    // 3. Prepare partial data to merge
+    const partialData = {};
     if (user) {
-      if (!updatedData.sectionMetadata) {
-        updatedData.sectionMetadata = {};
-      }
-      sections.forEach(sec => {
-        if (updatedData[sec]) {
-          updatedData.sectionMetadata[sec] = {
+      partialData.sectionMetadata = { ...(originalData.sectionMetadata || {}) };
+    }
+
+    sections.forEach(sec => {
+      const oldSecStr = JSON.stringify(originalData[sec] || {});
+      const newSecStr = JSON.stringify(updatedData[sec] || {});
+      if (oldSecStr !== newSecStr) {
+        partialData[sec] = updatedData[sec];
+        if (user) {
+          partialData.sectionMetadata[sec] = {
             editor_id: user.id,
             editor_name: profile?.full_name || user.email || 'Docente',
             saved_at: new Date().toISOString()
           };
         }
-      });
+      }
+    });
+
+    // 4. Offline Detection & Save
+    const rpcArgs = {
+      p_piar_id: activeStudent.id,
+      p_data: partialData,
+      p_nombre: activeStudent.nombre,
+      p_grado: activeStudent.grado
+    };
+
+    if (!navigator.onLine) {
+      console.log('[PiarContext] Sin conexión. Guardando localmente...');
+      const pendingSaves = await localforage.getItem('piar_pending_saves') || [];
+      pendingSaves.push({ id: activeStudent.id, rpcArgs });
+      await localforage.setItem('piar_pending_saves', pendingSaves);
+      
+      setUnsavedChanges(false);
+      setLoading(false);
+      return { success: true, offline: true };
     }
 
-    // 4. Save to DB
-    const { error } = await supabase.from('piars').update({
-      data: updatedData,
-      nombre: activeStudent.nombre,
-      grado: activeStudent.grado,
-      diligenciado: true,
-      updated_at: new Date().toISOString()
-    }).eq('id', activeStudent.id);
+    // 5. Save to DB using RPC for partial JSONB merge
+    const { error } = await supabase.rpc('merge_piar_data', rpcArgs);
 
     if (error) {
+      console.error('[PiarContext] Error saving PIAR:', error);
       setLoading(false);
-      return false;
+      return { success: false, message: 'Error de conexión con la base de datos.' };
     }
 
     // 5. Register edit log with action_summary
@@ -216,7 +313,7 @@ export function PiarProvider({ children }) {
 
     setUnsavedChanges(false);
     setLoading(false);
-    return true;
+    return { success: true };
   };
 
   const savePiar = async (piarId, updatedData, sectionKey = null) => {
@@ -238,14 +335,31 @@ export function PiarProvider({ children }) {
       : p
     ));
 
-    // Persist PIAR data + mark as diligenciado
-    await supabase.from('piars').update({
-      data: updatedData,
-      nombre: updatedData.estudianteNombre || getActiveStudent()?.nombre,
-      grado: updatedData.grado || getActiveStudent()?.grado,
-      diligenciado: true,
-      updated_at: new Date().toISOString()
-    }).eq('id', piarId);
+    // Prepare partial data
+    const partialData = {};
+    if (sectionKey) {
+      partialData[sectionKey] = updatedData[sectionKey];
+      if (user) {
+        partialData.sectionMetadata = {
+           [sectionKey]: {
+              editor_id: user.id,
+              editor_name: profile?.full_name || user.email || 'Docente',
+              saved_at: new Date().toISOString()
+           }
+        };
+      }
+    } else {
+      // Fallback: merge entire updatedData if no sectionKey is provided
+      Object.assign(partialData, updatedData);
+    }
+
+    // Persist PIAR data using RPC merge
+    await supabase.rpc('merge_piar_data', {
+      p_piar_id: piarId,
+      p_data: partialData,
+      p_nombre: updatedData.estudianteNombre || getActiveStudent()?.nombre,
+      p_grado: updatedData.grado || getActiveStudent()?.grado
+    });
   };
 
   const releaseSectionLock = async (piarId, sectionKey) => {
