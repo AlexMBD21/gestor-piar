@@ -50,17 +50,9 @@ export default function AppPage() {
   };
 
   const switchTab = async (tabId, overrideStudentId = null) => {
-    if (unsavedChanges) {
-      if (tabId === 'tab-dashboard' || tabId === 'tab-admin') {
-        setConfirmModal({ show: true, tabId });
-        return;
-      } else {
-        // Auto-guardado al moverse entre Anexos o ir a la Vista Previa
-        const result = await saveActivePiar();
-        if (result && result.success) {
-          showToast('Cambios guardados automáticamente');
-        }
-      }
+    if (unsavedChanges && (tabId === 'tab-dashboard' || tabId === 'tab-admin')) {
+      setConfirmModal({ show: true, tabId });
+      return;
     }
     setActiveTab(tabId);
     window.scrollTo(0, 0);
@@ -114,15 +106,25 @@ export default function AppPage() {
           <span className="mobile-top-bar__title">{headerTitle}</span>
           <span className="mobile-top-bar__subtitle">Gestor PIAR</span>
         </div>
-        <button
-          className="mobile-top-bar__theme"
-          onClick={() => setDarkMode(!darkMode)}
-          title="Cambiar tema"
-        >
-          <span className="material-symbols-outlined">
-            {darkMode ? 'light_mode' : 'dark_mode'}
-          </span>
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            className="mobile-top-bar__theme"
+            onClick={() => setDarkMode(!darkMode)}
+            title="Cambiar tema"
+          >
+            <span className="material-symbols-outlined">
+              {darkMode ? 'light_mode' : 'dark_mode'}
+            </span>
+          </button>
+          <button
+            className="mobile-top-bar__theme"
+            style={{ color: 'var(--danger)' }}
+            onClick={signOut}
+            title="Cerrar sesión"
+          >
+            <span className="material-symbols-outlined">logout</span>
+          </button>
+        </div>
       </header>
 
       <main className="main-content">
@@ -222,9 +224,9 @@ export default function AppPage() {
               Tienes aportaciones sin guardar en el formulario. ¿Deseas descartar los cambios y salir?
             </div>
             <div className="modal-footer" style={{ borderTop: 'none', paddingTop: '0' }}>
-              <button 
-                type="button" 
-                className="btn btn-danger" 
+              <button
+                type="button"
+                className="btn btn-danger"
                 onClick={async () => {
                   setConfirmModal({ show: false, tabId: null });
                   await discardActiveStudentChanges();

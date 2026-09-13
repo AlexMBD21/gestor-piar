@@ -240,3 +240,6 @@ BEGIN
   WHERE id = p_piar_id;
 END;
 $$ LANGUAGE plpgsql SECURITY INVOKER;
+
+-- Refrescar la caché de la API de PostgREST
+NOTIFY pgrst, 'reload schema';

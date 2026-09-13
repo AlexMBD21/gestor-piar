@@ -239,11 +239,20 @@ export default function Anexo2Form({ showToast, switchTab }) {
         
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           {!isBlankTemplate && (
-            <button type="button" className="btn-wizard-save" onClick={async () => {
-              const success = await saveActivePiar();
-              if (success) showToast('Aportación guardada correctamente');
-              else showToast('Error al guardar', 'danger');
-            }}>
+            <button 
+              type="button" 
+              className="btn-wizard-save" 
+              onClick={async () => {
+                const result = await saveActivePiar();
+                if (result && result.success) showToast('Aportación guardada correctamente');
+                else showToast(result?.message || 'Error al guardar', 'danger');
+              }}
+              disabled={!unsavedChanges}
+              style={{
+                opacity: !unsavedChanges ? 0.6 : 1,
+                cursor: !unsavedChanges ? 'not-allowed' : 'pointer'
+              }}
+            >
               <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>save</span>
               <span>Guardar Aportación</span>
             </button>

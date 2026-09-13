@@ -283,7 +283,7 @@ export function PiarProvider({ children }) {
     if (error) {
       console.error('[PiarContext] Error saving PIAR:', error);
       setLoading(false);
-      return { success: false, message: 'Error de conexión con la base de datos.' };
+      return { success: false, message: `DB Error: ${error.message || 'Error desconocido'}` };
     }
 
     // 5. Register edit log with action_summary
