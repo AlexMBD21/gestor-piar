@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { usePiar } from '../context/PiarContext';
 import { escHtml, PLantillasPIAR } from '../lib/piarTemplates';
 import html2pdf from 'html2pdf.js';
+import AutoFitText from './AutoFitText';
 
 export default function PreviewTab({ showToast, switchTab }) {
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
@@ -63,6 +64,16 @@ export default function PreviewTab({ showToast, switchTab }) {
     { key: 'Autocontrol', label: 'Autocontrol' }
   ].map(cat => {
     const found = ajustes.find(a => a.area.toLowerCase().includes(cat.key.toLowerCase()));
+    if (found && found.trimestres && found.trimestres.length > 0) {
+      return {
+        label: cat.label,
+        barreras: found.trimestres.map(t => t.barreras || t.bareras).filter(Boolean).join('\n'),
+        ajustes: found.trimestres.map(t => t.ajustes).filter(Boolean).join('\n'),
+        evaluacion: found.trimestres.map(t => t.evaluacion).filter(Boolean).join('\n'),
+        trimestre: found.trimestres.map(t => t.trimestre).filter(Boolean).join(', '),
+        docente: found.docente || ''
+      };
+    }
     return {
       label: cat.label,
       barreras: found ? (found.barreras || found.bareras) : '',
@@ -624,7 +635,7 @@ export default function PreviewTab({ showToast, switchTab }) {
               <tr>
                 <td colSpan="4">
                   <div className="field-label">Lugar donde le atienden en caso de emergencia:</div>
-                  <div style={{}}>{v(sal.lugarEmergencia)}</div>
+                  <AutoFitText text={v(sal.lugarEmergencia)} maxHeight={20} />
                 </td>
               </tr>
             </tbody>
@@ -638,7 +649,7 @@ export default function PreviewTab({ showToast, switchTab }) {
                 <td style={{ width: '8%', textAlign: 'center' }}>No<br />{(!isBlankTemplate && sal.atendidoSectorSalud === 'NO') ? 'X' : ''}</td>
                 <td style={{ width: '49%' }}>
                   <div className="field-label">Frecuencia:</div>
-                  <div style={{}}>{v(sal.frecuenciaAtencion)}</div>
+                  <AutoFitText text={v(sal.frecuenciaAtencion)} maxHeight={20} />
                 </td>
               </tr>
               <tr>
@@ -647,7 +658,7 @@ export default function PreviewTab({ showToast, switchTab }) {
                 <td style={{ textAlign: 'center' }}>No<br />{(!isBlankTemplate && sal.diagnosticoMedico === 'NO') ? 'X' : ''}</td>
                 <td>
                   <div className="field-label">Cuál:</div>
-                  <div style={{}}>{v(sal.diagnosticoCual)}</div>
+                  <AutoFitText text={v(sal.diagnosticoCual)} maxHeight={20} />
                 </td>
               </tr>
               <tr>
@@ -696,19 +707,19 @@ export default function PreviewTab({ showToast, switchTab }) {
                 </td>
                 <td style={{ width: '50%' }}>
                   <div className="field-label">¿Cuál? <span style={{ color: '#888', fontWeight: 'normal' }}>Ejemplo: para controlar epilepsia, uso de oxígeno, insulina, etc.)</span></div>
-                  <div>{v(sal.tratamientoCual)}</div>
+                  <AutoFitText text={v(sal.tratamientoCual)} maxHeight={20} />
                 </td>
               </tr>
               <tr>
                 <td colSpan="2">
                   <div className="field-label">¿Consume medicamentos? Si {(!isBlankTemplate && sal.consumeMedicamentos === 'SI') ? 'X' : '__'} No {(!isBlankTemplate && sal.consumeMedicamentos === 'NO') ? 'X' : '__'} Frecuencia y horario <span style={{ color: '#888', fontWeight: 'normal' }}>(Nombre medicamento y si debe consumirlo en horario de clases)</span></div>
-                  <div style={{}}>{v(sal.medicamentosFrecuencia)}</div>
+                  <AutoFitText text={v(sal.medicamentosFrecuencia)} maxHeight={40} />
                 </td>
               </tr>
               <tr>
                 <td colSpan="2">
                   <div className="field-label">¿Cuenta con productos de apoyo para favorecer su movilidad, comunicación e independencia? NO {(!isBlankTemplate && sal.productosApoyo === 'NO') ? 'X' : '____'} SI {(!isBlankTemplate && sal.productosApoyo === 'SI') ? 'X' : '____'} ¿Cuáles? <span style={{ color: '#888', fontWeight: 'normal' }}>Ejemplos: Sillas de ruedas, bastones, tableros de comunicación, audifonos etc.</span></div>
-                  <div style={{}}>{v(sal.productosApoyoCuales)}</div>
+                  <AutoFitText text={v(sal.productosApoyoCuales)} maxHeight={40} />
                 </td>
               </tr>
             </tbody>
@@ -808,9 +819,9 @@ export default function PreviewTab({ showToast, switchTab }) {
                 </td>
                 <td style={{ width: '50%', padding: '4px 8px' }}>
                   <div className="field-label">NO {(!isBlankTemplate && tra.vinculadoAntes === 'NO') ? 'X' : '___'} ¿Por qué?</div>
-                  <div style={{ marginBottom: '4px' }}>{(!isBlankTemplate && tra.vinculadoAntes === 'NO') ? v(tra.observaciones) : ''}</div>
+                  <AutoFitText text={(!isBlankTemplate && tra.vinculadoAntes === 'NO') ? v(tra.observaciones) : ''} maxHeight={20} style={{ marginBottom: '4px' }} />
                   <div className="field-label">SI {(!isBlankTemplate && tra.vinculadoAntes === 'SI') ? 'X' : '___'} ¿Cuáles?</div>
-                  <div style={{}}>{(!isBlankTemplate && tra.vinculadoAntes === 'SI') ? v(tra.vinculadoCuales) : ''}</div>
+                  <AutoFitText text={(!isBlankTemplate && tra.vinculadoAntes === 'SI') ? v(tra.vinculadoCuales) : ''} maxHeight={20} />
                 </td>
               </tr>
               <tr>
@@ -827,7 +838,7 @@ export default function PreviewTab({ showToast, switchTab }) {
                         </td>
                         <td style={{ border: 'none', width: '60%', padding: '4px 6px' }}>
                           <div className="field-label">Observaciones: <span style={{ color: '#888', fontWeight: 'normal' }}>(incluir motivos del cambio de la modalidad o de la institución educativa)</span></div>
-                          <div style={{}}>{v(tra.observaciones)}</div>
+                          <AutoFitText text={v(tra.observaciones)} maxHeight={30} />
                         </td>
                       </tr>
                     </tbody>
@@ -840,7 +851,7 @@ export default function PreviewTab({ showToast, switchTab }) {
                 </td>
                 <td style={{ width: '50%', padding: '4px 8px' }}>
                   <div className="field-label">¿De qué institución o modalidad proviene el informe?</div>
-                  <div style={{}}>{v(tra.informeProcedencia)}</div>
+                  <AutoFitText text={v(tra.informeProcedencia)} maxHeight={20} />
                 </td>
               </tr>
               <tr>
@@ -849,7 +860,7 @@ export default function PreviewTab({ showToast, switchTab }) {
                 </td>
                 <td style={{ width: '50%', padding: '4px 8px' }}>
                   <div className="field-label">¿Cuáles? <span style={{ color: '#888', fontWeight: 'normal' }}>(Ejemplo: Deportes, danzas, música, pintura, recreación, otros cursos)</span></div>
-                  <div style={{}}>{v(tra.programasCuales)}</div>
+                  <AutoFitText text={v(tra.programasCuales)} maxHeight={20} />
                 </td>
               </tr>
             </tbody>
@@ -871,11 +882,11 @@ export default function PreviewTab({ showToast, switchTab }) {
               <tr>
                 <td style={{ padding: '4px 8px' }}>
                   <div className="field-label">Medio que usará el estudiante para transportarse a la institución educativa.</div>
-                  <div style={{}}>{v(ins.medioTransporte)}</div>
+                  <AutoFitText text={v(ins.medioTransporte)} maxHeight={20} />
                 </td>
                 <td style={{ padding: '4px 8px' }}>
                   <div className="field-label">Distancia entre la institución educativa o sede y el hogar del estudiante (Tiempo)</div>
-                  <div style={{}}>{v(ins.distanciaTiempo)}</div>
+                  <AutoFitText text={v(ins.distanciaTiempo)} maxHeight={20} />
                 </td>
               </tr>
             </tbody>
@@ -884,17 +895,32 @@ export default function PreviewTab({ showToast, switchTab }) {
           <table className="piar-official-table" style={{ marginTop: 10, minHeight: 60 }}>
             <tbody>
               <tr>
-                <td style={{ width: '33.3%', height: 50, verticalAlign: 'bottom', borderBottom: 'none' }}>
-                  <div className="field-label" style={{ marginBottom: '30px' }}>Nombre y firma</div>
-                  <div>{v(firmaA1?.[0]?.nombre)}</div>
+                <td style={{ width: '33.3%', height: 35, verticalAlign: 'bottom', borderBottom: 'none' }}>
+                  <div className="field-label" style={{ marginBottom: '18px' }}>Nombre y firma</div>
+                  <div>
+                    {firmaA1?.[0]?.signature ? (
+                      <img src={firmaA1[0].signature} alt="Firma" style={{ maxHeight: '90px', maxWidth: '100%', objectFit: 'contain', display: 'block' }} />
+                    ) : ''}
+                    {v(firmaA1?.[0]?.nombre)}
+                  </div>
                 </td>
-                <td style={{ width: '33.3%', height: 50, verticalAlign: 'bottom', borderBottom: 'none' }}>
-                  <div className="field-label" style={{ marginBottom: '30px' }}>Nombre y firma</div>
-                  <div>{v(firmaA1?.[1]?.nombre)}</div>
+                <td style={{ width: '33.3%', height: 35, verticalAlign: 'bottom', borderBottom: 'none' }}>
+                  <div className="field-label" style={{ marginBottom: '18px' }}>Nombre y firma</div>
+                  <div>
+                    {firmaA1?.[1]?.signature ? (
+                      <img src={firmaA1[1].signature} alt="Firma" style={{ maxHeight: '90px', maxWidth: '100%', objectFit: 'contain', display: 'block' }} />
+                    ) : ''}
+                    {v(firmaA1?.[1]?.nombre)}
+                  </div>
                 </td>
-                <td style={{ width: '33.3%', height: 50, verticalAlign: 'bottom', borderBottom: 'none' }}>
-                  <div className="field-label" style={{ marginBottom: '30px' }}>Nombre y firma</div>
-                  <div>{v(firmaA1?.[2]?.nombre)}</div>
+                <td style={{ width: '33.3%', height: 35, verticalAlign: 'bottom', borderBottom: 'none' }}>
+                  <div className="field-label" style={{ marginBottom: '18px' }}>Nombre y firma</div>
+                  <div>
+                    {firmaA1?.[2]?.signature ? (
+                      <img src={firmaA1[2].signature} alt="Firma" style={{ maxHeight: '90px', maxWidth: '100%', objectFit: 'contain', display: 'block' }} />
+                    ) : ''}
+                    {v(firmaA1?.[2]?.nombre)}
+                  </div>
                 </td>
               </tr>
               <tr>
@@ -1016,7 +1042,7 @@ export default function PreviewTab({ showToast, switchTab }) {
               <tr>
                 <td style={{ height: 180 }}>
                   <div className="field-label" style={{ color: '#666', fontStyle: 'italic', marginBottom: '10px' }}>Descripción en términos de lo que hace, puede hacer o requiere apoyo el estudiante para favorecer su proceso educativo.<br/><br/>Indique las habilidades, competencias, cualidades, aprendizajes con las que cuenta el estudiante para el grado en el que fue matriculado.</div>
-                  <div style={{}}>{v(s.anexo2.caracteristicasEstudiante)}</div>
+                  <AutoFitText text={v(s.anexo2.caracteristicasEstudiante)} maxHeight={120} />
                 </td>
               </tr>
             </tbody>
@@ -1064,17 +1090,21 @@ export default function PreviewTab({ showToast, switchTab }) {
                 </tr>
               ) : (
                 normAjustes.map(a => (
-                  <tr key={a.id}>
-                    <td style={{ fontWeight: 'bold', verticalAlign: 'top' }}>
-                      {a.area}
-                      {a.trimestre && <span style={{ fontWeight: 'normal', fontSize: '7.5pt', color: '#475569', display: 'block', marginTop: 4 }}>{a.trimestre}</span>}
-                      <span style={{ fontWeight: 'normal', fontSize: '7.5pt', color: '#0f172a', display: 'block', marginTop: 2 }}>Docente: {a.docente || '—'}</span>
-                    </td>
-                    <td>{v(a.objetivos)}</td>
-                    <td>{v(a.barreras || a.bareras)}</td>
-                    <td>{v(a.ajustes)}</td>
-                    <td>{v(a.evaluacion)}</td>
-                  </tr>
+                  <React.Fragment key={a.id}>
+                    {(a.trimestres && a.trimestres.length > 0 ? a.trimestres : [a]).map((t, index) => (
+                      <tr key={t.id || `${a.id}-${index}`}>
+                        <td style={{ verticalAlign: 'top' }}>
+                          {index === 0 && <strong style={{ display: 'block' }}>{a.area}</strong>}
+                          {t.trimestre && <span style={{ fontWeight: 'normal', fontSize: '7.5pt', color: '#475569', display: 'block', marginTop: index === 0 ? 4 : 0 }}>{t.trimestre}</span>}
+                          {index === 0 && <span style={{ fontWeight: 'normal', fontSize: '7.5pt', color: '#0f172a', display: 'block', marginTop: 2 }}>Docente: {a.docente || '—'}</span>}
+                        </td>
+                        <td>{v(t.objetivos)}</td>
+                        <td>{v(t.barreras || t.bareras)}</td>
+                        <td>{v(t.ajustes)}</td>
+                        <td>{v(t.evaluacion)}</td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
                 ))
               )}
               
@@ -1169,7 +1199,7 @@ export default function PreviewTab({ showToast, switchTab }) {
                   <div className="field-label" style={{ marginBottom: '18px' }}>Nombre y firma</div>
                   <div>
                     {firmaA2?.[0]?.signature ? (
-                      <img src={firmaA2[0].signature} alt="Firma" style={{ maxHeight: '30px', maxWidth: '100%', objectFit: 'contain', display: 'block' }} />
+                      <img src={firmaA2[0].signature} alt="Firma" style={{ maxHeight: '90px', maxWidth: '100%', objectFit: 'contain', display: 'block' }} />
                     ) : ''}
                     {v(firmaA2?.[0]?.nombre)}
                   </div>
@@ -1178,7 +1208,7 @@ export default function PreviewTab({ showToast, switchTab }) {
                   <div className="field-label" style={{ marginBottom: '18px' }}>Nombre y firma</div>
                   <div>
                     {firmaA2?.[1]?.signature ? (
-                      <img src={firmaA2[1].signature} alt="Firma" style={{ maxHeight: '30px', maxWidth: '100%', objectFit: 'contain', display: 'block' }} />
+                      <img src={firmaA2[1].signature} alt="Firma" style={{ maxHeight: '90px', maxWidth: '100%', objectFit: 'contain', display: 'block' }} />
                     ) : ''}
                     {v(firmaA2?.[1]?.nombre)}
                   </div>
@@ -1187,7 +1217,7 @@ export default function PreviewTab({ showToast, switchTab }) {
                   <div className="field-label" style={{ marginBottom: '18px' }}>Nombre y firma</div>
                   <div>
                     {firmaA2?.[2]?.signature ? (
-                      <img src={firmaA2[2].signature} alt="Firma" style={{ maxHeight: '30px', maxWidth: '100%', objectFit: 'contain', display: 'block' }} />
+                      <img src={firmaA2[2].signature} alt="Firma" style={{ maxHeight: '90px', maxWidth: '100%', objectFit: 'contain', display: 'block' }} />
                     ) : ''}
                     {v(firmaA2?.[2]?.nombre)}
                   </div>
@@ -1380,9 +1410,9 @@ export default function PreviewTab({ showToast, switchTab }) {
                 <td style={{ width: '45%', height: 50, verticalAlign: 'bottom', border: 'none', borderBottom: '1px solid #000', padding: '0 8px 4px 8px' }}>
                   <div style={{ textAlign: 'center' }}>
                     {firmas?.estudianteSignature ? (
-                      <img src={firmas.estudianteSignature} alt="Firma Estudiante" style={{ maxHeight: '30px', maxWidth: '100%', objectFit: 'contain', display: 'inline-block' }} />
+                      <img src={firmas.estudianteSignature} alt="Firma Estudiante" style={{ maxHeight: '90px', maxWidth: '100%', objectFit: 'contain', display: 'inline-block' }} />
                     ) : (
-                      <div style={{ height: '30px' }} />
+                      <div style={{ height: '90px' }} />
                     )}
                   </div>
                 </td>
@@ -1390,9 +1420,9 @@ export default function PreviewTab({ showToast, switchTab }) {
                 <td style={{ width: '45%', height: 50, verticalAlign: 'bottom', border: 'none', borderBottom: '1px solid #000', padding: '0 8px 4px 8px' }}>
                   <div style={{ textAlign: 'center' }}>
                     {firmas?.acudienteSignature ? (
-                      <img src={firmas.acudienteSignature} alt="Firma Acudiente" style={{ maxHeight: '30px', maxWidth: '100%', objectFit: 'contain', display: 'inline-block' }} />
+                      <img src={firmas.acudienteSignature} alt="Firma Acudiente" style={{ maxHeight: '90px', maxWidth: '100%', objectFit: 'contain', display: 'inline-block' }} />
                     ) : (
-                      <div style={{ height: '30px' }} />
+                      <div style={{ height: '90px' }} />
                     )}
                   </div>
                 </td>
@@ -1411,14 +1441,21 @@ export default function PreviewTab({ showToast, switchTab }) {
                 <td style={{ width: '45%', height: 50, verticalAlign: 'bottom', border: 'none', borderBottom: '1px solid #000', padding: '0 8px 4px 8px', paddingTop: '30px' }}>
                   <div style={{ textAlign: 'center' }}>
                     {firmas?.docentesSignature ? (
-                      <img src={firmas.docentesSignature} alt="Firma Docentes" style={{ maxHeight: '30px', maxWidth: '100%', objectFit: 'contain', display: 'inline-block' }} />
+                      <img src={firmas.docentesSignature} alt="Firma Docentes" style={{ maxHeight: '90px', maxWidth: '100%', objectFit: 'contain', display: 'inline-block' }} />
                     ) : (
-                      <div style={{ height: '30px' }} />
+                      <div style={{ height: '90px' }} />
                     )}
                   </div>
                 </td>
                 <td style={{ width: '10%', border: 'none' }}></td>
                 <td style={{ width: '45%', height: 50, verticalAlign: 'bottom', border: 'none', borderBottom: '1px solid #000', padding: '0 8px 4px 8px', paddingTop: '30px' }}>
+                  <div style={{ textAlign: 'center' }}>
+                    {firmas?.docentesSignature2 ? (
+                      <img src={firmas.docentesSignature2} alt="Firma Docentes 2" style={{ maxHeight: '90px', maxWidth: '100%', objectFit: 'contain', display: 'inline-block' }} />
+                    ) : (
+                      <div style={{ height: '90px' }} />
+                    )}
+                  </div>
                 </td>
               </tr>
               <tr>
@@ -1435,9 +1472,9 @@ export default function PreviewTab({ showToast, switchTab }) {
                 <td style={{ width: '45%', height: 50, verticalAlign: 'bottom', border: 'none', borderBottom: '1px solid #000', padding: '0 8px 4px 8px', paddingTop: '30px' }}>
                   <div style={{ textAlign: 'center' }}>
                     {firmas?.directivoSignature ? (
-                      <img src={firmas.directivoSignature} alt="Firma Directivo" style={{ maxHeight: '30px', maxWidth: '100%', objectFit: 'contain', display: 'inline-block' }} />
+                      <img src={firmas.directivoSignature} alt="Firma Directivo" style={{ maxHeight: '90px', maxWidth: '100%', objectFit: 'contain', display: 'inline-block' }} />
                     ) : (
-                      <div style={{ height: '30px' }} />
+                      <div style={{ height: '90px' }} />
                     )}
                   </div>
                 </td>

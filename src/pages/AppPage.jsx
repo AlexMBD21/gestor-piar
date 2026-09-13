@@ -14,7 +14,7 @@ import ScrollToTop from '../components/ScrollToTop';
 
 export default function AppPage() {
   const { profile, isSuperAdmin, signOut } = useAuth();
-  const { getActiveStudent, activeStudentId, unsavedChanges, discardActiveStudentChanges } = usePiar();
+  const { getActiveStudent, activeStudentId, unsavedChanges, discardActiveStudentChanges, saveActivePiar } = usePiar();
   const [activeTab, setActiveTab] = useState('tab-dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('piar_sidebar_collapsed') === 'true');
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('piar_dark_mode') === 'enabled');
@@ -50,9 +50,17 @@ export default function AppPage() {
   };
 
   const switchTab = async (tabId, overrideStudentId = null) => {
-    if (unsavedChanges && (tabId === 'tab-dashboard' || tabId === 'tab-admin')) {
-      setConfirmModal({ show: true, tabId });
-      return;
+    if (unsavedChanges) {
+      if (tabId === 'tab-dashboard' || tabId === 'tab-admin') {
+        setConfirmModal({ show: true, tabId });
+        return;
+      } else {
+        // Auto-guardado al moverse entre Anexos o ir a la Vista Previa
+        const result = await saveActivePiar();
+        if (result && result.success) {
+          showToast('Cambios guardados automáticamente');
+        }
+      }
     }
     setActiveTab(tabId);
     window.scrollTo(0, 0);

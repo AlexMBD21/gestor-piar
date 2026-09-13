@@ -253,6 +253,16 @@ export default function Anexo3Form({ showToast, switchTab }) {
               />
             </div>
 
+            {/* Docentes 2 */}
+            <div className="signature-input-card">
+              <SignaturePad
+                label="Firma de Docentes (2)"
+                savedSignature={firmas?.docentesSignature2 || ''}
+                onSave={val => handleFirmaChange('docentesSignature2', val)}
+                onClear={() => handleFirmaChange('docentesSignature2', '')}
+              />
+            </div>
+
             {/* Directivo */}
             <div className="signature-input-card">
               <SignaturePad

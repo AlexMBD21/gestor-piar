@@ -1,3 +1,5 @@
+import SignaturePad from '../SignaturePad';
+
 export default function Anexo1Educativo({ trayectoria, institucion, firmas, handleChange, handleFirmaChange }) {
   return (
     <div className="card print-page">
@@ -158,16 +160,25 @@ export default function Anexo1Educativo({ trayectoria, institucion, firmas, hand
 
       <div className="no-print">
         <h5 className="section-subtitle" style={{ fontSize: '0.95rem', marginTop: 20 }}>Firmas de Valoración (Web)</h5>
-        <div className="form-grid-3">
+        <div className="signature-grid">
           {[0, 1, 2].map(idx => (
-            <div className="form-group" key={idx}>
-              <label>Nombre Funcionario {idx + 1}</label>
+            <div className="signature-input-card" key={idx}>
+              <label style={{ fontWeight: 600, display: 'block' }}>Nombre Funcionario {idx + 1}</label>
+              <div style={{ marginTop: '4px' }}>
+                <SignaturePad
+                  label={`Firma Funcionario ${idx + 1}`}
+                  savedSignature={firmas?.[idx]?.signature || ''}
+                  onSave={val => handleFirmaChange(idx, 'signature', val)}
+                  onClear={() => handleFirmaChange(idx, 'signature', '')}
+                />
+              </div>
               <input
                 type="text"
                 className="form-control"
                 placeholder="Nombre completo"
                 value={firmas?.[idx]?.nombre || ''}
                 onChange={e => handleFirmaChange(idx, 'nombre', e.target.value)}
+                style={{ marginTop: 8 }}
               />
               <input
                 type="text"

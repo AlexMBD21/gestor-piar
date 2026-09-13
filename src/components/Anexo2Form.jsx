@@ -204,6 +204,14 @@ export default function Anexo2Form({ showToast, switchTab }) {
                 <input
                   type="text"
                   className="form-control"
+                  placeholder="Nombre completo"
+                  value={firmas?.[idx]?.nombre || ''}
+                  onChange={e => handleFirmaChange(idx, 'nombre', e.target.value)}
+                  style={{ marginBottom: 8 }}
+                />
+                <input
+                  type="text"
+                  className="form-control"
                   placeholder="Cargo / Área"
                   value={firmas?.[idx]?.area || ''}
                   onChange={e => handleFirmaChange(idx, 'area', e.target.value)}
