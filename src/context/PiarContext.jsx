@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from './AuthContext';
 import localforage from 'localforage';
@@ -111,6 +111,18 @@ export function PiarProvider({ children }) {
     return () => window.removeEventListener('online', handleOnline);
   }, [loadPiars]);
 
+  // Refs para acceder a los valores más recientes dentro de los callbacks de realtime
+  const activeStudentIdRef = useRef(activeStudentId);
+  const unsavedChangesRef = useRef(unsavedChanges);
+
+  useEffect(() => {
+    activeStudentIdRef.current = activeStudentId;
+  }, [activeStudentId]);
+
+  useEffect(() => {
+    unsavedChangesRef.current = unsavedChanges;
+  }, [unsavedChanges]);
+
   // Real-time collaborative sync
   useEffect(() => {
     if (!user) return;
@@ -121,30 +133,19 @@ export function PiarProvider({ children }) {
         if (payload.eventType === 'UPDATE') {
           setPiars(prev => prev.map(p => {
             if (p.id === payload.new.id) {
-              // Prevenir que los eventos realtime sobrescriban cambios locales no guardados
-              setUnsavedChanges((currentUnsaved) => {
-                if (currentUnsaved && p.id === activeStudentId) {
-                   console.warn('[PiarContext] Ignorando actualización realtime porque hay cambios locales sin guardar.');
-                   return currentUnsaved; // keep true
-                }
-                return currentUnsaved;
-              });
+              const currentActiveId = activeStudentIdRef.current;
+              const currentUnsaved = unsavedChangesRef.current;
+              
+              if (currentUnsaved && p.id === currentActiveId) {
+                 console.warn('[PiarContext] Ignorando actualización realtime porque hay cambios locales sin guardar.');
+                 return p; // Retornamos el local intacto si hay cambios sin guardar
+              }
               
               // Si este es el estudiante activo y hay cambios, fusionamos para retener lo local
-              // Nota: Como no podemos leer el estado exacto de unsavedChanges sincrónicamente aquí de manera limpia sin refs, 
-              // usamos el estado 'p' anterior como base si el id coincide con activeStudentId (esto se evalúa en el closure de setPiars pero activeStudentId podría estar stale).
-              // Lo más seguro es fusionar el nuevo 'data' con el 'data' actual.
-              const mergedData = { ...payload.new.data, ...p.data };
-              
-              // Si no hay unsavedChanges o no es el activo, tomamos el nuevo. Si sí, mantenemos el merge.
-              // Para simplificar: tomaremos el payload.new completo y luego el componente re-renderizará.
-              // Pero si hacemos eso perdemos lo escrito. 
-              // En su lugar, si estamos editando, solo aceptamos cambios de campos que no existen en p.data o confiamos en el RPC.
-              // Mejor:
               return { 
                 ...p, 
                 ...payload.new, 
-                data: (p.id === activeStudentId) ? { ...payload.new.data, ...p.data } : payload.new.data 
+                data: (p.id === currentActiveId) ? { ...payload.new.data, ...p.data } : payload.new.data 
               };
             }
             return p;
@@ -172,7 +173,8 @@ export function PiarProvider({ children }) {
     setUnsavedChanges(true);
   };
 
-  // Auto-save: Si hay cambios sin guardar, guarda automáticamente después de 1 minuto de inactividad
+  // Auto-save: Desactivado a petición del usuario para que el guardado sea estrictamente manual.
+  /*
   useEffect(() => {
     let timeoutId;
     if (unsavedChanges && activeStudentId) {
@@ -182,7 +184,8 @@ export function PiarProvider({ children }) {
       }, 60000); // 60 segundos
     }
     return () => clearTimeout(timeoutId);
-  }, [unsavedChanges, activeStudentId]); // Note: saveActivePiar shouldn't be a dependency if it's not wrapped in useCallback, but we can safely call it this way.
+  }, [unsavedChanges, activeStudentId]);
+  */
 
 
   const discardActiveStudentChanges = async () => {
