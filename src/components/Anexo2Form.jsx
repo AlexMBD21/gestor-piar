@@ -41,8 +41,7 @@ export default function Anexo2Form({ showToast, switchTab }) {
   const handleTableUpdate = (anexo, field, updatedList) => {
     const updatedData = { ...data };
     updatedData[anexo][field] = updatedList;
-    const sectionKey = field === 'ajustesRazonables' ? 'anexo2-ajustes' : 'anexo2-pmi';
-    savePiar(displayStudent.id, updatedData, sectionKey);
+    updateLocalPiarData(displayStudent.id, updatedData);
   };
 
   return (

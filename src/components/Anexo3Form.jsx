@@ -55,7 +55,7 @@ export default function Anexo3Form({ showToast, switchTab }) {
   const handleTableUpdate = (anexo, field, updatedList) => {
     const updatedData = { ...data };
     updatedData[anexo][field] = updatedList;
-    savePiar(displayStudent.id, updatedData, 'anexo3-actividades');
+    updateLocalPiarData(displayStudent.id, updatedData);
   };
 
   return (
