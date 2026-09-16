@@ -1580,9 +1580,7 @@ body.dark-mode #tabla-ajustes-razonables td:first-child {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding-right: 8px;
-  padding-top: 6px;
-  padding-bottom: 6px;
+  padding: 4px 0;
 }
 
 .student-card-item {
@@ -4047,36 +4045,47 @@ body.dark-mode .btn-md3-success:hover {
     order: 3;
   }
 
-  /* Cards de estudiantes mÃ¡s compactas */
+  /* Cards de estudiantes más compactas y perfectamente simétricas en móvil */
   .md3-card {
-    padding: 16px;
+    padding: 16px !important;
     border-radius: 12px;
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
-  .md3-card-header {
-    margin-bottom: 12px;
-  }
-
-  .md3-card-actions {
-    gap: 8px;
-    width: 100%;
-  }
-  .md3-card-actions button {
-    flex: 1;
-    justify-content: center;
+  .student-list-container {
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
   }
 
   .student-card-item,
   .skeleton-card {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+    padding: 14px 12px 14px 16px !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    gap: 12px !important;
+  }
+
+  .sc-body {
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .sc-actions,
   .skeleton-actions {
-    width: 100%;
-    justify-content: space-between;
+    width: 100% !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
   }
 
   /* Contenido principal en mobile â€” centrado y maximizando anchura */
@@ -5253,7 +5262,7 @@ body.dark-mode .signature-modal-content {
   display: flex;
   align-items: center;
   gap: 20px;
-  padding: 18px 22px;
+  padding: 18px 16px 18px 20px;
   background-color: #f8fafc;
   border: 1px solid #cbd5e1;
   border-radius: var(--radius-lg);

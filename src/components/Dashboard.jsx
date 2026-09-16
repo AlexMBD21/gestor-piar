@@ -278,7 +278,7 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
                       </button>
                     )}
 
-                    <div style={{ position: 'relative' }}>
+                    <div className="sc-more-wrapper" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                       <button
                         className={`sc-btn-more ${activeDropdownId === piar.id ? 'active' : ''}`}
                         onClick={(e) => {
