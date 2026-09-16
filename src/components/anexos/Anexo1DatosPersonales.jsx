@@ -1,3 +1,5 @@
+import CustomSelect from '../CustomSelect';
+
 export default function Anexo1DatosPersonales({ general, estudiante, handleChange, isBlankTemplate }) {
   return (
     <div className="card print-page">
@@ -147,18 +149,18 @@ export default function Anexo1DatosPersonales({ general, estudiante, handleChang
         </div>
         <div className="form-group">
           <label htmlFor="anexo1-estudiante-tipoIdentificacion">Tipo de Identificación</label>
-          <select
+          <CustomSelect
             id="anexo1-estudiante-tipoIdentificacion"
-            className="form-control"
             value={estudiante.tipoIdentificacion || 'TI'}
-            onChange={e => handleChange('estudiante', 'tipoIdentificacion', e.target.value)}
-          >
-            <option value="TI">TI (Tarjeta de Identidad)</option>
-            <option value="CC">CC (Cédula de Ciudadanía)</option>
-            <option value="RC">RC (Registro Civil)</option>
-            <option value="PEP">PEP</option>
-            <option value="Otro">Otro</option>
-          </select>
+            onChange={val => handleChange('estudiante', 'tipoIdentificacion', val)}
+            options={[
+              { value: 'TI', label: 'TI (Tarjeta de Identidad)' },
+              { value: 'CC', label: 'CC (Cédula de Ciudadanía)' },
+              { value: 'RC', label: 'RC (Registro Civil)' },
+              { value: 'PEP', label: 'PEP' },
+              { value: 'Otro', label: 'Otro' }
+            ]}
+          />
         </div>
 
         {estudiante.tipoIdentificacion === 'Otro' && (

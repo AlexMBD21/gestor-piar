@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { escHtml } from '../lib/piarTemplates';
 import CollaborativeSection from './CollaborativeSection';
+import CustomSelect from './CustomSelect';
 
 export default function AjustesTable({ list, studentData, onUpdate }) {
   const rawAjustes = list || studentData?.anexo2?.ajustesRazonables || [];
@@ -237,18 +237,18 @@ export default function AjustesTable({ list, studentData, onUpdate }) {
                           <div key={t.id} className={`ajustes-trimestre-fields ${activeTab === index ? 'active' : ''}`}>
                             <div className="ajustes-field-group ajustes-field-objetivos">
                               <label className="ajustes-field-label">Periodo y Objetivos / Propósitos (Grado - DBA)</label>
-                              <select
-                                className="form-control table-input select-periodo"
+                              <CustomSelect
                                 value={t.trimestre || ''}
-                                onChange={e => handleChangeTrimestre(item.id, t.id, 'trimestre', e.target.value)}
+                                onChange={val => handleChangeTrimestre(item.id, t.id, 'trimestre', val)}
+                                placeholder="Seleccionar Trimestre..."
                                 style={{ marginBottom: 6 }}
-                              >
-                                <option value="" disabled>Seleccionar Trimestre...</option>
-                                <option value="Primer Cuatrimestre">1er Trimestre/Cuat.</option>
-                                <option value="Segundo Cuatrimestre">2do Trimestre/Cuat.</option>
-                                <option value="Tercer Cuatrimestre">3er Trimestre/Cuat.</option>
-                                <option value="Transversal">Transversal</option>
-                              </select>
+                                options={[
+                                  { value: 'Primer Cuatrimestre', label: '1er Trimestre/Cuat.' },
+                                  { value: 'Segundo Cuatrimestre', label: '2do Trimestre/Cuat.' },
+                                  { value: 'Tercer Cuatrimestre', label: '3er Trimestre/Cuat.' },
+                                  { value: 'Transversal', label: 'Transversal' }
+                                ]}
+                              />
                               <textarea
                                 className="table-textarea"
                                 value={t.objetivos || ''}

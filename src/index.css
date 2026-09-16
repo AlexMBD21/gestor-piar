@@ -1145,6 +1145,203 @@ body.dark-mode .info-banner {
   box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
 }
 
+/* Dark mode overrides para .table-input */
+body.dark-mode .table-input {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+}
+
+body.dark-mode .table-input:hover {
+  background-color: rgba(255, 255, 255, 0.09) !important;
+  border-color: rgba(255, 255, 255, 0.45) !important;
+}
+
+body.dark-mode .table-input:focus {
+  background-color: var(--bg-card) !important;
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25) !important;
+}
+
+/* =============================================
+   CUSTOM REUSABLE SELECT COMPONENT (CustomSelect)
+   ============================================= */
+.custom-select-container {
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.custom-select-trigger {
+  width: 100%;
+  height: 42px;
+  padding: 8px 14px;
+  background-color: var(--bg-input);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-sizing: border-box;
+  text-align: left;
+  outline: none;
+}
+
+.custom-select-trigger:hover:not(:disabled) {
+  background-color: var(--bg-card);
+  border-color: var(--primary);
+}
+
+.custom-select-container.open .custom-select-trigger {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(43, 87, 154, 0.15);
+  background-color: var(--bg-card);
+}
+
+.custom-select-trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.custom-select-value {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-select-value.placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.custom-select-arrow {
+  font-size: 20px;
+  color: var(--text-muted);
+  transition: transform var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.custom-select-container.open .custom-select-arrow {
+  transform: rotate(180deg);
+  color: var(--primary);
+}
+
+/* Dropdown menu popup (Flotante con Portal) */
+.custom-select-dropdown {
+  z-index: 99999 !important;
+  background-color: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: 0 16px 32px -4px rgba(0, 0, 0, 0.3), 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px;
+  box-sizing: border-box;
+  animation: dropdownFadeIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.custom-select-option {
+  padding: 10px 12px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--text-main);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  transition: all var(--transition-fast);
+}
+
+.custom-select-option:hover {
+  background-color: var(--primary-light);
+  color: var(--primary);
+}
+
+.custom-select-option.selected {
+  background-color: var(--primary);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.custom-select-option .option-check {
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.custom-select-empty {
+  padding: 12px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-align: center;
+  font-style: italic;
+}
+
+/* Dark Mode overrides para CustomSelect */
+body.dark-mode .custom-select-trigger {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+body.dark-mode .custom-select-trigger:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.45);
+}
+
+body.dark-mode .custom-select-container.open .custom-select-trigger {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25);
+  background-color: #1a1c22;
+}
+
+body.dark-mode .custom-select-dropdown {
+  background-color: #1a1c22;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
+}
+
+body.dark-mode .custom-select-option {
+  color: #e2e8f0;
+}
+
+body.dark-mode .custom-select-option:hover {
+  background-color: rgba(96, 165, 250, 0.18);
+  color: #60a5fa;
+}
+
+body.dark-mode .custom-select-option.selected {
+  background-color: #3b82f6;
+  color: #ffffff;
+}
+
+/* Estilizado de native <select> y <option> para uniformidad en dark mode */
+select option {
+  background-color: #1e2025;
+  color: #ffffff;
+  padding: 8px;
+}
+
 /* ── AjustesTable: Área/Docente header ── */
 .ajuste-area-header {
   display: flex;

@@ -1,4 +1,5 @@
 import CollaborativeSection from './CollaborativeSection';
+import CustomSelect from './CustomSelect';
 
 export default function ActividadesTable({ list, studentData, onUpdate }) {
   const actividades = list || studentData?.anexo3?.actividadesHogar || [];
@@ -91,16 +92,15 @@ export default function ActividadesTable({ list, studentData, onUpdate }) {
                     />
                   </td>
                   <td data-label="Frecuencia (D / S / P)">
-                    <select
-                      className="form-control table-input"
+                    <CustomSelect
                       value={item.frecuencia || 'D'}
-                      onChange={e => handleChange(item.id, 'frecuencia', e.target.value)}
-                      style={{ width: '100%', boxSizing: 'border-box', padding: '6px 8px' }}
-                    >
-                      <option value="D">D (Diaria)</option>
-                      <option value="S">S (Semanal)</option>
-                      <option value="P">P (Permanente)</option>
-                    </select>
+                      onChange={val => handleChange(item.id, 'frecuencia', val)}
+                      options={[
+                        { value: 'D', label: 'D (Diaria)' },
+                        { value: 'S', label: 'S (Semanal)' },
+                        { value: 'P', label: 'P (Permanente)' }
+                      ]}
+                    />
                   </td>
                   <td className="action-cell no-print">
                     <button
