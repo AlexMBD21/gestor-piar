@@ -117,8 +117,7 @@ export default function AppPage() {
             </span>
           </button>
           <button
-            className="mobile-top-bar__theme"
-            style={{ color: 'var(--danger)' }}
+            className="mobile-top-bar__theme mobile-top-bar__logout"
             onClick={signOut}
             title="Cerrar sesión"
           >

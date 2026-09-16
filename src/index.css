@@ -607,6 +607,23 @@ body.dark-mode .btn-md3-outlined:active {
   border-color: rgba(140, 144, 159, 0.5);
 }
 
+.footer-link-logout {
+  color: #ef4444 !important;
+  transition: all 0.2s ease;
+}
+.footer-link-logout .material-symbols-outlined {
+  color: #ef4444 !important;
+  transition: all 0.2s ease;
+}
+.footer-link-logout:hover {
+  color: #ffffff !important;
+  background-color: rgba(239, 68, 68, 0.25) !important;
+}
+.footer-link-logout:hover span,
+.footer-link-logout:hover .material-symbols-outlined {
+  color: #ffffff !important;
+}
+
 .theme-toggle-row {
   display: flex;
   align-items: center;
@@ -1639,7 +1656,6 @@ body.dark-mode .student-card-item:hover {
 }
 body.dark-mode .student-card-item.active {
   border-color: var(--primary);
-  background-color: #1e2840;
 }
 
 /* Body (left, expands) */
@@ -3202,9 +3218,8 @@ body.dark-mode .floating-action-btn:hover {
 }
 
 .student-card-item.active {
-  background-color: var(--primary-light);
   border-color: var(--primary);
-  box-shadow: var(--shadow-glow);
+  box-shadow: 0 0 0 1.5px var(--primary);
 }
 
 body.dark-mode .student-card-item {
@@ -3217,7 +3232,6 @@ body.dark-mode .student-card-item:hover {
 }
 
 body.dark-mode .student-card-item.active {
-  background-color: rgba(59, 130, 246, 0.1);
   border-color: var(--primary);
 }
 
@@ -3866,11 +3880,26 @@ body.dark-mode .btn-md3-success:hover {
     font-size: 20px;
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.2s ease;
   }
-  body.dark-mode .mobile-top-bar__theme .material-symbols-outlined {
-    color: #f59e0b; /* Amarillo cÃ¡lido para el sol en modo oscuro */
+  body.dark-mode .mobile-top-bar__theme:not(.mobile-top-bar__logout) .material-symbols-outlined {
+    color: #f59e0b; /* Amarillo cálido para el sol en modo oscuro */
   }
-  body:not(.dark-mode) .mobile-top-bar__theme .material-symbols-outlined {
+  body:not(.dark-mode) .mobile-top-bar__theme:not(.mobile-top-bar__logout) .material-symbols-outlined {
     color: var(--primary); /* Azul intenso para la luna en modo claro */
+  }
+
+  .mobile-top-bar__logout {
+    color: #ef4444 !important;
+  }
+  .mobile-top-bar__logout .material-symbols-outlined {
+    color: #ef4444 !important;
+  }
+  .mobile-top-bar__logout:hover {
+    color: #ffffff !important;
+    background: #ef4444 !important;
+    border-color: #ef4444 !important;
+  }
+  .mobile-top-bar__logout:hover .material-symbols-outlined {
+    color: #ffffff !important;
   }
 
   /* â”€â”€ MOBILE BOTTOM NAV (Material Design 3 + Glassmorphism) â”€â”€ */
@@ -5310,9 +5339,9 @@ body.dark-mode .signature-modal-content {
 }
 
 .student-card-item.active {
-  background-color: #f0f7ff;
+  background-color: #f8fafc;
   border-color: #3b82f6;
-  box-shadow: 0 0 0 1px #3b82f6, 0 4px 14px rgba(59, 130, 246, 0.12);
+  box-shadow: 0 0 0 1.5px #3b82f6;
 }
 
 /* Dark Mode Card Customizations */
@@ -5339,9 +5368,9 @@ body.dark-mode .student-card-item:hover {
 }
 
 body.dark-mode .student-card-item.active {
-  background-color: #1e293b !important; /* Slate 800 active contrast */
+  background-color: #1a1b1e !important;
   border-color: #60a5fa !important;
-  box-shadow: 0 0 0 1px #60a5fa, 0 8px 20px -6px rgba(96, 165, 250, 0.25) !important;
+  box-shadow: 0 0 0 1.5px #60a5fa !important;
 }
 
 /* Deselect Button Style (Soft Tonal Red) */

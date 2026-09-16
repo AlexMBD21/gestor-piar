@@ -161,7 +161,7 @@ export default function Sidebar({ activeTab, switchTab, sidebarCollapsed, setSid
             <span>Panel Admin</span>
           </a>
         )}
-        <a className="footer-link" onClick={onSignOut} data-tooltip="Cerrar Sesión">
+        <a className="footer-link footer-link-logout" onClick={onSignOut} data-tooltip="Cerrar Sesión">
           <span className="material-symbols-outlined">logout</span>
           <span>Cerrar Sesión</span>
         </a>
