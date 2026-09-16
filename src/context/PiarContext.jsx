@@ -13,6 +13,7 @@ export function PiarProvider({ children }) {
   const [activeStudentId, setActiveStudentId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
+  const savedPiarsDataRef = useRef({});
 
   const loadPiars = useCallback(async () => {
     if (!user) { setPiars([]); setEditLogs({}); return; }
@@ -51,6 +52,12 @@ export function PiarProvider({ children }) {
         owner_name: profilesMap[p.owner_id]?.full_name || 'Profesor',
         owner_email: profilesMap[p.owner_id]?.email || 'Asignado'
       }));
+
+      const savedMap = {};
+      mappedPiars.forEach(p => {
+        savedMap[p.id] = JSON.stringify(p.data || {});
+      });
+      savedPiarsDataRef.current = savedMap;
 
       setPiars(mappedPiars);
 
@@ -166,11 +173,15 @@ export function PiarProvider({ children }) {
   const getActiveStudent = () => piars.find(p => p.id === activeStudentId) ?? null;
 
   const updateLocalPiarData = (piarId, updatedData) => {
+    const savedStr = savedPiarsDataRef.current[piarId] || '{}';
+    const currentStr = JSON.stringify(updatedData || {});
+    const hasChanges = savedStr !== currentStr;
+
     setPiars(prev => prev.map(p => p.id === piarId
       ? { ...p, data: updatedData, nombre: updatedData.estudianteNombre || p.nombre, grado: updatedData.grado || p.grado }
       : p
     ));
-    setUnsavedChanges(true);
+    setUnsavedChanges(hasChanges);
   };
 
   // Auto-save: Desactivado a petición del usuario para que el guardado sea estrictamente manual.
@@ -314,6 +325,7 @@ export function PiarProvider({ children }) {
       }
     }
 
+    savedPiarsDataRef.current[activeStudent.id] = JSON.stringify(updatedData);
     setUnsavedChanges(false);
     setLoading(false);
     return { success: true };

@@ -31,17 +31,22 @@ export default function Sidebar({ activeTab, switchTab, sidebarCollapsed, setSid
   return (
     <aside className="sidebar no-print">
       {/* Botón flotante de colapso/expansión */}
-      <button className="sidebar-collapse-btn" title={sidebarCollapsed ? 'Expandir' : 'Contraer'} onClick={() => setSidebarCollapsed(!sidebarCollapsed)}>
+      <button
+        className="sidebar-collapse-btn"
+        title={sidebarCollapsed ? 'Expandir menú' : 'Contraer menú'}
+        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+      >
         <span className="material-symbols-outlined">chevron_left</span>
       </button>
 
-      {/* Header */}
-      <div className="sidebar-header">
-        <div className="sidebar-logo-text">
-          <h1>Gestor PIAR</h1>
-          <p>DECRETO 1421 DE 2017</p>
+      <div className="sidebar-inner">
+        {/* Header */}
+        <div className="sidebar-header">
+          <div className="sidebar-logo-text">
+            <h1>Gestor PIAR</h1>
+            <p>DECRETO 1421 DE 2017</p>
+          </div>
         </div>
-      </div>
 
       {/* Student Selector — expandido */}
       <div className="sidebar-student-selector">
@@ -170,6 +175,7 @@ export default function Sidebar({ activeTab, switchTab, sidebarCollapsed, setSid
           </button>
         </div>
       </div>
-    </aside>
-  );
+    </div>
+  </aside>
+);
 }
