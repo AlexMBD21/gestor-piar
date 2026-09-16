@@ -5,7 +5,7 @@ import CollaborativeSection from './CollaborativeSection';
 
 export default function AjustesTable({ list, studentData, onUpdate }) {
   const rawAjustes = list || studentData?.anexo2?.ajustesRazonables || [];
-  
+
   // Migración al vuelo para compatibilidad con la estructura anterior
   const ajustes = rawAjustes.map(item => {
     if (item.trimestres) return item;
@@ -146,7 +146,7 @@ export default function AjustesTable({ list, studentData, onUpdate }) {
         Diligencie los objetivos, barreras del contexto, ajustes y criterios de evaluación por áreas. Puede agregar cuantas filas necesite.
       </p>
 
-      <div className="table-wrapper">
+      <div className="table-wrapper mobile-card-table-wrapper">
         <table className="custom-table" id="tabla-ajustes-razonables">
           <thead>
             <tr>
@@ -168,97 +168,80 @@ export default function AjustesTable({ list, studentData, onUpdate }) {
             ) : (
               ajustes.map(item => {
                 const activeTab = activeTabs[item.id] || 0;
-                
+
                 return (
                   <tr key={item.id} className="ajustes-area-row">
                     <td data-label="Área / Docente" style={{ fontWeight: 600, minWidth: 140, verticalAlign: 'top' }}>
-                      <input
-                        type="text"
-                        className="table-input"
-                        value={item.area || ''}
-                        onChange={e => handleChangeArea(item.id, 'area', e.target.value)}
-                        placeholder="Ej. Matemáticas"
-                        style={{ fontWeight: 600 }}
-                      />
-                      <input
-                        type="text"
-                        className="table-input"
-                        value={item.docente || ''}
-                        onChange={e => handleChangeArea(item.id, 'docente', e.target.value)}
-                        placeholder="Profesor asignado..."
-                        style={{ fontSize: '0.75rem', padding: 2, marginTop: 4 }}
-                      />
-                      
-                      <div className="trimestres-tabs no-print" style={{ marginTop: '12px' }}>
-                        {item.trimestres.map((t, index) => (
-                          <div 
-                            key={t.id} 
-                            className={`trimestre-tab ${activeTab === index ? 'active' : ''}`}
-                            onClick={() => setActiveTabs(prev => ({ ...prev, [item.id]: index }))}
-                            style={{ 
-                              padding: '4px 8px', 
-                              fontSize: '0.7rem', 
-                              cursor: 'pointer', 
-                              backgroundColor: activeTab === index ? 'var(--bg-card)' : 'transparent',
-                              border: activeTab === index ? '1px solid var(--border-color)' : '1px solid transparent',
-                              borderBottom: activeTab === index ? '1px solid var(--bg-card)' : '1px solid transparent',
-                              borderRadius: '4px 4px 0 0',
-                              marginBottom: '-1px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              gap: '4px'
-                            }}
-                          >
-                            <span style={{ 
-                              whiteSpace: 'nowrap', 
-                              overflow: 'hidden', 
-                              textOverflow: 'ellipsis', 
-                              maxWidth: '100px',
-                              color: activeTab === index ? 'var(--text-main)' : 'var(--text-muted)'
-                            }}>
-                              {t.trimestre || 'Nuevo Trimestre'}
-                            </span>
-                            {item.trimestres.length > 1 && (
-                              <span 
-                                className="material-symbols-outlined btn-remove-tab" 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRemoveTrimestre(item.id, t.id);
-                                }}
-                                style={{ fontSize: '14px', color: 'var(--danger)' }}
-                                title="Eliminar trimestre"
-                              >
-                                close
-                              </span>
-                            )}
-                          </div>
-                        ))}
+                      <div className="ajuste-area-header">
+                        <input
+                          type="text"
+                          className="table-input ajuste-area-input"
+                          value={item.area || ''}
+                          onChange={e => handleChangeArea(item.id, 'area', e.target.value)}
+                          placeholder="Ej. Matemáticas"
+                          style={{ fontWeight: 600 }}
+                        />
+                        <input
+                          type="text"
+                          className="table-input ajuste-docente-input"
+                          value={item.docente || ''}
+                          onChange={e => handleChangeArea(item.id, 'docente', e.target.value)}
+                          placeholder="Profesor asignado..."
+                          style={{ fontSize: '0.82rem', marginTop: 6 }}
+                        />
                       </div>
-                      
-                      <button 
-                        type="button" 
-                        className="btn btn-outline-primary btn-sm no-print" 
-                        onClick={() => handleAddTrimestre(item.id)}
-                        style={{ fontSize: '0.7rem', padding: '2px 6px', marginTop: '4px', width: '100%' }}
-                      >
-                        + Trimestre
-                      </button>
+
+                      <div className="trimestres-tabs-container no-print">
+                        <div className="trimestres-tabs">
+                          {item.trimestres.map((t, index) => (
+                            <button
+                              key={t.id}
+                              type="button"
+                              className={`trimestre-tab-btn ${activeTab === index ? 'active' : ''}`}
+                              onClick={() => setActiveTabs(prev => ({ ...prev, [item.id]: index }))}
+                            >
+                              <span className="trimestre-tab-label">
+                                {t.trimestre
+                                  ? t.trimestre.replace('Primer ', '1er ').replace('Segundo ', '2do ').replace('Tercer ', '3er ')
+                                  : 'Nuevo'}
+                              </span>
+                              {item.trimestres.length > 1 && (
+                                <span
+                                  className="material-symbols-outlined trimestre-tab-remove"
+                                  onClick={(e) => { e.stopPropagation(); handleRemoveTrimestre(item.id, t.id); }}
+                                  title="Eliminar trimestre"
+                                >
+                                  close
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          type="button"
+                          className="btn-add-trimestre no-print"
+                          onClick={() => handleAddTrimestre(item.id)}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>add</span>
+                          Trimestre
+                        </button>
+                      </div>
                     </td>
 
                     {/* Contenido del trimestre - Renderizado condicional basado en la vista (pantalla vs impresión) */}
                     <td colSpan="4" className="trimestres-content-cell" style={{ padding: 0, verticalAlign: 'top' }}>
-                      
+
                       {/* Vista de Pantalla: Solo muestra el trimestre activo */}
                       <div className="trimestre-screen-view no-print">
                         {item.trimestres.map((t, index) => (
-                          <div key={t.id} style={{ display: activeTab === index ? 'flex' : 'none', width: '100%', gap: '8px', padding: '8px' }}>
-                            <div style={{ flex: '1 1 30%' }}>
+                          <div key={t.id} className={`ajustes-trimestre-fields ${activeTab === index ? 'active' : ''}`}>
+                            <div className="ajustes-field-group ajustes-field-objetivos">
+                              <label className="ajustes-field-label">Periodo y Objetivos / Propósitos (Grado - DBA)</label>
                               <select
-                                className="form-control table-input mb-1"
+                                className="form-control table-input select-periodo"
                                 value={t.trimestre || ''}
                                 onChange={e => handleChangeTrimestre(item.id, t.id, 'trimestre', e.target.value)}
-                                style={{ fontSize: '0.75rem', padding: '2px 4px' }}
+                                style={{ marginBottom: 6 }}
                               >
                                 <option value="" disabled>Seleccionar Trimestre...</option>
                                 <option value="Primer Cuatrimestre">1er Trimestre/Cuat.</option>
@@ -271,34 +254,37 @@ export default function AjustesTable({ list, studentData, onUpdate }) {
                                 value={t.objetivos || ''}
                                 onChange={e => handleChangeTrimestre(item.id, t.id, 'objetivos', e.target.value)}
                                 placeholder="Objetivos del grado..."
-                                style={{ minHeight: '120px' }}
+                                rows={4}
                               />
                             </div>
-                            <div style={{ flex: '1 1 30%' }}>
+                            <div className="ajustes-field-group ajustes-field-barreras">
+                              <label className="ajustes-field-label">Barreras Evidenciadas</label>
                               <textarea
                                 className="table-textarea"
                                 value={t.barreras || ''}
                                 onChange={e => handleChangeTrimestre(item.id, t.id, 'barreras', e.target.value)}
                                 placeholder="Barreras del entorno..."
-                                style={{ minHeight: '150px' }}
+                                rows={4}
                               />
                             </div>
-                            <div style={{ flex: '1 1 25%' }}>
+                            <div className="ajustes-field-group ajustes-field-estrategias">
+                              <label className="ajustes-field-label">Ajustes Razonables (Apoyos/Estrategias)</label>
                               <textarea
                                 className="table-textarea"
                                 value={t.ajustes || ''}
                                 onChange={e => handleChangeTrimestre(item.id, t.id, 'ajustes', e.target.value)}
                                 placeholder="Estrategias/Apoyos..."
-                                style={{ minHeight: '150px' }}
+                                rows={4}
                               />
                             </div>
-                            <div style={{ flex: '1 1 15%' }}>
+                            <div className="ajustes-field-group ajustes-field-evaluacion">
+                              <label className="ajustes-field-label">Evaluación de los Ajustes</label>
                               <textarea
                                 className="table-textarea"
                                 value={t.evaluacion || ''}
                                 onChange={e => handleChangeTrimestre(item.id, t.id, 'evaluacion', e.target.value)}
                                 placeholder="Observaciones..."
-                                style={{ minHeight: '150px' }}
+                                rows={4}
                               />
                             </div>
                           </div>
@@ -363,9 +349,9 @@ export default function AjustesTable({ list, studentData, onUpdate }) {
               ¿Estás seguro de que deseas eliminar esta asignatura del PIAR y todos sus trimestres? Esta acción no se puede deshacer.
             </div>
             <div className="modal-footer" style={{ borderTop: 'none', paddingTop: '0' }}>
-              <button 
-                type="button" 
-                className="btn btn-danger" 
+              <button
+                type="button"
+                className="btn btn-danger"
                 onClick={handleConfirmDelete}
                 style={{ width: '100%', padding: '12px 16px', height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
               >

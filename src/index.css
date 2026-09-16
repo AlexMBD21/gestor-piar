@@ -1123,26 +1123,221 @@ body.dark-mode .info-banner {
 
 .table-input {
   width: 100%;
-  border: 1px solid transparent;
-  background-color: transparent;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-input);
   font-family: inherit;
   font-size: 0.88rem;
-  padding: 6px;
+  padding: 6px 10px;
   color: var(--text-main);
   outline: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
 }
 
 .table-input:hover {
-  background-color: var(--bg-input);
-  border-color: var(--border-color);
+  background-color: var(--bg-card);
+  border-color: var(--primary);
 }
 
 .table-input:focus {
   background-color: var(--bg-card);
   border-color: var(--border-focus);
-  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.1);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
 }
+
+/* ── AjustesTable: Área/Docente header ── */
+.ajuste-area-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ── AjustesTable: Tabs de Trimestre ── */
+.trimestres-tabs-container {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.trimestres-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.trimestre-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 20px;
+  border: 1.5px solid var(--border-color);
+  background-color: transparent;
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  line-height: 1.4;
+  width: 100%;
+}
+
+.trimestre-tab-btn:hover {
+  background-color: var(--bg-input);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.trimestre-tab-btn.active {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+.trimestre-tab-label {
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.trimestre-tab-remove {
+  font-size: 12px !important;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+}
+.trimestre-tab-remove:hover {
+  background-color: var(--danger);
+  color: #fff;
+  transform: scale(1.1);
+}
+
+/* Cuando el tab está activo (fondo azul), la X debe ser blanca */
+.trimestre-tab-btn.active .trimestre-tab-remove {
+  background-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.85);
+}
+.trimestre-tab-btn.active .trimestre-tab-remove:hover {
+  background-color: rgba(255, 255, 255, 0.95);
+  color: var(--primary);
+  transform: scale(1.1);
+}
+
+.btn-add-trimestre {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 20px;
+  border: 1.5px dashed var(--primary);
+  background-color: var(--primary-light);
+  color: var(--primary);
+  transition: all var(--transition-fast);
+  width: 100%;
+  justify-content: center;
+  margin-top: 4px;
+}
+.btn-add-trimestre:hover {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  border-style: solid;
+  color: #fff;
+}
+
+/* ── Dark mode overrides para la sección de trimestres ── */
+body.dark-mode .trimestre-tab-btn,
+body.dark-mode #tabla-ajustes-razonables .trimestre-tab-btn {
+  border-color: rgba(255, 255, 255, 0.38) !important;
+  color: var(--text-muted);
+}
+body.dark-mode .trimestre-tab-btn:hover,
+body.dark-mode #tabla-ajustes-razonables .trimestre-tab-btn:hover {
+  border-color: rgba(255, 255, 255, 0.65) !important;
+  background-color: rgba(255, 255, 255, 0.06);
+  color: var(--text-main);
+}
+body.dark-mode .trimestre-tab-btn.active,
+body.dark-mode #tabla-ajustes-razonables .trimestre-tab-btn.active {
+  border-color: var(--primary) !important;
+  background-color: var(--primary);
+  color: #fff;
+}
+
+body.dark-mode .btn-add-trimestre {
+  border-color: rgba(255, 255, 255, 0.35);
+  background-color: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.75);
+}
+body.dark-mode .btn-add-trimestre:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.7);
+  border-style: dashed;
+  color: #fff;
+}
+
+/* Sin gradiente en la cabecera de la tarjeta en dark mode */
+body.dark-mode #tabla-ajustes-razonables td:first-child {
+  background: var(--bg-input) !important;
+}
+
+/* ── AjustesTable: Campos del trimestre (vista pantalla) ── */
+.ajustes-trimestre-fields {
+  display: none;
+  flex-direction: row;
+  gap: 8px;
+  padding: 8px;
+  width: 100%;
+  align-items: stretch;
+}
+.ajustes-trimestre-fields.active {
+  display: flex;
+}
+
+.ajustes-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ajustes-field-group .table-textarea {
+  flex: 1;
+}
+
+.ajustes-field-label {
+  display: none;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Desktop: distribute widths to align perfectly with the 4 header columns and align textareas top baseline */
+.ajustes-field-objetivos   { flex: 1 1 29.4%; }
+.ajustes-field-barreras    { flex: 1 1 29.4%; margin-top: 46px; }
+.ajustes-field-estrategias { flex: 1 1 23.5%; margin-top: 46px; }
+.ajustes-field-evaluacion  { flex: 1 1 17.6%; margin-top: 46px; }
 
 .action-cell {
   text-align: center;
@@ -3790,12 +3985,17 @@ body.dark-mode .btn-md3-success:hover {
   .form-grid-2,
   .form-grid-3,
   .form-grid-4 {
+    display: grid !important;
     grid-template-columns: 1fr !important;
-    gap: 12px !important;
+    gap: 14px !important;
+    width: 100% !important;
   }
 
   .form-group {
-    margin-bottom: 14px;
+    margin-bottom: 14px !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
 
   .form-group.col-span-2,
@@ -3804,9 +4004,65 @@ body.dark-mode .btn-md3-success:hover {
     grid-column: span 1 !important;
   }
 
+  .form-group label {
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    color: var(--text-main) !important;
+    margin-bottom: 6px !important;
+    display: block !important;
+    line-height: 1.35 !important;
+  }
+
   .form-control {
-    font-size: 0.9rem !important;
-    padding: 8px 12px !important;
+    font-size: 0.92rem !important;
+    height: 44px !important;
+    padding: 10px 14px !important;
+    border-radius: 12px !important;
+    border: 1.5px solid var(--border-color) !important;
+    background-color: var(--bg-input) !important;
+    color: var(--text-main) !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast) !important;
+  }
+
+  textarea.form-control {
+    height: auto !important;
+    min-height: 90px !important;
+    padding: 10px 14px !important;
+    resize: vertical !important;
+  }
+
+  input[type="date"].form-control {
+    display: flex !important;
+    align-items: center !important;
+  }
+  body.dark-mode input[type="date"].form-control {
+    color-scheme: dark;
+  }
+
+  body.dark-mode .form-control {
+    background-color: #1a1c22 !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.18) !important;
+    color: #ffffff !important;
+  }
+
+  body.dark-mode .form-control:focus {
+    border-color: #60a5fa !important;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25) !important;
+    background-color: #111318 !important;
+  }
+
+  body:not(.dark-mode) .form-control {
+    background-color: #f8fafc !important;
+    border: 1.5px solid #cbd5e1 !important;
+    color: #0f172a !important;
+  }
+
+  body:not(.dark-mode) .form-control:focus {
+    border-color: #2b579a !important;
+    box-shadow: 0 0 0 3px rgba(43, 87, 154, 0.15) !important;
+    background-color: #ffffff !important;
   }
 
   .options-group-horizontal {
@@ -3894,12 +4150,29 @@ body.dark-mode .btn-md3-success:hover {
     min-width: 800px !important;
   }
 
-  /* Sobreescribir el inline padding del fieldset en secciones colaborativas y arreglar bug de desbordamiento */
+  /* Sobreescribir el padding del fieldset en secciones colaborativas para alinear con el resto del formulario */
   .collaborative-section fieldset {
-    padding: 16px 12px !important;
+    padding: 0 !important;
+    margin: 0 !important;
     min-width: 0 !important;
     width: 100% !important;
     box-sizing: border-box !important;
+  }
+
+  /* En móvil, los wrappers de tablas transformadas a tarjetas no llevan borde exterior ni fondo para mantener el ancho exacto */
+  .table-wrapper.mobile-card-table-wrapper,
+  .table-wrapper:has(#tabla-ajustes-razonables),
+  .table-wrapper:has(#tabla-pmi-recomendaciones),
+  .table-wrapper:has(#tabla-terapias),
+  .table-wrapper:has(#tabla-actividades-hogar) {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 0 16px 0 !important;
+    overflow: visible !important;
+    width: 100% !important;
   }
 
   /* Footer de navegaciÃ³n (Wizard) en mobile */
@@ -4067,7 +4340,7 @@ body.dark-mode .btn-md3-success:hover {
     box-sizing: border-box !important;
   }
 
-  /* â”€â”€ Transformar tabla de Ajustes Razonables (6) en tarjetas apiladas â”€â”€ */
+  /* ── Transformar tabla de Ajustes Razonables (6) en tarjetas apiladas ── */
   #tabla-ajustes-razonables {
     display: block !important;
     width: 100% !important;
@@ -4096,15 +4369,20 @@ body.dark-mode .btn-md3-success:hover {
     flex-direction: column !important;
     background-color: var(--bg-input) !important;
     border: 1px solid var(--border-color) !important;
-    border-radius: var(--radius-lg) !important;
-    padding: 12px 10px !important;
-    gap: 10px !important;
+    border-radius: 20px !important;
+    padding: 0 !important;
+    gap: 0 !important;
     width: 100% !important;
     margin: 0 !important;
     box-sizing: border-box !important;
     position: relative;
-    box-shadow: var(--shadow-sm);
-    overflow: hidden !important;
+    box-shadow: var(--shadow-sm) !important;
+    overflow: visible !important;
+  }
+
+  body.dark-mode #tabla-ajustes-razonables tr {
+    border: 1px solid rgba(255, 255, 255, 0.22) !important;
+    background-color: var(--bg-card) !important;
   }
 
   #tabla-ajustes-razonables td {
@@ -4116,30 +4394,137 @@ body.dark-mode .btn-md3-success:hover {
   }
 
   #tabla-ajustes-razonables td::before {
-    content: attr(data-label);
-    display: block;
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    margin-bottom: 4px;
-    text-transform: uppercase;
+    content: none !important;
   }
 
-  /* El primer td (Ãrea / Docente) se destaca como cabecera */
+  /* El primer td (Área / Docente) = cabecera de la tarjeta */
   #tabla-ajustes-razonables td:first-child {
-    background-color: var(--primary-light) !important;
-    margin-left: -10px !important;
-    margin-right: -10px !important;
-    margin-top: -12px !important;
-    margin-bottom: 2px !important;
-    width: calc(100% + 20px) !important;
+    background: linear-gradient(135deg, var(--primary-light), rgba(var(--primary-rgb), 0.08)) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    border-radius: 20px 20px 0 0 !important;
+    padding: 14px 14px 12px !important;
+    width: 100% !important;
     box-sizing: border-box !important;
-    padding: 10px 12px !important;
   }
-  #tabla-ajustes-razonables td:first-child::before {
+
+  /* Inputs de área y docente en header */
+  #tabla-ajustes-razonables td:first-child .ajuste-area-input {
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    background-color: transparent !important;
+    border: none !important;
+    border-bottom: 1px solid rgba(var(--primary-rgb), 0.25) !important;
+    border-radius: 0 !important;
+    padding: 4px 0 !important;
+    width: 100% !important;
+    color: var(--text-main) !important;
+  }
+  #tabla-ajustes-razonables td:first-child .ajuste-area-input:focus {
+    border-bottom-color: var(--primary) !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+  }
+  #tabla-ajustes-razonables td:first-child .ajuste-docente-input {
+    font-size: 0.82rem !important;
+    background-color: transparent !important;
+    border: none !important;
+    padding: 3px 0 !important;
+    width: 100% !important;
+    color: var(--text-muted) !important;
+  }
+  #tabla-ajustes-razonables td:first-child .ajuste-docente-input:focus {
+    border-bottom: 1px solid var(--border-focus) !important;
+    box-shadow: none !important;
+    background-color: transparent !important;
+  }
+
+  /* Tabs de trimestre en móvil: chips horizontales scrollables */
+  #tabla-ajustes-razonables .trimestres-tabs-container {
+    margin-top: 12px !important;
+    gap: 8px !important;
+  }
+
+  #tabla-ajustes-razonables .trimestres-tabs {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding-bottom: 4px !important;
+  }
+
+  #tabla-ajustes-razonables .trimestre-tab-btn {
+    flex-shrink: 0 !important;
+    border-radius: 20px !important;
+    border: 1.5px solid var(--border-color) !important;
+    background-color: transparent !important;
+    padding: 6px 14px !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    color: var(--text-muted) !important;
+    white-space: nowrap !important;
+    line-height: 1.4 !important;
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+
+  #tabla-ajustes-razonables .trimestre-tab-btn.active {
+    background-color: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+  }
+
+  #tabla-ajustes-razonables .trimestre-tab-label {
+    max-width: none !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: nowrap !important;
+  }
+
+  #tabla-ajustes-razonables .btn-add-trimestre {
+    border-radius: 20px !important;
+    padding: 6px 14px !important;
+    font-size: 0.8rem !important;
+    width: 100% !important;
+    align-self: stretch !important;
+  }
+
+  /* Celda de contenido (colSpan=4): ocupa todo el ancho */
+  #tabla-ajustes-razonables .trimestres-content-cell {
+    width: 100% !important;
+    display: block !important;
+  }
+
+  /* Campos del trimestre activo: columna vertical */
+  #tabla-ajustes-razonables .ajustes-trimestre-fields {
+    display: none !important;
+    flex-direction: column !important;
+    gap: 14px !important;
+    padding: 14px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  #tabla-ajustes-razonables .ajustes-trimestre-fields.active {
+    display: flex !important;
+  }
+
+  /* Cada campo ocupa 100% en columna */
+  #tabla-ajustes-razonables .ajustes-field-group {
+    width: 100% !important;
+    flex: none !important;
+    margin-top: 0 !important;
+  }
+
+  /* Las etiquetas de campo son visibles y claras */
+  #tabla-ajustes-razonables .ajustes-field-label {
+    font-size: 0.72rem !important;
+    font-weight: 700 !important;
     color: var(--primary) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    margin-bottom: 4px !important;
+    white-space: normal !important;
   }
-  
+
   #tabla-ajustes-razonables .table-input,
   #tabla-ajustes-razonables input[type="text"],
   #tabla-ajustes-razonables select {
@@ -4158,24 +4543,27 @@ body.dark-mode .btn-md3-success:hover {
   #tabla-ajustes-razonables textarea {
     background-color: var(--bg-card) !important;
     border: 1px solid var(--border-color) !important;
-    padding: 9px 10px !important;
+    padding: 10px 12px !important;
     border-radius: var(--radius-sm) !important;
-    min-height: 80px !important;
+    min-height: 90px !important;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
     display: block !important;
     font-size: 0.9rem !important;
+    resize: vertical !important;
+    line-height: 1.5 !important;
   }
 
-  /* La celda de acciÃ³n de borrar */
+  /* La celda de acción de borrar */
   #tabla-ajustes-razonables .action-cell {
     border-top: 1px solid var(--border-color) !important;
-    padding-top: 12px !important;
+    padding: 10px 14px !important;
     text-align: right !important;
     display: flex !important;
     justify-content: flex-end !important;
     width: 100% !important;
+    box-sizing: border-box !important;
   }
 
 
@@ -4626,6 +5014,20 @@ body.dark-mode .signature-modal-content {
     width: 100% !important;
     box-sizing: border-box !important;
     margin: 0 !important;
+    padding: 12px 10px !important;
+    border-radius: 16px !important;
+    background-color: var(--bg-card) !important;
+    border: 1.5px solid var(--border-color) !important;
+  }
+
+  body.dark-mode .signature-input-card {
+    background-color: var(--bg-card) !important;
+    border: 1.5px solid rgba(255, 255, 255, 0.2) !important;
+  }
+
+  .signature-input-card .form-control {
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 }
 

@@ -149,7 +149,7 @@ export default function Anexo2Form({ showToast, switchTab }) {
                 onChange={e => handleGeneralChange('jornada', e.target.value)}
               />
             </div>
-            <div className="form-group" style={{ gridColumn: 'span 2' }}>
+            <div className="form-group col-span-2">
               <label htmlFor="anexo2-general-docentesElaboran">Docentes que elaboran</label>
               <input
                 type="text"

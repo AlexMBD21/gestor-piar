@@ -43,7 +43,7 @@ export default function PmiTable({ list, studentData, onUpdate }) {
         Recomendaciones dirigidas a los distintos actores de la comunidad educativa para la eliminación de barreras y la creación de procesos para la participación, el aprendizaje y el progreso.
       </p>
 
-      <div className="table-wrapper">
+      <div className="table-wrapper mobile-card-table-wrapper">
         <table className="custom-table" id="tabla-pmi-recomendaciones">
           <thead>
             <tr>
