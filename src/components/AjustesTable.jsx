@@ -56,7 +56,21 @@ export default function AjustesTable({ list, studentData, onUpdate }) {
         }
       ]
     };
-    const updated = [...ajustes, newAjuste];
+
+    // Insertar antes de las categorías de "Otras" para mantener el orden correcto
+    const firstOtrasIndex = ajustes.findIndex(item => item.area && item.area.toLowerCase().includes('otras'));
+
+    let updated;
+    if (firstOtrasIndex !== -1) {
+      updated = [
+        ...ajustes.slice(0, firstOtrasIndex),
+        newAjuste,
+        ...ajustes.slice(firstOtrasIndex)
+      ];
+    } else {
+      updated = [...ajustes, newAjuste];
+    }
+
     handleUpdate(updated);
   };
 
@@ -166,7 +180,10 @@ export default function AjustesTable({ list, studentData, onUpdate }) {
                 </td>
               </tr>
             ) : (
-              ajustes.map(item => {
+              [
+                ...ajustes.filter(item => !(item.area && item.area.toLowerCase().includes('otras'))),
+                ...ajustes.filter(item => item.area && item.area.toLowerCase().includes('otras'))
+              ].map(item => {
                 const activeTab = activeTabs[item.id] || 0;
 
                 return (
