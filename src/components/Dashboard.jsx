@@ -341,8 +341,8 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
             <ul className="dashboard-guide-list">
               <li>Haz clic en <strong>"Nuevo"</strong> para crear el registro en blanco de un estudiante.</li>
               <li>Usa las pestañas laterales para diligenciar los 3 Anexos requeridos.</li>
-              <li>Los datos se <strong>auto-guardan</strong> automáticamente en la nube.</li>
-              <li>Haz clic en <strong>"Imprimir / PDF"</strong> para generar el documento oficial.</li>
+              <li>Los datos se guardan en la nube al hacer clic en el botón <strong>"Guardar Aportación"</strong>.</li>
+              <li>El documento oficial se puede descargar en dos formatos: <strong>Word</strong> y <strong>PDF</strong>.</li>
             </ul>
           </div>
         </div>
