@@ -53,12 +53,14 @@ describe('PiarContext Concurrency & Logic', () => {
     // Setup mock supabase return for loadPiars
     const queryResult = { data: [{ id: 'piar-1', data: {}, owner_id: 'user-123' }], error: null };
     const mockOrder = vi.fn().mockResolvedValue(queryResult);
-    const mockSelect = vi.fn().mockReturnValue({ order: mockOrder });
+    const mockSingle = vi.fn().mockResolvedValue({ data: { anexo1: {}, anexo2: {}, anexo3: {} } });
+    const mockEq = vi.fn().mockReturnValue({ single: mockSingle });
+    const mockSelect = vi.fn().mockReturnValue({ order: mockOrder, eq: mockEq });
     
     const mockFrom = vi.fn((table) => {
       if (table === 'piars') return { select: mockSelect, update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({}) }) };
       if (table === 'profiles') return { select: vi.fn().mockResolvedValue({ data: [] }) };
-      if (table === 'piar_edit_logs') return { select: vi.fn().mockReturnValue({ in: vi.fn().mockReturnValue({ order: vi.fn().mockResolvedValue({ data: [] }) }) }) };
+      if (table === 'piar_edit_logs') return { select: vi.fn().mockReturnValue({ in: vi.fn().mockReturnValue({ order: vi.fn().mockResolvedValue({ data: [] }) }) }), insert: vi.fn().mockReturnValue({ select: vi.fn().mockReturnValue({ single: vi.fn().mockResolvedValue({ data: null }) }) }) };
       return {};
     });
     

@@ -15,8 +15,10 @@ export function PiarProvider({ children }) {
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const savedPiarsDataRef = useRef({});
 
+  const userId = user?.id;
+
   const loadPiars = useCallback(async () => {
-    if (!user) { setPiars([]); setEditLogs({}); return; }
+    if (!userId) { setPiars([]); setEditLogs({}); return; }
     setLoading(true);
     // Todos los profesores ven todos los PIARs (RLS en Supabase controla el acceso)
     let { data: piarsData, error } = await supabase
@@ -59,7 +61,28 @@ export function PiarProvider({ children }) {
       });
       savedPiarsDataRef.current = savedMap;
 
-      setPiars(mappedPiars);
+      setPiars(prev => {
+        const currentActiveId = activeStudentIdRef.current;
+        const currentUnsaved = unsavedChangesRef.current;
+
+        if (currentUnsaved && currentActiveId) {
+          const localActivePiar = prev.find(p => p.id === currentActiveId);
+          if (localActivePiar) {
+            return mappedPiars.map(p => {
+              if (p.id === currentActiveId) {
+                return {
+                  ...p,
+                  data: localActivePiar.data,
+                  nombre: localActivePiar.nombre,
+                  grado: localActivePiar.grado
+                };
+              }
+              return p;
+            });
+          }
+        }
+        return mappedPiars;
+      });
 
       // Load edit logs for all fetched PIARs (including editor_id)
       const piarIds = mappedPiars.map(p => p.id);
@@ -85,7 +108,7 @@ export function PiarProvider({ children }) {
       }
     }
     setLoading(false);
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => {
     loadPiars();
@@ -132,7 +155,7 @@ export function PiarProvider({ children }) {
 
   // Real-time collaborative sync
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
     const channel = supabase
       .channel('piars_realtime_collab')
@@ -168,7 +191,7 @@ export function PiarProvider({ children }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [userId]);
 
   const getActiveStudent = () => piars.find(p => p.id === activeStudentId) ?? null;
 
@@ -201,8 +224,9 @@ export function PiarProvider({ children }) {
 
   const discardActiveStudentChanges = async () => {
     setLoading(true);
-    await loadPiars();
     setUnsavedChanges(false);
+    unsavedChangesRef.current = false;
+    await loadPiars();
     setLoading(false);
   };
 

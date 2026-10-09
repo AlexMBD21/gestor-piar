@@ -21,7 +21,8 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+      const currentUser = session?.user ?? null;
+      setUser(prevUser => (prevUser && currentUser && prevUser.id === currentUser.id ? prevUser : currentUser));
       if (session?.user) fetchProfile(session.user.id);
       else setLoading(false);
     });
@@ -29,7 +30,7 @@ export function AuthProvider({ children }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       const currentUser = session?.user ?? null;
-      setUser(currentUser);
+      setUser(prevUser => (prevUser && currentUser && prevUser.id === currentUser.id ? prevUser : currentUser));
       if (currentUser) {
         await fetchProfile(currentUser.id);
       } else {

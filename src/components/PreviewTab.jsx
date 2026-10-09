@@ -1123,23 +1123,60 @@ export default function PreviewTab({ showToast, switchTab }) {
                     <td colSpan="5" style={{ textAlign: 'center', color: '#94a3b8', fontStyle: 'italic', padding: 10 }}>Sin ajustes razonables registrados.</td>
                   </tr>
                 ) : (
-                  normAjustes.map(a => (
-                    <React.Fragment key={a.id}>
-                      {(a.trimestres && a.trimestres.length > 0 ? a.trimestres : [a]).map((t, index) => (
-                        <tr key={t.id || `${a.id}-${index}`}>
-                          <td style={{ verticalAlign: 'top' }}>
-                            {index === 0 && <strong style={{ display: 'block' }}>{a.area}</strong>}
-                            {t.trimestre && <span style={{ fontWeight: 'normal', fontSize: '7.5pt', color: '#475569', display: 'block', marginTop: index === 0 ? 4 : 0 }}>{t.trimestre}</span>}
-                            {index === 0 && <span style={{ fontWeight: 'normal', fontSize: '7.5pt', color: '#0f172a', display: 'block', marginTop: 2 }}>Docente: {a.docente || '—'}</span>}
+                  normAjustes.map(a => {
+                    const validTrimestres = (a.trimestres && a.trimestres.length > 0 ? a.trimestres : [a]).filter(t => Boolean(t.trimestre));
+                    
+                    if (validTrimestres.length === 0) {
+                      return (
+                        <tr key={a.id}>
+                          <td style={{ verticalAlign: 'middle', textAlign: 'center', fontWeight: 'bold' }}>
+                            <strong style={{ display: 'block', fontSize: '9pt', textTransform: 'uppercase' }}>{a.area}</strong>
+                            {a.docente && <span style={{ fontWeight: 'normal', fontSize: '7.5pt', color: '#475569', display: 'block', marginTop: 2 }}>Docente: {a.docente}</span>}
                           </td>
-                          <td>{v(t.objetivos)}</td>
-                          <td>{v(t.barreras || t.bareras)}</td>
-                          <td>{v(t.ajustes)}</td>
-                          <td>{v(t.evaluacion)}</td>
+                          <td>—</td>
+                          <td>—</td>
+                          <td>—</td>
+                          <td>—</td>
                         </tr>
-                      ))}
-                    </React.Fragment>
-                  ))
+                      );
+                    }
+
+                    return (
+                      <React.Fragment key={a.id}>
+                        {validTrimestres.map((t, index) => (
+                          <React.Fragment key={t.id || `${a.id}-${index}`}>
+                            {/* Celda divisora de Trimestre/Periodo que abarca todas las columnas */}
+                            <tr className="trimestre-divider-row">
+                              <td
+                                colSpan="5"
+                                style={{
+                                  textAlign: 'center',
+                                  fontWeight: 'bold',
+                                  fontSize: '9pt',
+                                  backgroundColor: '#ffffff',
+                                  padding: '6px 8px',
+                                  border: '1px solid #000'
+                                }}
+                              >
+                                {t.trimestre}
+                              </td>
+                            </tr>
+                            {/* Fila de contenido del Área para este Trimestre */}
+                            <tr>
+                              <td style={{ verticalAlign: 'middle', textAlign: 'center', fontWeight: 'bold', width: '12%', border: '1px solid #000', padding: '6px' }}>
+                                <strong style={{ display: 'block', fontSize: '9pt', textTransform: 'uppercase' }}>{a.area}</strong>
+                                {a.docente && <span style={{ fontWeight: 'normal', fontSize: '7.5pt', color: '#334155', display: 'block', marginTop: '4px' }}>Docente: {a.docente}</span>}
+                              </td>
+                              <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>{v(t.objetivos)}</td>
+                              <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>{v(t.barreras || t.bareras)}</td>
+                              <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>{v(t.ajustes)}</td>
+                              <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>{v(t.evaluacion)}</td>
+                            </tr>
+                          </React.Fragment>
+                        ))}
+                      </React.Fragment>
+                    );
+                  })
                 )}
 
                 {/* Otras categories rows */}

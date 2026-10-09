@@ -1505,6 +1505,33 @@ select option {
   border-style: solid;
   color: #fff;
 }
+.btn-add-trimestre:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.trimestre-unassigned-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #fffbebf5;
+  border: 1px solid #fde68a;
+  color: #b45309;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-top: 4px;
+  margin-bottom: 8px;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+body.dark-mode .trimestre-unassigned-banner {
+  background-color: rgba(217, 119, 6, 0.15);
+  border-color: rgba(217, 119, 6, 0.35);
+  color: #fcd34d;
+}
 
 /* ── Dark mode overrides para la sección de trimestres ── */
 body.dark-mode .trimestre-tab-btn,

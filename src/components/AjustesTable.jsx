@@ -3,31 +3,52 @@ import { createPortal } from 'react-dom';
 import CollaborativeSection from './CollaborativeSection';
 import CustomSelect from './CustomSelect';
 
+const TRIMESTRE_OPTIONS = [
+  { value: 'Primer Cuatrimestre', label: '1er Trimestre' },
+  { value: 'Segundo Cuatrimestre', label: '2do Trimestre' },
+  { value: 'Tercer Cuatrimestre', label: '3er Trimestre' },
+  { value: 'Transversal', label: 'Transversal' }
+];
+
+export function normalizeTrimestre(val) {
+  if (!val) return '';
+  const s = String(val).trim().toLowerCase();
+  if (s.includes('primer') || s.includes('1er') || s.includes('1°')) return 'Primer Cuatrimestre';
+  if (s.includes('segundo') || s.includes('2do') || s.includes('2°')) return 'Segundo Cuatrimestre';
+  if (s.includes('tercer') || s.includes('3er') || s.includes('3°')) return 'Tercer Cuatrimestre';
+  if (s.includes('transversal')) return 'Transversal';
+  return val;
+}
+
 export default function AjustesTable({ list, studentData, onUpdate }) {
   const rawAjustes = list || studentData?.anexo2?.ajustesRazonables || [];
 
-  // Migración al vuelo para compatibilidad con la estructura anterior
+  // Migración y normalización al vuelo para compatibilidad con la estructura anterior y datos de BD
   const ajustes = rawAjustes.map(item => {
-    if (item.trimestres) return item;
+    const rawTrimestres = item.trimestres || [
+      {
+        id: item.id + '-t1',
+        trimestre: item.trimestre || '',
+        objetivos: item.objetivos || '',
+        barreras: item.barreras || item.bareras || '',
+        ajustes: item.ajustes || '',
+        evaluacion: item.evaluacion || ''
+      }
+    ];
+
     return {
-      id: item.id,
-      area: item.area,
-      docente: item.docente,
-      trimestres: [
-        {
-          id: item.id + '-t1',
-          trimestre: item.trimestre || 'Primer Cuatrimestre',
-          objetivos: item.objetivos || '',
-          barreras: item.barreras || item.bareras || '',
-          ajustes: item.ajustes || '',
-          evaluacion: item.evaluacion || ''
-        }
-      ]
+      ...item,
+      trimestres: rawTrimestres.map(t => ({
+        ...t,
+        trimestre: normalizeTrimestre(t.trimestre)
+      }))
     };
   });
 
   const [deleteModalAjuste, setDeleteModalAjuste] = useState(null);
   const [isClosingDeleteModal, setIsClosingDeleteModal] = useState(false);
+  const [deleteModalTrimestre, setDeleteModalTrimestre] = useState(null); // { areaId, trimestreId, label }
+  const [isClosingDeleteTrimestreModal, setIsClosingDeleteTrimestreModal] = useState(false);
   const [activeTabs, setActiveTabs] = useState({}); // { [areaId]: tabIndex }
 
   const handleUpdate = (updated) => {
@@ -93,6 +114,34 @@ export default function AjustesTable({ list, studentData, onUpdate }) {
       return item;
     });
     handleUpdate(updated);
+  };
+
+  const handleRequestRemoveTrimestre = (areaId, trimestre, trimestreId) => {
+    const label = trimestre
+      ? trimestre
+          .replace('Primer Cuatrimestre', '1er Trimestre')
+          .replace('Segundo Cuatrimestre', '2do Trimestre')
+          .replace('Tercer Cuatrimestre', '3er Trimestre')
+          .replace('Primer ', '1er ')
+          .replace('Segundo ', '2do ')
+          .replace('Tercer ', '3er ')
+      : 'este trimestre';
+    setDeleteModalTrimestre({ areaId, trimestreId, label });
+  };
+
+  const handleCloseDeleteTrimestreModal = () => {
+    setIsClosingDeleteTrimestreModal(true);
+    setTimeout(() => {
+      setDeleteModalTrimestre(null);
+      setIsClosingDeleteTrimestreModal(false);
+    }, 300);
+  };
+
+  const handleConfirmDeleteTrimestre = () => {
+    if (deleteModalTrimestre) {
+      handleRemoveTrimestre(deleteModalTrimestre.areaId, deleteModalTrimestre.trimestreId);
+      handleCloseDeleteTrimestreModal();
+    }
   };
 
   const handleRemoveTrimestre = (areaId, trimestreId) => {
@@ -185,6 +234,7 @@ export default function AjustesTable({ list, studentData, onUpdate }) {
                 ...ajustes.filter(item => item.area && item.area.toLowerCase().includes('otras'))
               ].map(item => {
                 const activeTab = activeTabs[item.id] || 0;
+                const canAddMoreTrimestre = item.trimestres.length < TRIMESTRE_OPTIONS.length;
 
                 return (
                   <tr key={item.id} className="ajustes-area-row">
@@ -219,13 +269,19 @@ export default function AjustesTable({ list, studentData, onUpdate }) {
                             >
                               <span className="trimestre-tab-label">
                                 {t.trimestre
-                                  ? t.trimestre.replace('Primer ', '1er ').replace('Segundo ', '2do ').replace('Tercer ', '3er ')
-                                  : 'Nuevo'}
+                                  ? t.trimestre
+                                      .replace('Primer Cuatrimestre', '1er Trimestre')
+                                      .replace('Segundo Cuatrimestre', '2do Trimestre')
+                                      .replace('Tercer Cuatrimestre', '3er Trimestre')
+                                      .replace('Primer ', '1er ')
+                                      .replace('Segundo ', '2do ')
+                                      .replace('Tercer ', '3er ')
+                                  : 'Sin Asignar'}
                               </span>
                               {item.trimestres.length > 1 && (
                                 <span
                                   className="material-symbols-outlined trimestre-tab-remove"
-                                  onClick={(e) => { e.stopPropagation(); handleRemoveTrimestre(item.id, t.id); }}
+                                  onClick={(e) => { e.stopPropagation(); handleRequestRemoveTrimestre(item.id, t.trimestre, t.id); }}
                                   title="Eliminar trimestre"
                                 >
                                   close
@@ -238,6 +294,8 @@ export default function AjustesTable({ list, studentData, onUpdate }) {
                           type="button"
                           className="btn-add-trimestre no-print"
                           onClick={() => handleAddTrimestre(item.id)}
+                          disabled={!canAddMoreTrimestre}
+                          title={canAddMoreTrimestre ? "Agregar trimestre" : "Todos los periodos han sido asignados para esta área"}
                         >
                           <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>add</span>
                           Trimestre
@@ -250,83 +308,103 @@ export default function AjustesTable({ list, studentData, onUpdate }) {
 
                       {/* Vista de Pantalla: Solo muestra el trimestre activo */}
                       <div className="trimestre-screen-view no-print">
-                        {item.trimestres.map((t, index) => (
-                          <div key={t.id} className={`ajustes-trimestre-fields ${activeTab === index ? 'active' : ''}`}>
-                            <div className="ajustes-field-group ajustes-field-objetivos">
-                              <label className="ajustes-field-label">Periodo y Objetivos / Propósitos (Grado - DBA)</label>
-                              <CustomSelect
-                                value={t.trimestre || ''}
-                                onChange={val => handleChangeTrimestre(item.id, t.id, 'trimestre', val)}
-                                placeholder="Seleccionar Trimestre..."
-                                style={{ marginBottom: 6 }}
-                                options={[
-                                  { value: 'Primer Cuatrimestre', label: '1er Trimestre/Cuat.' },
-                                  { value: 'Segundo Cuatrimestre', label: '2do Trimestre/Cuat.' },
-                                  { value: 'Tercer Cuatrimestre', label: '3er Trimestre/Cuat.' },
-                                  { value: 'Transversal', label: 'Transversal' }
-                                ]}
-                              />
-                              <textarea
-                                className="table-textarea"
-                                value={t.objetivos || ''}
-                                onChange={e => handleChangeTrimestre(item.id, t.id, 'objetivos', e.target.value)}
-                                placeholder="Objetivos del grado..."
-                                rows={4}
-                              />
+                        {item.trimestres.map((t, index) => {
+                          const usedValuesByOthers = item.trimestres
+                            .filter(other => other.id !== t.id)
+                            .map(other => other.trimestre)
+                            .filter(Boolean);
+
+                          const availableOptions = TRIMESTRE_OPTIONS.filter(
+                            opt => opt.value === t.trimestre || !usedValuesByOthers.includes(opt.value)
+                          );
+
+                          const isTrimestreAssigned = Boolean(t.trimestre);
+
+                          return (
+                            <div key={t.id} className={`ajustes-trimestre-fields ${activeTab === index ? 'active' : ''}`}>
+                              <div className="ajustes-field-group ajustes-field-objetivos">
+                                <label className="ajustes-field-label">Periodo y Objetivos / Propósitos (Grado - DBA)</label>
+                                <CustomSelect
+                                  value={t.trimestre || ''}
+                                  onChange={val => handleChangeTrimestre(item.id, t.id, 'trimestre', val)}
+                                  placeholder="Seleccionar Trimestre..."
+                                  style={{ marginBottom: 6 }}
+                                  options={availableOptions}
+                                />
+                                {!isTrimestreAssigned && (
+                                  <div className="trimestre-unassigned-banner">
+                                    <span className="material-symbols-outlined" style={{ fontSize: '18px', color: '#d97706' }}>info</span>
+                                    <span>Seleccione el periodo/trimestre arriba para habilitar la edición de esta sección.</span>
+                                  </div>
+                                )}
+                                <textarea
+                                  className="table-textarea"
+                                  value={t.objetivos || ''}
+                                  onChange={e => handleChangeTrimestre(item.id, t.id, 'objetivos', e.target.value)}
+                                  placeholder={isTrimestreAssigned ? "Objetivos del grado..." : "Seleccione un periodo arriba..."}
+                                  rows={4}
+                                  disabled={!isTrimestreAssigned}
+                                />
+                              </div>
+                              <div className="ajustes-field-group ajustes-field-barreras">
+                                <label className="ajustes-field-label">Barreras Evidenciadas</label>
+                                <textarea
+                                  className="table-textarea"
+                                  value={t.barreras || ''}
+                                  onChange={e => handleChangeTrimestre(item.id, t.id, 'barreras', e.target.value)}
+                                  placeholder={isTrimestreAssigned ? "Barreras del entorno..." : "Seleccione un periodo arriba..."}
+                                  rows={4}
+                                  disabled={!isTrimestreAssigned}
+                                />
+                              </div>
+                              <div className="ajustes-field-group ajustes-field-estrategias">
+                                <label className="ajustes-field-label">Ajustes Razonables (Apoyos/Estrategias)</label>
+                                <textarea
+                                  className="table-textarea"
+                                  value={t.ajustes || ''}
+                                  onChange={e => handleChangeTrimestre(item.id, t.id, 'ajustes', e.target.value)}
+                                  placeholder={isTrimestreAssigned ? "Estrategias/Apoyos..." : "Seleccione un periodo arriba..."}
+                                  rows={4}
+                                  disabled={!isTrimestreAssigned}
+                                />
+                              </div>
+                              <div className="ajustes-field-group ajustes-field-evaluacion">
+                                <label className="ajustes-field-label">Evaluación de los Ajustes</label>
+                                <textarea
+                                  className="table-textarea"
+                                  value={t.evaluacion || ''}
+                                  onChange={e => handleChangeTrimestre(item.id, t.id, 'evaluacion', e.target.value)}
+                                  placeholder={isTrimestreAssigned ? "Observaciones..." : "Seleccione un periodo arriba..."}
+                                  rows={4}
+                                  disabled={!isTrimestreAssigned}
+                                />
+                              </div>
                             </div>
-                            <div className="ajustes-field-group ajustes-field-barreras">
-                              <label className="ajustes-field-label">Barreras Evidenciadas</label>
-                              <textarea
-                                className="table-textarea"
-                                value={t.barreras || ''}
-                                onChange={e => handleChangeTrimestre(item.id, t.id, 'barreras', e.target.value)}
-                                placeholder="Barreras del entorno..."
-                                rows={4}
-                              />
-                            </div>
-                            <div className="ajustes-field-group ajustes-field-estrategias">
-                              <label className="ajustes-field-label">Ajustes Razonables (Apoyos/Estrategias)</label>
-                              <textarea
-                                className="table-textarea"
-                                value={t.ajustes || ''}
-                                onChange={e => handleChangeTrimestre(item.id, t.id, 'ajustes', e.target.value)}
-                                placeholder="Estrategias/Apoyos..."
-                                rows={4}
-                              />
-                            </div>
-                            <div className="ajustes-field-group ajustes-field-evaluacion">
-                              <label className="ajustes-field-label">Evaluación de los Ajustes</label>
-                              <textarea
-                                className="table-textarea"
-                                value={t.evaluacion || ''}
-                                onChange={e => handleChangeTrimestre(item.id, t.id, 'evaluacion', e.target.value)}
-                                placeholder="Observaciones..."
-                                rows={4}
-                              />
-                            </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
 
-                      {/* Vista de Impresión: Muestra TODOS los trimestres uno debajo del otro */}
+                      {/* Vista de Impresión: Muestra TODOS los trimestres uno debajo del otro que tengan periodo asignado */}
                       <div className="trimestre-print-view print-only">
-                        {item.trimestres.map((t, index) => (
-                          <div key={t.id} className="print-trimestre-block" style={{ display: 'flex', width: '100%', borderBottom: index < item.trimestres.length - 1 ? '1px dashed #ccc' : 'none' }}>
-                            <div style={{ flex: '1 1 30%', padding: '6px', borderRight: '1px solid var(--border-color)' }}>
-                              <strong style={{ fontSize: '0.75rem', display: 'block', marginBottom: '4px' }}>{t.trimestre}</strong>
-                              <div style={{ fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>{t.objetivos}</div>
+                        {item.trimestres
+                          .filter(t => Boolean(t.trimestre))
+                          .map((t, index, array) => (
+                            <div key={t.id} className="print-trimestre-block" style={{ display: 'flex', width: '100%', borderBottom: index < array.length - 1 ? '1px dashed #ccc' : 'none' }}>
+                              <div style={{ flex: '1 1 30%', padding: '6px', borderRight: '1px solid var(--border-color)' }}>
+                                <strong style={{ fontSize: '0.75rem', display: 'block', marginBottom: '4px' }}>{t.trimestre}</strong>
+                                <div style={{ fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>{t.objetivos}</div>
+                              </div>
+                              <div style={{ flex: '1 1 30%', padding: '6px', borderRight: '1px solid var(--border-color)' }}>
+                                <div style={{ fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>{t.barreras}</div>
+                              </div>
+                              <div style={{ flex: '1 1 25%', padding: '6px', borderRight: '1px solid var(--border-color)' }}>
+                                <div style={{ fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>{t.ajustes}</div>
+                              </div>
+                              <div style={{ flex: '1 1 15%', padding: '6px' }}>
+                                <div style={{ fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>{t.evaluacion}</div>
+                              </div>
                             </div>
-                            <div style={{ flex: '1 1 30%', padding: '6px', borderRight: '1px solid var(--border-color)' }}>
-                              <div style={{ fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>{t.barreras}</div>
-                            </div>
-                            <div style={{ flex: '1 1 25%', padding: '6px', borderRight: '1px solid var(--border-color)' }}>
-                              <div style={{ fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>{t.ajustes}</div>
-                            </div>
-                            <div style={{ flex: '1 1 15%', padding: '6px' }}>
-                              <div style={{ fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>{t.evaluacion}</div>
-                            </div>
-                          </div>
-                        ))}
+                          ))}
                       </div>
 
                     </td>
@@ -374,6 +452,46 @@ export default function AjustesTable({ list, studentData, onUpdate }) {
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
                 Eliminar Permanentemente
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Modal de Confirmación para Eliminar Trimestre */}
+      {deleteModalTrimestre && createPortal(
+        <div id="modal-delete-trimestre" className={`modal-overlay active ${isClosingDeleteTrimestreModal ? 'closing' : ''}`} onClick={(e) => e.target.id === 'modal-delete-trimestre' && handleCloseDeleteTrimestreModal()}>
+          <div className="modal-container" style={{ maxWidth: '420px', width: '100%' }}>
+            <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: '8px' }}>
+              <h3 className="modal-title" style={{ fontSize: '1.2rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="material-symbols-outlined" style={{ color: 'var(--danger)', fontSize: '24px' }}>delete_forever</span>
+                ¿Eliminar trimestre?
+              </h3>
+              <button type="button" className="modal-close" onClick={handleCloseDeleteTrimestreModal} aria-label="Cerrar modal">
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
+              </button>
+            </div>
+            <div className="modal-body" style={{ padding: '0 24px 20px 24px', fontSize: '0.95rem', color: 'var(--text-main)', lineHeight: '1.5' }}>
+              ¿Estás seguro de que deseas eliminar <strong>{deleteModalTrimestre.label}</strong>? Se perderá la información ingresada en este periodo. Esta acción no se puede deshacer.
+            </div>
+            <div className="modal-footer" style={{ borderTop: 'none', paddingTop: '0', display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={handleCloseDeleteTrimestreModal}
+                style={{ flex: 1, padding: '10px 16px' }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={handleConfirmDeleteTrimestre}
+                style={{ flex: 1, padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
+                Eliminar Trimestre
               </button>
             </div>
           </div>
