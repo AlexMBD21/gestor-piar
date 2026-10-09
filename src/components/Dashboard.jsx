@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { usePiar } from '../context/PiarContext';
 import { useAuth } from '../context/AuthContext';
+import GuideCard from './GuideCard';
 
 export default function Dashboard({ switchTab, showToast, onNewStudent }) {
   const { piars, activeStudentId, setActiveStudentId, deletePiar, importPiar, loading, createPiar, editLogs } = usePiar();
@@ -333,18 +334,7 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
         <div className="dashboard-col-right">
 
 
-          <div className="md3-card">
-            <h4 className="md3-card-title-small text-primary mb-3">Guía de Uso Rápido</h4>
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: '1.5' }}>
-              Seleccione un estudiante de la lista para gestionar su Plan Individual de Ajustes Razonables (PIAR).
-            </p>
-            <ul className="dashboard-guide-list">
-              <li>Haz clic en <strong>"Nuevo"</strong> para crear el registro en blanco de un estudiante.</li>
-              <li>Usa las pestañas laterales para diligenciar los 3 Anexos requeridos.</li>
-              <li>Los datos se guardan en la nube al hacer clic en el botón <strong>"Guardar Aportación"</strong>.</li>
-              <li>El documento oficial se puede descargar en dos formatos: <strong>Word</strong> y <strong>PDF</strong>.</li>
-            </ul>
-          </div>
+          <GuideCard />
         </div>
 
       </div>
