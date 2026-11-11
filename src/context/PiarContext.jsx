@@ -7,7 +7,7 @@ import { validatePiarData } from '../utils/schemaValidation';
 const PiarContext = createContext(null);
 
 export function PiarProvider({ children }) {
-  const { user, profile, isSuperAdmin } = useAuth();
+  const { user, profile } = useAuth();
   const [piars, setPiars] = useState([]);
   const [editLogs, setEditLogs] = useState({}); // { [piarId]: [ { id, edited_at } ] }
   const [activeStudentId, setActiveStudentId] = useState(null);
@@ -475,5 +475,6 @@ export function PiarProvider({ children }) {
   );
 }
 
+// oxlint-disable-next-line react/only-export-components
 export const usePiar = () => useContext(PiarContext);
 

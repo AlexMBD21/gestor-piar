@@ -1,11 +1,19 @@
 import { usePiar } from '../context/PiarContext';
 import { PLantillasPIAR } from '../lib/piarTemplates';
 import ActividadesTable from './ActividadesTable';
-import CollaborativeSection from './CollaborativeSection';
 import SignaturePad from './SignaturePad';
+import AnexoQuickNav from './AnexoQuickNav';
 
-export default function Anexo3Form({ showToast, switchTab }) {
-  const { getActiveStudent, savePiar, updateLocalPiarData, saveActivePiar, unsavedChanges } = usePiar();
+const ANEXO3_SECTIONS = [
+  { id: 'anexo3-sec-general', icon: 'history_edu', label: '1. Datos del Acta' },
+  { id: 'anexo3-sec-familia', icon: 'family_restroom', label: '2. Familiares / Acudientes' },
+  { id: 'anexo3-sec-compromisos', icon: 'handshake', label: '3. Compromisos de Aula' },
+  { id: 'anexo3-sec-actividades', icon: 'home_work', label: '4. Actividades en el Hogar' },
+  { id: 'anexo3-sec-firmas', icon: 'draw', label: '5. Firmas del Acuerdo' }
+];
+
+export default function Anexo3Form({ switchTab }) {
+  const { getActiveStudent, updateLocalPiarData } = usePiar();
   const activeStudent = getActiveStudent();
   const isBlankTemplate = !activeStudent;
 
@@ -60,6 +68,8 @@ export default function Anexo3Form({ showToast, switchTab }) {
 
   return (
     <>
+      <AnexoQuickNav sections={ANEXO3_SECTIONS} ariaLabel="Secciones del Anexo 3" />
+
       <div className="card print-page">
         <div className="card-title-container">
           <h3 className="card-title">
@@ -99,178 +109,216 @@ export default function Anexo3Form({ showToast, switchTab }) {
         </div>
 
         <h5 className="section-subtitle">Datos del Estudiante</h5>
-        <div className="form-grid-3" style={{ backgroundColor: 'var(--bg-input)', padding: 16, borderRadius: 'var(--radius-md)', marginBottom: 24 }}>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Estudiante</label>
-            <div style={{ fontWeight: 600 }}>{isBlankTemplate ? '' : displayStudent.nombre}</div>
+        <div className="form-grid-3 student-summary-grid">
+          <div className="student-summary-item">
+            <div className="student-summary-icon">
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>person</span>
+            </div>
+            <div className="student-summary-content">
+              <span className="student-summary-label">Estudiante</span>
+              <div className={`student-summary-value ${!isBlankTemplate && displayStudent.nombre ? '' : 'student-summary-empty'}`}>
+                {!isBlankTemplate && displayStudent.nombre ? displayStudent.nombre : 'Sin seleccionar'}
+              </div>
+            </div>
           </div>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Identificación</label>
-            <div style={{ fontWeight: 600 }}>{isBlankTemplate ? '' : data.anexo1?.estudiante?.numeroIdentificacion}</div>
+
+          <div className="student-summary-item">
+            <div className="student-summary-icon">
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>badge</span>
+            </div>
+            <div className="student-summary-content">
+              <span className="student-summary-label">Identificación</span>
+              <div className={`student-summary-value ${!isBlankTemplate && data.anexo1?.estudiante?.numeroIdentificacion ? '' : 'student-summary-empty'}`}>
+                {!isBlankTemplate && data.anexo1?.estudiante?.numeroIdentificacion ? data.anexo1.estudiante.numeroIdentificacion : '—'}
+              </div>
+            </div>
           </div>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Grado / Edad</label>
-            <div style={{ fontWeight: 600 }}>
-              {isBlankTemplate ? '' : `${displayStudent.grado || ''} / ${data.anexo1?.estudiante?.edad ? `${data.anexo1.estudiante.edad} años` : ''}`}
+
+          <div className="student-summary-item">
+            <div className="student-summary-icon">
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>school</span>
+            </div>
+            <div className="student-summary-content">
+              <span className="student-summary-label">Grado / Edad</span>
+              <div className={`student-summary-value ${!isBlankTemplate && (displayStudent.grado || data.anexo1?.estudiante?.edad) ? '' : 'student-summary-empty'}`}>
+                {!isBlankTemplate && (displayStudent.grado || data.anexo1?.estudiante?.edad)
+                  ? `${displayStudent.grado || '—'} / ${data.anexo1?.estudiante?.edad ? `${data.anexo1.estudiante.edad} años` : '—'}`
+                  : '—'}
+              </div>
             </div>
           </div>
         </div>
 
         <div style={isBlankTemplate ? { pointerEvents: 'none', opacity: 0.85 } : {}}>
-          <h5 className="section-subtitle">Datos del Acta</h5>
-          <div className="form-grid-3">
-            <div className="form-group">
-              <label htmlFor="anexo3-general-fecha">Fecha</label>
-              <input
-                type="date"
-                id="anexo3-general-fecha"
-                className="form-control"
-                value={general.fecha || ''}
-                onChange={e => handleGeneralChange('fecha', e.target.value)}
-              />
-            </div>
-            <div className="form-group col-span-2">
-              <label htmlFor="anexo3-general-institucionSede">Institución Educativa y Sede</label>
-              <input
-                type="text"
-                id="anexo3-general-institucionSede"
-                className="form-control"
-                placeholder="Ej. Institución Educativa El Vallejo - Sede Principal"
-                value={general.institucionSede || ''}
-                onChange={e => handleGeneralChange('institucionSede', e.target.value)}
-              />
-            </div>
-            <div className="form-group col-span-3">
-              <label htmlFor="anexo3-general-docentesEquipo">Nombres del Equipo Directivo y Docentes comprometidos</label>
-              <input
-                type="text"
-                id="anexo3-general-docentesEquipo"
-                className="form-control"
-                placeholder="Nombres completos y roles (Ej. Lic. Manuel Salvador, Psicóloga, etc.)"
-                value={general.docentesEquipo || ''}
-                onChange={e => handleGeneralChange('docentesEquipo', e.target.value)}
-              />
-            </div>
-          </div>
-
-          <h5 className="section-subtitle">Familiar / Acudiente 1</h5>
-          <div className="form-grid-2">
-            <div className="form-group">
-              <label>Nombre del Acudiente</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Nombre completo"
-                value={general.familiaEstudiante?.[0]?.nombre || ''}
-                onChange={e => handleFamiliaChange(0, 'nombre', e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label>Parentesco</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Ej. Madre, Padre, Abuelo"
-                value={general.familiaEstudiante?.[0]?.parentesco || ''}
-                onChange={e => handleFamiliaChange(0, 'parentesco', e.target.value)}
-              />
+          {/* 1. Datos del Acta */}
+          <div id="anexo3-sec-general" className="anexo-section-anchor">
+            <h5 className="section-subtitle">Datos del Acta</h5>
+            <div className="form-grid-3">
+              <div className="form-group">
+                <label htmlFor="anexo3-general-fecha">Fecha</label>
+                <input
+                  type="date"
+                  id="anexo3-general-fecha"
+                  className="form-control"
+                  value={general.fecha || ''}
+                  onChange={e => handleGeneralChange('fecha', e.target.value)}
+                />
+              </div>
+              <div className="form-group col-span-2">
+                <label htmlFor="anexo3-general-institucionSede">Institución Educativa y Sede</label>
+                <input
+                  type="text"
+                  id="anexo3-general-institucionSede"
+                  className="form-control"
+                  placeholder="Ej. Institución Educativa El Vallejo - Sede Principal"
+                  value={general.institucionSede || ''}
+                  onChange={e => handleGeneralChange('institucionSede', e.target.value)}
+                />
+              </div>
+              <div className="form-group col-span-3">
+                <label htmlFor="anexo3-general-docentesEquipo">Nombres del Equipo Directivo y Docentes comprometidos</label>
+                <input
+                  type="text"
+                  id="anexo3-general-docentesEquipo"
+                  className="form-control"
+                  placeholder="Nombres completos y roles (Ej. Lic. Manuel Salvador, Psicóloga, etc.)"
+                  value={general.docentesEquipo || ''}
+                  onChange={e => handleGeneralChange('docentesEquipo', e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
-          <h5 className="section-subtitle">Familiar / Acudiente 2 (Opcional)</h5>
-          <div className="form-grid-2">
-            <div className="form-group">
-              <label>Nombre del Acudiente</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Nombre completo"
-                value={general.familiaEstudiante?.[1]?.nombre || ''}
-                onChange={e => handleFamiliaChange(1, 'nombre', e.target.value)}
-              />
+          {/* 2. Familiares / Acudientes */}
+          <div id="anexo3-sec-familia" className="anexo-section-anchor">
+            <h5 className="section-subtitle">Familiar / Acudiente 1</h5>
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label>Nombre del Acudiente</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Nombre completo"
+                  value={general.familiaEstudiante?.[0]?.nombre || ''}
+                  onChange={e => handleFamiliaChange(0, 'nombre', e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>Parentesco</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Ej. Madre, Padre, Abuelo"
+                  value={general.familiaEstudiante?.[0]?.parentesco || ''}
+                  onChange={e => handleFamiliaChange(0, 'parentesco', e.target.value)}
+                />
+              </div>
             </div>
-            <div className="form-group">
-              <label>Parentesco</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Ej. Madre, Padre, Abuelo"
-                value={general.familiaEstudiante?.[1]?.parentesco || ''}
-                onChange={e => handleFamiliaChange(1, 'parentesco', e.target.value)}
-              />
+
+            <h5 className="section-subtitle">Familiar / Acudiente 2 (Opcional)</h5>
+            <div className="form-grid-2">
+              <div className="form-group">
+                <label>Nombre del Acudiente</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Nombre completo"
+                  value={general.familiaEstudiante?.[1]?.nombre || ''}
+                  onChange={e => handleFamiliaChange(1, 'nombre', e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>Parentesco</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder="Ej. Madre, Padre, Abuelo"
+                  value={general.familiaEstudiante?.[1]?.parentesco || ''}
+                  onChange={e => handleFamiliaChange(1, 'parentesco', e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
           <hr className="section-divider" />
 
-          <h5 className="section-subtitle">Compromisos del Colegio y la Familia</h5>
-          <div className="form-group">
-            <label htmlFor="anexo3-compromisosAula">Compromisos específicos para el aula (Establecimiento Educativo):</label>
-            <textarea
-              id="anexo3-compromisosAula"
-              className="form-control"
-              style={{ minHeight: 120 }}
-              placeholder="Describa los compromisos y responsabilidades del colegio..."
-              value={compromisosAula || ''}
-              onChange={e => handleChange('compromisosAula', e.target.value)}
+          {/* 3. Compromisos de Aula */}
+          <div id="anexo3-sec-compromisos" className="anexo-section-anchor">
+            <h5 className="section-subtitle">Compromisos del Colegio y la Familia</h5>
+            <div className="form-group">
+              <label htmlFor="anexo3-compromisosAula">Compromisos específicos para el aula (Establecimiento Educativo):</label>
+              <textarea
+                id="anexo3-compromisosAula"
+                className="form-control"
+                style={{ minHeight: 120 }}
+                placeholder="Describa los compromisos y responsabilidades del colegio..."
+                value={compromisosAula || ''}
+                onChange={e => handleChange('compromisosAula', e.target.value)}
+              />
+            </div>
+          </div>
+
+          {/* 4. Actividades en el Hogar */}
+          <div id="anexo3-sec-actividades" className="anexo-section-anchor">
+            <ActividadesTable
+              list={data.anexo3.actividadesHogar || []}
+              onUpdate={newList => handleTableUpdate('anexo3', 'actividadesHogar', newList)}
             />
           </div>
 
-          <ActividadesTable
-            list={data.anexo3.actividadesHogar || []}
-            onUpdate={newList => handleTableUpdate('anexo3', 'actividadesHogar', newList)}
-          />
+          {/* 5. Firmas del Acuerdo */}
+          <div id="anexo3-sec-firmas" className="anexo-section-anchor">
+            <h5 className="section-subtitle">Firma de los Actores Comprometidos (Pizarra de Firma)</h5>
+            <div className="signature-grid">
+              {/* Estudiante */}
+              <div className="signature-input-card">
+                <SignaturePad
+                  label="Firma del Estudiante"
+                  savedSignature={firmas?.estudianteSignature || ''}
+                  onSave={val => handleFirmaChange('estudianteSignature', val)}
+                  onClear={() => handleFirmaChange('estudianteSignature', '')}
+                />
+              </div>
 
-          <h5 className="section-subtitle">Firma de los Actores Comprometidos (Pizarra de Firma)</h5>
-          <div className="signature-grid">
-            {/* Estudiante */}
-            <div className="signature-input-card">
-              <SignaturePad
-                label="Firma del Estudiante"
-                savedSignature={firmas?.estudianteSignature || ''}
-                onSave={val => handleFirmaChange('estudianteSignature', val)}
-                onClear={() => handleFirmaChange('estudianteSignature', '')}
-              />
-            </div>
+              {/* Acudiente */}
+              <div className="signature-input-card">
+                <SignaturePad
+                  label="Firma de la Familia o Acudiente"
+                  savedSignature={firmas?.acudienteSignature || ''}
+                  onSave={val => handleFirmaChange('acudienteSignature', val)}
+                  onClear={() => handleFirmaChange('acudienteSignature', '')}
+                />
+              </div>
 
-            {/* Acudiente */}
-            <div className="signature-input-card">
-              <SignaturePad
-                label="Firma de la Familia o Acudiente"
-                savedSignature={firmas?.acudienteSignature || ''}
-                onSave={val => handleFirmaChange('acudienteSignature', val)}
-                onClear={() => handleFirmaChange('acudienteSignature', '')}
-              />
-            </div>
+              {/* Docentes */}
+              <div className="signature-input-card">
+                <SignaturePad
+                  label="Firma de Docentes comprometidos"
+                  savedSignature={firmas?.docentesSignature || ''}
+                  onSave={val => handleFirmaChange('docentesSignature', val)}
+                  onClear={() => handleFirmaChange('docentesSignature', '')}
+                />
+              </div>
 
-            {/* Docentes */}
-            <div className="signature-input-card">
-              <SignaturePad
-                label="Firma de Docentes comprometidos"
-                savedSignature={firmas?.docentesSignature || ''}
-                onSave={val => handleFirmaChange('docentesSignature', val)}
-                onClear={() => handleFirmaChange('docentesSignature', '')}
-              />
-            </div>
+              {/* Docentes 2 */}
+              <div className="signature-input-card">
+                <SignaturePad
+                  label="Firma de Docentes (2)"
+                  savedSignature={firmas?.docentesSignature2 || ''}
+                  onSave={val => handleFirmaChange('docentesSignature2', val)}
+                  onClear={() => handleFirmaChange('docentesSignature2', '')}
+                />
+              </div>
 
-            {/* Docentes 2 */}
-            <div className="signature-input-card">
-              <SignaturePad
-                label="Firma de Docentes (2)"
-                savedSignature={firmas?.docentesSignature2 || ''}
-                onSave={val => handleFirmaChange('docentesSignature2', val)}
-                onClear={() => handleFirmaChange('docentesSignature2', '')}
-              />
-            </div>
-
-            {/* Directivo */}
-            <div className="signature-input-card">
-              <SignaturePad
-                label="Firma de Directivo docente"
-                savedSignature={firmas?.directivoSignature || ''}
-                onSave={val => handleFirmaChange('directivoSignature', val)}
-                onClear={() => handleFirmaChange('directivoSignature', '')}
-              />
+              {/* Directivo */}
+              <div className="signature-input-card">
+                <SignaturePad
+                  label="Firma de Directivo docente"
+                  savedSignature={firmas?.directivoSignature || ''}
+                  onSave={val => handleFirmaChange('directivoSignature', val)}
+                  onClear={() => handleFirmaChange('directivoSignature', '')}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -282,41 +330,11 @@ export default function Anexo3Form({ showToast, switchTab }) {
           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_back</span>
           <span>Anterior Anexo 2</span>
         </button>
-        
-        {unsavedChanges && !isBlankTemplate && (
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', animation: 'fadeIn 0.3s ease-in-out' }}>
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'var(--warning)', animation: 'pulse 1.5s infinite ease-in-out' }} />
-              <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--warning)' }}>Tienes aportaciones sin guardar</span>
-            </div>
-          </div>
-        )}
-        
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          {!isBlankTemplate && (
-            <button 
-              type="button" 
-              className="btn-wizard-save" 
-              onClick={async () => {
-                const result = await saveActivePiar();
-                if (result && result.success) showToast('Aportación guardada correctamente');
-                else showToast(result?.message || 'Error al guardar', 'danger');
-              }}
-              disabled={!unsavedChanges}
-              style={{
-                opacity: !unsavedChanges ? 0.6 : 1,
-                cursor: !unsavedChanges ? 'not-allowed' : 'pointer'
-              }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>save</span>
-              <span>Guardar Aportación</span>
-            </button>
-          )}
-          <button type="button" className="btn-wizard-next" onClick={() => switchTab('tab-preview')}>
-            <span>Finalizar y Ver PIAR</span>
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>visibility</span>
-          </button>
-        </div>
+
+        <button type="button" className="btn-wizard-next" onClick={() => switchTab('tab-preview')}>
+          <span>Finalizar y Ver PIAR</span>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>visibility</span>
+        </button>
       </div>
     </>
   );

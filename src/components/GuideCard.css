@@ -291,3 +291,71 @@ body.dark-mode .guide-card-step-desc {
     transform: translateX(0);
   }
 }
+
+/* Compact GuideCard Refinements */
+.guide-card-header {
+  padding: 10px 14px !important;
+  gap: 10px !important;
+}
+
+.guide-card-icon-badge {
+  width: 30px !important;
+  height: 30px !important;
+  border-radius: 8px !important;
+}
+
+.guide-card-icon-badge .material-symbols-outlined {
+  font-size: 17px !important;
+}
+
+.guide-card-title {
+  font-size: 0.88rem !important;
+}
+
+.guide-card-subtitle {
+  font-size: 0.68rem !important;
+}
+
+.guide-card-body {
+  padding: 10px 12px !important;
+}
+
+.guide-card-intro {
+  margin: 0 0 8px !important;
+  font-size: 0.76rem !important;
+  line-height: 1.35 !important;
+}
+
+.guide-card-steps {
+  gap: 5px !important;
+}
+
+.guide-card-step-item {
+  min-height: 44px !important;
+  padding: 6px 10px !important;
+  border-radius: 8px !important;
+  gap: 9px !important;
+}
+
+.guide-card-step-icon {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 7px !important;
+}
+
+.guide-card-step-icon .material-symbols-outlined {
+  font-size: 16px !important;
+}
+
+.guide-card-step-num {
+  font-size: 0.64rem !important;
+}
+
+.guide-card-step-title {
+  font-size: 0.77rem !important;
+}
+
+.guide-card-step-desc {
+  font-size: 0.71rem !important;
+  line-height: 1.25 !important;
+}

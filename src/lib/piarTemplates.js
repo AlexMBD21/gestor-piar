@@ -38,8 +38,8 @@ export const PLantillasPIAR = {
       general: { fechaElaboracion: "", institucion: "", sede: "", jornada: "", docentesElaboran: "", grado: "" },
       caracteristicasEstudiante: "",
       ajustesRazonables: [
-        { id: "ar-1", area: "Trigonometría", trimestre: "Primer Cuatrimestre", docente: "", objetivos: "", barreras: "", ajustes: "", evaluacion: "" },
-        { id: "ar-2", area: "Estadística", trimestre: "Primer Cuatrimestre", docente: "", objetivos: "", barreras: "", ajustes: "", evaluacion: "" },
+        { id: "ar-1", area: "Matemáticas", asignatura: "Estadística", trimestre: "Primer Cuatrimestre", docente: "", objetivos: "", barreras: "", ajustes: "", evaluacion: "" },
+        { id: "ar-2", area: "Ciencias Naturales", asignatura: "", trimestre: "Primer Cuatrimestre", docente: "", objetivos: "", barreras: "", ajustes: "", evaluacion: "" },
         { id: "ar-3", area: "Otras: Convivencia", trimestre: "Primer Cuatrimestre", docente: "", objetivos: "", barreras: "", ajustes: "", evaluacion: "" },
         { id: "ar-4", area: "Otras: Socialización", trimestre: "Primer Cuatrimestre", docente: "", objetivos: "", barreras: "", ajustes: "", evaluacion: "" },
         { id: "ar-5", area: "Otras: Participación", trimestre: "Primer Cuatrimestre", docente: "", objetivos: "", barreras: "", ajustes: "", evaluacion: "" },
@@ -213,6 +213,7 @@ export function createDemoPiar() {
     {
       id: 'ar-1',
       area: 'Matemáticas',
+      asignatura: 'Estadística',
       trimestre: 'Primer Trimestre',
       docente: 'Pedro Suárez Mendoza',
       objetivos: 'Resolver problemas algebraicos y geométricos básicos aplicados a situaciones cotidianas.',

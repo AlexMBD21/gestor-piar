@@ -14,7 +14,7 @@ import ScrollToTop from '../components/ScrollToTop';
 
 export default function AppPage() {
   const { profile, isSuperAdmin, signOut } = useAuth();
-  const { getActiveStudent, activeStudentId, unsavedChanges, discardActiveStudentChanges, saveActivePiar } = usePiar();
+  const { getActiveStudent, unsavedChanges, saveActivePiar, discardActiveStudentChanges } = usePiar();
   const [activeTab, setActiveTab] = useState('tab-dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('piar_sidebar_collapsed') === 'true');
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('piar_dark_mode') === 'enabled');
@@ -49,7 +49,7 @@ export default function AppPage() {
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
   };
 
-  const switchTab = async (tabId, overrideStudentId = null) => {
+  const switchTab = async (tabId) => {
     if (unsavedChanges && (tabId === 'tab-dashboard' || tabId === 'tab-admin')) {
       setConfirmModal({ show: true, tabId });
       return;
@@ -92,9 +92,7 @@ export default function AppPage() {
         darkMode={darkMode}
         setDarkMode={setDarkMode}
         isSuperAdmin={isSuperAdmin}
-        profile={profile}
         onSignOut={signOut}
-        showToast={showToast}
       />
 
       {/* MOBILE: Top Bar */}
@@ -129,8 +127,36 @@ export default function AppPage() {
       <main className="main-content">
         {/* Desktop App Header */}
         <header className="app-header no-print">
-          <div><span style={{ display: 'none' }}>Gestor PIAR</span></div>
+          <div className="app-header-context">
+            <div className="app-header-title-block">
+              <span className="app-header-eyebrow">
+                {activeTab === 'tab-dashboard' && 'Gestión Institucional'}
+                {activeTab === 'tab-anexo1' && 'Paso 1 de 4 · Información General'}
+                {activeTab === 'tab-anexo2' && 'Paso 2 de 4 · Ajustes Razonables'}
+                {activeTab === 'tab-anexo3' && 'Paso 3 de 4 · Acta de Acuerdo'}
+                {activeTab === 'tab-preview' && 'Paso 4 de 4 · Documento Oficial'}
+                {activeTab === 'tab-admin' && 'Configuración del Sistema'}
+              </span>
+              <h2 className="app-header-page-title">{headerTitle}</h2>
+            </div>
+          </div>
+
           <div className="header-actions">
+            {unsavedChanges && activeStudent && (
+              <button
+                type="button"
+                className="header-unsaved-btn"
+                onClick={async () => {
+                  const result = await saveActivePiar();
+                  if (result && result.success) showToast('Aportación guardada correctamente');
+                  else showToast(result?.message || 'Error al guardar', 'danger');
+                }}
+                title="Haz clic para guardar los cambios pendientes"
+              >
+                <span className="header-unsaved-dot" />
+                <span>Guardar cambios</span>
+              </button>
+            )}
             <div className="header-profile-chip">
               <div className="profile-avatar">
                 <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>person</span>
@@ -222,7 +248,15 @@ export default function AppPage() {
             <div className="modal-body" style={{ padding: '0 24px 20px 24px', fontSize: '0.95rem', color: 'var(--text-main)', lineHeight: '1.5' }}>
               Tienes aportaciones sin guardar en el formulario. ¿Deseas descartar los cambios y salir?
             </div>
-            <div className="modal-footer" style={{ borderTop: 'none', paddingTop: '0' }}>
+            <div className="modal-footer" style={{ borderTop: 'none', paddingTop: '0', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setConfirmModal({ show: false, tabId: null })}
+                style={{ flex: 1, justifyContent: 'center', height: '38px' }}
+              >
+                Continuar editando
+              </button>
               <button
                 type="button"
                 className="btn btn-danger"
@@ -233,9 +267,10 @@ export default function AppPage() {
                   setActiveTab(confirmModal.tabId);
                   window.scrollTo(0, 0);
                 }}
-                style={{ width: '100%', padding: '10px 16px', height: 'auto' }}
+                style={{ flex: 1, justifyContent: 'center', height: '38px', gap: '6px' }}
               >
-                Descartar y Salir
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete_forever</span>
+                <span>Descartar y Salir</span>
               </button>
             </div>
           </div>

@@ -5,12 +5,14 @@ import { useAuth } from '../context/AuthContext';
 import GuideCard from './GuideCard';
 
 export default function Dashboard({ switchTab, showToast, onNewStudent }) {
-  const { piars, activeStudentId, setActiveStudentId, deletePiar, importPiar, loading, createPiar, editLogs } = usePiar();
+  const { piars, activeStudentId, setActiveStudentId, deletePiar, loading, editLogs } = usePiar();
   const { user, isSuperAdmin } = useAuth();
   const [historyModalPiar, setHistoryModalPiar] = useState(null);
   const [deleteModalPiar, setDeleteModalPiar] = useState(null);
   const [isClosingDeleteModal, setIsClosingDeleteModal] = useState(false);
   const [activeDropdownId, setActiveDropdownId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'diligenciado' | 'pendiente'
 
   useEffect(() => {
     const handleOutsideClick = () => setActiveDropdownId(null);
@@ -28,6 +30,26 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
 
 
   const validPiars = piars.filter(p => p.data?.id !== 'blanco-temp');
+  const checkIsDiligenciado = (piar) => {
+    const hasUserEdited = editLogs[piar.id]?.some(log => log.editor_id === user?.id) || false;
+    return isSuperAdmin ? Boolean(piar.diligenciado || (editLogs[piar.id]?.length > 0)) : hasUserEdited;
+  };
+  const diligenciadosCount = validPiars.filter(checkIsDiligenciado).length;
+  const pendientesCount = Math.max(0, validPiars.length - diligenciadosCount);
+
+  const filteredPiars = validPiars.filter(piar => {
+    const isDil = checkIsDiligenciado(piar);
+    if (statusFilter === 'diligenciado' && !isDil) return false;
+    if (statusFilter === 'pendiente' && isDil) return false;
+
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    const nombre = (piar.nombre || '').toLowerCase();
+    const doc = (piar.data?.anexo1?.estudiante?.numeroIdentificacion || '').toLowerCase();
+    const grado = (piar.grado || '').toLowerCase();
+    const docente = (piar.owner_name || piar.owner_email || '').toLowerCase();
+    return nombre.includes(q) || doc.includes(q) || grado.includes(q) || docente.includes(q);
+  });
 
   const handleManage = (piar) => {
     setActiveStudentId(piar.id);
@@ -52,41 +74,41 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
     showToast(`PIAR de ${targetName} eliminado.`, 'danger');
   };
 
-  const handleImport = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (evt) => {
-      try {
-        const imported = JSON.parse(evt.target.result);
-        if (!imported.estudianteNombre) throw new Error('Formato PIAR inválido');
-        const created = await importPiar(imported);
-        if (created) {
-          setActiveStudentId(created.id);
-          switchTab('tab-anexo1', created.id);
-          showToast(`PIAR de ${imported.estudianteNombre} importado con éxito.`);
-        }
-      } catch {
-        showToast('Error al importar el archivo JSON.', 'danger');
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  };
-
-  const handleExport = (piar) => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(piar.data, null, 2));
-    const a = document.createElement('a');
-    a.setAttribute("href", dataStr);
-    a.setAttribute("download", `${piar.nombre.replace(/\s+/g, '_')}_PIAR.json`);
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    showToast('Archivo JSON exportado.');
-  };
-
   return (
     <div className="dashboard-layout">
+      {/* KPI Summary Cards */}
+      <div className="dashboard-kpi-grid no-print">
+        <div className="dashboard-kpi-card">
+          <div className="dashboard-kpi-icon kpi-primary">
+            <span className="material-symbols-outlined">groups</span>
+          </div>
+          <div className="dashboard-kpi-info">
+            <span className="dashboard-kpi-label">Total Estudiantes</span>
+            <strong className="dashboard-kpi-value">{validPiars.length}</strong>
+          </div>
+        </div>
+
+        <div className="dashboard-kpi-card">
+          <div className="dashboard-kpi-icon kpi-success">
+            <span className="material-symbols-outlined">task_alt</span>
+          </div>
+          <div className="dashboard-kpi-info">
+            <span className="dashboard-kpi-label">Diligenciados</span>
+            <strong className="dashboard-kpi-value">{diligenciadosCount}</strong>
+          </div>
+        </div>
+
+        <div className="dashboard-kpi-card">
+          <div className="dashboard-kpi-icon kpi-warning">
+            <span className="material-symbols-outlined">pending_actions</span>
+          </div>
+          <div className="dashboard-kpi-info">
+            <span className="dashboard-kpi-label">Pendientes</span>
+            <strong className="dashboard-kpi-value">{pendientesCount}</strong>
+          </div>
+        </div>
+      </div>
+
       {/* Main Content Grid */}
       <div className="dashboard-main-grid">
         
@@ -105,10 +127,48 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
                 </button>
               </div>
             </div>
-            
-            <p className="md3-card-description" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-              Total registrados: <strong style={{ color: 'var(--text-main)' }}>{validPiars.length}</strong>
-            </p>
+
+            {validPiars.length > 0 && (
+              <div className="dashboard-toolbar no-print">
+                <div className="dashboard-search-box">
+                  <span className="material-symbols-outlined dashboard-search-icon">search</span>
+                  <input
+                    type="text"
+                    className="dashboard-search-input"
+                    placeholder="Buscar por nombre, documento, grado o docente..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      className="dashboard-search-clear"
+                      onClick={() => setSearchQuery('')}
+                      title="Limpiar búsqueda"
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>close</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="dashboard-filter-pills">
+                  {[
+                    { id: 'all', label: `Todos (${validPiars.length})` },
+                    { id: 'diligenciado', label: `Diligenciados (${diligenciadosCount})` },
+                    { id: 'pendiente', label: `Pendientes (${pendientesCount})` }
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      className={`dashboard-filter-pill ${statusFilter === tab.id ? 'active' : ''}`}
+                      onClick={() => setStatusFilter(tab.id)}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div id="dashboard-student-list" className="student-list-container">
             {loading ? (
@@ -180,16 +240,48 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
                   </svg>
                 </div>
                 <h3 style={{ fontSize: '1.2rem', color: 'var(--text-main)', margin: 0 }}>No hay estudiantes registrados</h3>
-                <p style={{ margin: 0, maxWidth: '300px', lineHeight: '1.5' }}>
-                  El sistema está listo. Para comenzar a trabajar, haz clic en el botón <strong>"Nuevo PIAR"</strong> en la esquina superior.
+                <p style={{ margin: 0, maxWidth: '320px', lineHeight: '1.5' }}>
+                  El sistema está listo. Para comenzar a trabajar, registra el primer estudiante en gestión.
                 </p>
+                <button
+                  type="button"
+                  className="btn-md3-filled"
+                  onClick={onNewStudent}
+                  style={{ marginTop: '4px' }}
+                >
+                  <span className="material-symbols-outlined text-[18px]">person_add</span>
+                  <span>Crear primer PIAR</span>
+                </button>
               </div>
-            ) : validPiars.map((piar, index) => {
+            ) : filteredPiars.length === 0 ? (
+              <div style={{
+                textAlign: 'center',
+                padding: '40px 24px',
+                color: 'var(--text-muted)',
+                background: 'var(--bg-card)',
+                borderRadius: 'var(--radius-md)',
+                border: '1px dashed var(--border-color)',
+                margin: '12px 0',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: '10px'
+              }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '32px', color: 'var(--primary)', opacity: 0.75 }}>manage_search</span>
+                <strong style={{ color: 'var(--text-main)', fontSize: '0.98rem' }}>No se encontraron coincidencias</strong>
+                <span style={{ fontSize: '0.85rem' }}>Prueba con otro término de búsqueda o cambia el filtro de estado.</span>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => { setSearchQuery(''); setStatusFilter('all'); }}
+                  style={{ marginTop: '4px' }}
+                >
+                  Limpiar filtros
+                </button>
+              </div>
+            ) : filteredPiars.map((piar) => {
               const isActive = piar.id === activeStudentId;
-              const hasUserEdited = editLogs[piar.id]?.some(log => log.editor_id === user?.id) || false;
-              const isDiligenciado = isSuperAdmin
-                ? (piar.diligenciado || (editLogs[piar.id]?.length > 0))
-                : hasUserEdited;
+              const isDiligenciado = checkIsDiligenciado(piar);
               // Eliminada isLastItem por falta de uso
               return (
                 <div

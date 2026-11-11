@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { supabase } from '../lib/supabaseClient';
 import TeacherList from '../components/admin/TeacherList';
 
 export default function AdminPage() {

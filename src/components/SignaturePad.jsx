@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 
 export default function SignaturePad({ label, savedSignature, onSave, onClear }) {
@@ -28,7 +28,7 @@ export default function SignaturePad({ label, savedSignature, onSave, onClear })
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const initializeCanvas = () => {
+  const initializeCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -64,7 +64,7 @@ export default function SignaturePad({ label, savedSignature, onSave, onClear })
       ctx.fillRect(0, 0, logicalWidth, logicalHeight);
       setHasDrawn(false);
     }
-  };
+  }, [isMobile]);
 
   useEffect(() => {
     if (savedSignature) return;
@@ -75,7 +75,7 @@ export default function SignaturePad({ label, savedSignature, onSave, onClear })
       window.addEventListener('resize', initializeCanvas);
       return () => window.removeEventListener('resize', initializeCanvas);
     }
-  }, [savedSignature, isMobile]);
+  }, [savedSignature, isMobile, initializeCanvas]);
 
   // Inicializar canvas cuando el modal móvil se abre
   useEffect(() => {
@@ -85,9 +85,9 @@ export default function SignaturePad({ label, savedSignature, onSave, onClear })
       }, 50); // Pequeño delay para que el modal se renderice en el DOM
       return () => clearTimeout(timer);
     }
-  }, [isModalOpen, savedSignature]);
+  }, [isModalOpen, savedSignature, initializeCanvas]);
 
-  const getCoordinates = (e) => {
+  const getCoordinates = useCallback((e) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
 
@@ -123,9 +123,9 @@ export default function SignaturePad({ label, savedSignature, onSave, onClear })
         y: clientY - rect.top
       };
     }
-  };
+  }, [isMobile]);
 
-  const startDrawing = (e) => {
+  const startDrawing = useCallback((e) => {
     if (e.cancelable) {
       e.preventDefault();
     }
@@ -143,9 +143,9 @@ export default function SignaturePad({ label, savedSignature, onSave, onClear })
     ctx.moveTo(x, y);
     setIsDrawing(true);
     setHasDrawn(true);
-  };
+  }, [initializeCanvas, getCoordinates]);
 
-  const draw = (e) => {
+  const draw = useCallback((e) => {
     if (!isDrawingRef.current) return;
     if (e.cancelable) {
       e.preventDefault();
@@ -159,12 +159,12 @@ export default function SignaturePad({ label, savedSignature, onSave, onClear })
     
     ctx.lineTo(x, y);
     ctx.stroke();
-  };
+  }, [getCoordinates]);
 
-  const stopDrawing = () => {
+  const stopDrawing = useCallback(() => {
     if (!isDrawingRef.current) return;
     setIsDrawing(false);
-  };
+  }, []);
 
   // Vincular eventos táctiles no pasivos manualmente
   useEffect(() => {
@@ -195,7 +195,7 @@ export default function SignaturePad({ label, savedSignature, onSave, onClear })
       canvas.removeEventListener('touchmove', handleTouchMove);
       canvas.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [savedSignature, isMobile, isModalOpen]);
+  }, [savedSignature, isMobile, isModalOpen, startDrawing, draw, stopDrawing]);
 
   const saveSignature = () => {
     const canvas = canvasRef.current;
@@ -256,16 +256,12 @@ export default function SignaturePad({ label, savedSignature, onSave, onClear })
           />
           <button
             type="button"
-            className="btn btn-secondary btn-sm"
+            className="btn-md3-outlined btn-sm"
             onClick={clearCanvas}
-            style={{
-              padding: '4px 10px',
-              fontSize: '0.75rem',
-              borderRadius: 'var(--radius-sm)'
-            }}
+            title="Borrar y volver a trazar la firma"
           >
-            <span className="material-symbols-outlined" style={{ fontSize: '14px', marginRight: '4px', verticalAlign: 'middle' }}>history</span>
-            Volver a Firmar
+            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>history</span>
+            <span>Volver a Firmar</span>
           </button>
         </div>
       ) : isMobile ? (
@@ -273,19 +269,16 @@ export default function SignaturePad({ label, savedSignature, onSave, onClear })
         <>
           <button
             type="button"
-            className="btn btn-primary"
+            className="btn-md3-filled"
             onClick={() => setIsModalOpen(true)}
             style={{
               width: '100%',
               justifyContent: 'center',
-              gap: '8px',
-              padding: '10px 16px',
-              fontSize: '0.9rem',
-              borderRadius: 'var(--radius-md)'
+              height: '40px'
             }}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>gesture</span>
-            Trazar Firma
+            <span>Trazar Firma</span>
           </button>
 
           {/* Modal Overlay para Dibujar la Firma */}
@@ -382,37 +375,26 @@ export default function SignaturePad({ label, savedSignature, onSave, onClear })
             display: 'flex', 
             justifyContent: 'space-between', 
             alignItems: 'center',
-            marginTop: '8px'
+            marginTop: '10px'
           }}>
             <button
               type="button"
-              className="btn btn-secondary btn-sm"
+              className="btn-md3-outlined btn-sm"
               onClick={clearCanvas}
               disabled={!hasDrawn}
-              style={{
-                padding: '4px 10px',
-                fontSize: '0.75rem',
-                borderRadius: 'var(--radius-sm)'
-              }}
+              title="Limpiar trazo"
             >
-              Limpiar
+              <span>Limpiar</span>
             </button>
             <button
               type="button"
-              className="btn btn-success btn-sm"
+              className="btn-md3-success btn-sm"
               onClick={saveSignature}
               disabled={!hasDrawn}
-              style={{
-                padding: '4px 12px',
-                fontSize: '0.75rem',
-                borderRadius: 'var(--radius-sm)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}
+              title="Guardar firma"
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>check</span>
-              Guardar Firma
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>check</span>
+              <span>Guardar Firma</span>
             </button>
           </div>
         </div>

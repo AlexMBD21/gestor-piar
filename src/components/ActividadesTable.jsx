@@ -69,7 +69,7 @@ export default function ActividadesTable({ list, studentData, onUpdate }) {
         Especifique las actividades acordadas con la familia para el acompañamiento y refuerzo escolar en el hogar.
       </p>
 
-      <div className="table-wrapper">
+      <div className="table-wrapper mobile-card-table-wrapper">
         <table className="custom-table" id="tabla-actividades-hogar">
           <thead>
             <tr>
@@ -82,8 +82,12 @@ export default function ActividadesTable({ list, studentData, onUpdate }) {
           <tbody id="tbody-actividades-hogar">
             {actividades.length === 0 ? (
               <tr>
-                <td colSpan="4" style={{ textAlign: 'center', color: '#94a3b8', fontStyle: 'italic' }}>
-                  Sin actividades registradas.
+                <td colSpan="4" style={{ textAlign: 'center', padding: '28px 16px', color: 'var(--text-muted)' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '26px', color: 'var(--primary)', opacity: 0.8 }}>home_work</span>
+                    <span style={{ fontWeight: 600, color: 'var(--text-main)', fontSize: '0.9rem' }}>Sin actividades registradas para el hogar</span>
+                    <span style={{ fontSize: '0.8rem' }}>Haz clic en <strong>&ldquo;Agregar Actividad&rdquo;</strong> para definir compromisos familiares.</span>
+                  </div>
                 </td>
               </tr>
             ) : (

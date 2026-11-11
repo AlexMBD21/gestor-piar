@@ -1,11 +1,11 @@
 import CollaborativeSection from './CollaborativeSection';
 
 const DEFAULT_ACTORS = [
-  { actor: 'FAMILIA, CUIDADORES O CON QUIENES VIVE', acciones: '', estrategias: '' },
-  { actor: 'DOCENTES', acciones: '', estrategias: '' },
-  { actor: 'DIRECTIVOS', acciones: '', estrategias: '' },
-  { actor: 'ADMINISTRATIVOS', acciones: '', estrategias: '' },
-  { actor: 'PARES (Sus compañeros)', acciones: '', estrategias: '' }
+  { actor: 'FAMILIA, CUIDADORES O CON QUIENES VIVE', icon: 'family_restroom', acciones: '', estrategias: '' },
+  { actor: 'DOCENTES', icon: 'school', acciones: '', estrategias: '' },
+  { actor: 'DIRECTIVOS', icon: 'account_balance', acciones: '', estrategias: '' },
+  { actor: 'ADMINISTRATIVOS', icon: 'badge', acciones: '', estrategias: '' },
+  { actor: 'PARES (Sus compañeros)', icon: 'groups', acciones: '', estrategias: '' }
 ];
 
 export default function PmiTable({ list, studentData, onUpdate }) {
@@ -56,7 +56,12 @@ export default function PmiTable({ list, studentData, onUpdate }) {
             {recommendations.map(item => (
               <tr key={item.actor}>
                 <td data-label="Actor" style={{ fontWeight: 700, fontSize: '0.82rem', verticalAlign: 'top', paddingTop: '14px', color: 'var(--text-main)' }}>
-                  {item.actor}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
+                    <span className="material-symbols-outlined no-print" style={{ fontSize: '18px', color: 'var(--primary)', background: 'var(--primary-light)', padding: '5px', borderRadius: '8px', flexShrink: 0 }}>
+                      {item.icon || 'person'}
+                    </span>
+                    <span style={{ lineHeight: 1.35, paddingTop: '2px' }}>{item.actor}</span>
+                  </div>
                 </td>
                 <td data-label="Acciones">
                   <textarea

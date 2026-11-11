@@ -4,9 +4,17 @@ import Anexo1DatosPersonales from './anexos/Anexo1DatosPersonales';
 import Anexo1Salud from './anexos/Anexo1Salud';
 import Anexo1Hogar from './anexos/Anexo1Hogar';
 import Anexo1Educativo from './anexos/Anexo1Educativo';
+import AnexoQuickNav from './AnexoQuickNav';
 
-export default function Anexo1Form({ showToast, switchTab }) {
-  const { getActiveStudent, updateLocalPiarData, saveActivePiar, unsavedChanges } = usePiar();
+const ANEXO1_SECTIONS = [
+  { id: 'anexo1-sec-personal', icon: 'badge', label: '1. Datos Personales' },
+  { id: 'anexo1-sec-salud', icon: 'medical_services', label: '2. Entorno Salud' },
+  { id: 'anexo1-sec-hogar', icon: 'family_restroom', label: '3. Entorno Hogar' },
+  { id: 'anexo1-sec-educativo', icon: 'school', label: '4. Entorno Educativo' }
+];
+
+export default function Anexo1Form({ switchTab }) {
+  const { getActiveStudent, updateLocalPiarData } = usePiar();
   const activeStudent = getActiveStudent();
   const isBlankTemplate = !activeStudent;
 
@@ -50,25 +58,34 @@ export default function Anexo1Form({ showToast, switchTab }) {
 
   return (
     <>
+      <AnexoQuickNav sections={ANEXO1_SECTIONS} ariaLabel="Secciones del Anexo 1" />
 
       <div style={isBlankTemplate ? { pointerEvents: 'none', opacity: 0.85 } : {}}>
         {/* Diligenciamiento y Datos Personales */}
-        <Anexo1DatosPersonales general={general} estudiante={estudiante} handleChange={handleChange} isBlankTemplate={isBlankTemplate} />
+        <div id="anexo1-sec-personal" className="anexo1-section-anchor">
+          <Anexo1DatosPersonales general={general} estudiante={estudiante} handleChange={handleChange} isBlankTemplate={isBlankTemplate} />
+        </div>
 
         {/* Entorno Salud */}
-        <Anexo1Salud salud={salud} handleChange={handleChange} handleTerapiaChange={handleTerapiaChange} />
+        <div id="anexo1-sec-salud" className="anexo1-section-anchor">
+          <Anexo1Salud salud={salud} handleChange={handleChange} handleTerapiaChange={handleTerapiaChange} />
+        </div>
 
         {/* Entorno Hogar */}
-        <Anexo1Hogar hogar={hogar} handleChange={handleChange} />
+        <div id="anexo1-sec-hogar" className="anexo1-section-anchor">
+          <Anexo1Hogar hogar={hogar} handleChange={handleChange} />
+        </div>
 
         {/* Entorno Educativo */}
-        <Anexo1Educativo 
-          trayectoria={trayectoria} 
-          institucion={institucion} 
-          firmas={firmas} 
-          handleChange={handleChange} 
-          handleFirmaChange={handleFirmaChange} 
-        />
+        <div id="anexo1-sec-educativo" className="anexo1-section-anchor">
+          <Anexo1Educativo 
+            trayectoria={trayectoria} 
+            institucion={institucion} 
+            firmas={firmas} 
+            handleChange={handleChange} 
+            handleFirmaChange={handleFirmaChange} 
+          />
+        </div>
       </div>
 
       {/* Botones de Navegación del Wizard */}
@@ -78,40 +95,10 @@ export default function Anexo1Form({ showToast, switchTab }) {
           <span>Volver a Estudiantes</span>
         </button>
 
-        {unsavedChanges && !isBlankTemplate && (
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', animation: 'fadeIn 0.3s ease-in-out' }}>
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'var(--warning)', animation: 'pulse 1.5s infinite ease-in-out' }} />
-              <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--warning)' }}>Tienes aportaciones sin guardar</span>
-            </div>
-          </div>
-        )}
-        
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          {!isBlankTemplate && (
-            <button 
-              type="button" 
-              className="btn-wizard-save" 
-              onClick={async () => {
-                const result = await saveActivePiar();
-                if (result && result.success) showToast('Aportación guardada correctamente');
-                else showToast(result?.message || 'Error al guardar', 'danger');
-              }}
-              disabled={!unsavedChanges}
-              style={{
-                opacity: !unsavedChanges ? 0.6 : 1,
-                cursor: !unsavedChanges ? 'not-allowed' : 'pointer'
-              }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>save</span>
-              <span>Guardar Aportación</span>
-            </button>
-          )}
-          <button type="button" className="btn-wizard-next" onClick={() => switchTab('tab-anexo2')}>
-            <span>Siguiente Anexo 2</span>
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_forward</span>
-          </button>
-        </div>
+        <button type="button" className="btn-wizard-next" onClick={() => switchTab('tab-anexo2')}>
+          <span>Siguiente Anexo 2</span>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_forward</span>
+        </button>
       </div>
     </>
   );

@@ -1,32 +1,46 @@
 import { usePiar } from '../context/PiarContext';
-import { useAuth } from '../context/AuthContext';
 
-export default function Sidebar({ activeTab, switchTab, sidebarCollapsed, setSidebarCollapsed, darkMode, setDarkMode, isSuperAdmin, profile, onSignOut, showToast }) {
+export default function Sidebar({ activeTab, switchTab, sidebarCollapsed, setSidebarCollapsed, darkMode, setDarkMode, isSuperAdmin, onSignOut }) {
   const { getActiveStudent } = usePiar();
   const activeStudent = getActiveStudent();
 
-  const navItems = [
+  const mainItem = {
+    tab: 'tab-dashboard',
+    label: 'Panel de Control',
+    sub: 'Inicio y estudiantes',
+    icon: <span className="material-symbols-outlined">dashboard</span>
+  };
+
+  const anexoItems = [
     {
-      tab: 'tab-dashboard', label: 'Panel de Control',
-      icon: <span className="material-symbols-outlined">dashboard</span>
-    },
-    {
-      tab: 'tab-anexo1', label: 'Anexo 1: Info General',
+      tab: 'tab-anexo1',
+      label: 'Anexo 1: Info General',
+      sub: 'Datos, salud y hogar',
+      step: '01',
       icon: <span className="material-symbols-outlined">description</span>
     },
     {
-      tab: 'tab-anexo2', label: 'Anexo 2: Plan PIAR',
+      tab: 'tab-anexo2',
+      label: 'Anexo 2: Plan PIAR',
+      sub: 'Ajustes razonables',
+      step: '02',
       icon: <span className="material-symbols-outlined">assignment</span>
     },
     {
-      tab: 'tab-anexo3', label: 'Anexo 3: Acta Acuerdo',
+      tab: 'tab-anexo3',
+      label: 'Anexo 3: Acta Acuerdo',
+      sub: 'Compromisos y firmas',
+      step: '03',
       icon: <span className="material-symbols-outlined">handshake</span>
-    },
-    {
-      tab: 'tab-preview', label: 'Vista Previa / Imprimir', isPreview: true,
-      icon: <span className="material-symbols-outlined">visibility</span>
     }
   ];
+
+  const previewItem = {
+    tab: 'tab-preview',
+    label: 'Vista Previa / Imprimir',
+    sub: 'Exportar Word y PDF',
+    icon: <span className="material-symbols-outlined">visibility</span>
+  };
 
   return (
     <aside className="sidebar no-print">
@@ -40,142 +54,147 @@ export default function Sidebar({ activeTab, switchTab, sidebarCollapsed, setSid
       </button>
 
       <div className="sidebar-inner">
-        {/* Header */}
+        {/* Header con emblema */}
         <div className="sidebar-header">
+          <div className="sidebar-brand-mark">
+            <span className="material-symbols-outlined">school</span>
+          </div>
           <div className="sidebar-logo-text">
             <h1>Gestor PIAR</h1>
             <p>DECRETO 1421 DE 2017</p>
           </div>
         </div>
 
-      {/* Student Selector — expandido */}
-      <div className="sidebar-student-selector">
-        <p>ESTUDIANTE EN GESTIÓN</p>
-        {activeStudent ? (
-          <div className="active-student-badge" style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            padding: '10px 12px',
-            borderRadius: 'var(--radius-md, 12px)',
-            background: 'rgba(92, 143, 250, 0.12)',
-            border: '1px solid rgba(92, 143, 250, 0.3)',
-            color: 'var(--text-main)',
-            animation: 'fadeIn 0.2s ease-in-out',
-            boxShadow: 'var(--shadow-sm)'
-          }}>
-            <span className="material-symbols-outlined" style={{ 
-              fontSize: '20px', 
-              color: 'var(--primary)',
-              background: 'rgba(92, 143, 250, 0.15)',
-              borderRadius: '50%',
-              padding: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>school</span>
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
-              <span className="student-name" style={{ 
-                fontSize: '0.85rem', 
-                fontWeight: 700, 
-                color: 'var(--text-main)',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}>
-                {activeStudent.nombre}
-              </span>
-              <span style={{ 
-                fontSize: '0.75rem', 
-                color: 'var(--text-muted)',
-                fontWeight: 600
-              }}>
-                Grado: {activeStudent.grado || 'S/G'}
-              </span>
-            </div>
-          </div>
-        ) : (
-          <div className="active-student-badge-empty" style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            padding: '10px 12px',
-            borderRadius: 'var(--radius-md, 12px)',
-            background: 'var(--bg-app)',
-            border: '1px dashed var(--border-color)',
-            color: 'var(--text-muted)'
-          }}>
-            <span className="material-symbols-outlined" style={{ fontSize: '20px', color: 'var(--text-muted)' }}>person_off</span>
-            <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Ningún estudiante</span>
-          </div>
-        )}
-      </div>
-
-      {/* Student Avatar — solo visible cuando está contraído */}
-      <div className="sidebar-student-avatar" title={activeStudent ? activeStudent.nombre : 'Sin estudiante'}>
-        {activeStudent ? (
-          <span className="material-symbols-outlined" style={{ fontSize: '20px', color: 'var(--primary)' }}>school</span>
-        ) : (
-          <span className="material-symbols-outlined" style={{ fontSize: '20px', color: 'var(--text-muted)' }}>person</span>
-        )}
-      </div>
-
-      {/* Main Navigation */}
-      <div className="sidebar-nav">
-        {navItems.map(item => {
-          if (item.isPreview) {
-            return (
-              <div key={item.tab}>
-                <div className="nav-divider"></div>
-                <a
-                  className={`nav-link nav-link-preview ${activeTab === item.tab ? 'active' : ''}`}
-                  onClick={() => switchTab(item.tab)}
-                  data-tooltip={item.label}
-                >
-                  {item.icon}
-                  <span>{item.label}</span>
-                </a>
+        {/* Student Selector — expandido */}
+        <div className="sidebar-student-selector">
+          <p>ESTUDIANTE EN GESTIÓN</p>
+          {activeStudent ? (
+            <div className="sidebar-student-card sidebar-student-card--active">
+              <div className="sidebar-student-card__icon">
+                <span className="material-symbols-outlined">person</span>
+                <span className="sidebar-student-card__dot" />
               </div>
-            );
-          }
-
-          return (
-            <a
-              key={item.tab}
-              className={`nav-link ${activeTab === item.tab ? 'active' : ''}`}
-              onClick={() => switchTab(item.tab)}
-              data-tooltip={item.label}
+              <div className="sidebar-student-card__info">
+                <span className="student-name">{activeStudent.nombre}</span>
+                <span className="sidebar-student-card__grade">
+                  Grado: {activeStudent.grado || 'Sin asignar'}
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="sidebar-student-card sidebar-student-card--empty"
+              onClick={() => switchTab('tab-dashboard')}
+              title="Ir al Panel de Control para seleccionar un estudiante"
+              style={{ cursor: 'pointer' }}
             >
-              {item.icon}
-              <span>{item.label}</span>
-            </a>
-          );
-        })}
-      </div>
+              <div className="sidebar-student-card__icon sidebar-student-card__icon--muted">
+                <span className="material-symbols-outlined">person_search</span>
+              </div>
+              <div className="sidebar-student-card__info">
+                <span className="sidebar-student-card__empty-title">Ningún estudiante</span>
+                <span className="sidebar-student-card__empty-sub">Seleccionar en Panel →</span>
+              </div>
+            </div>
+          )}
+        </div>
 
-      {/* Footer Navigation */}
-      <div className="sidebar-footer">
-        {isSuperAdmin && (
-          <a className="footer-link" onClick={() => switchTab('tab-admin')} data-tooltip="Panel Admin">
-            <span className="material-symbols-outlined">settings</span>
-            <span>Panel Admin</span>
-          </a>
-        )}
-        <a className="footer-link footer-link-logout" onClick={onSignOut} data-tooltip="Cerrar Sesión">
-          <span className="material-symbols-outlined">logout</span>
-          <span>Cerrar Sesión</span>
-        </a>
-        <div className="theme-toggle-row">
-          <span>Modo Oscuro</span>
-          <button 
-            className={`theme-toggle-btn ${darkMode ? 'active' : ''}`}
-            onClick={() => setDarkMode(!darkMode)}
+        {/* Student Avatar — solo visible cuando está contraído */}
+        <div
+          className={`sidebar-student-avatar ${activeStudent ? 'sidebar-student-avatar--active' : ''}`}
+          title={activeStudent ? `Estudiante: ${activeStudent.nombre}` : 'Ningún estudiante (Ir al Panel)'}
+          onClick={() => switchTab('tab-dashboard')}
+        >
+          <span className="material-symbols-outlined">
+            {activeStudent ? 'person' : 'person_search'}
+          </span>
+          {activeStudent && <span className="sidebar-student-card__dot" />}
+        </div>
+
+        {/* Main Navigation */}
+        <div className="sidebar-nav">
+          <div className="sidebar-section-label">GENERAL</div>
+          <a
+            className={`nav-link nav-link-premium ${activeTab === mainItem.tab ? 'active' : ''}`}
+            onClick={() => switchTab(mainItem.tab)}
+            data-tooltip={mainItem.label}
           >
-            <div className="toggle-thumb"></div>
-          </button>
+            <div className="nav-icon-box">{mainItem.icon}</div>
+            <div className="nav-item-text">
+              <span className="nav-item-title">{mainItem.label}</span>
+              <span className="nav-item-subtitle">{mainItem.sub}</span>
+            </div>
+          </a>
+
+          <div className="sidebar-section-label" style={{ marginTop: '8px' }}>EXPEDIENTE PIAR</div>
+          <div className="sidebar-anexos-group">
+            {anexoItems.map(item => (
+              <a
+                key={item.tab}
+                className={`nav-link nav-link-premium ${activeTab === item.tab ? 'active' : ''}`}
+                onClick={() => switchTab(item.tab)}
+                data-tooltip={item.label}
+              >
+                <div className="nav-icon-box">{item.icon}</div>
+                <div className="nav-item-text">
+                  <span className="nav-item-title">{item.label}</span>
+                  <span className="nav-item-subtitle">{item.sub}</span>
+                </div>
+                {item.step && (
+                  <span className="sidebar-step-pill">{item.step}</span>
+                )}
+              </a>
+            ))}
+          </div>
+
+          <div className="sidebar-section-label" style={{ marginTop: '8px' }}>DOCUMENTO FINAL</div>
+          <a
+            className={`nav-link nav-link-preview nav-link-preview-premium ${activeTab === previewItem.tab ? 'active' : ''}`}
+            onClick={() => switchTab(previewItem.tab)}
+            data-tooltip={previewItem.label}
+          >
+            <div className="nav-icon-box nav-icon-box--preview">{previewItem.icon}</div>
+            <div className="nav-item-text">
+              <span className="nav-item-title">{previewItem.label}</span>
+              <span className="nav-item-subtitle">{previewItem.sub}</span>
+            </div>
+            <span className="material-symbols-outlined nav-preview-arrow">arrow_forward_ios</span>
+          </a>
+        </div>
+
+        {/* Footer Navigation */}
+        <div className="sidebar-footer">
+          {isSuperAdmin && (
+            <a
+              className={`footer-link ${activeTab === 'tab-admin' ? 'active' : ''}`}
+              onClick={() => switchTab('tab-admin')}
+              data-tooltip="Panel Admin"
+            >
+              <span className="material-symbols-outlined">settings</span>
+              <span>Panel Admin</span>
+            </a>
+          )}
+          <a className="footer-link footer-link-logout" onClick={onSignOut} data-tooltip="Cerrar Sesión">
+            <span className="material-symbols-outlined">logout</span>
+            <span>Cerrar Sesión</span>
+          </a>
+          <div className="theme-toggle-row" title={darkMode ? 'Modo oscuro activo' : 'Activar modo oscuro'}>
+            <div className="theme-toggle-label" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px', color: 'var(--text-muted)' }}>
+                {darkMode ? 'dark_mode' : 'light_mode'}
+              </span>
+              <span>Modo Oscuro</span>
+            </div>
+            <button
+              className={`theme-toggle-btn ${darkMode ? 'active' : ''}`}
+              onClick={() => setDarkMode(!darkMode)}
+              aria-label="Alternar modo oscuro"
+            >
+              <div className="toggle-thumb"></div>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  </aside>
-);
+    </aside>
+  );
 }

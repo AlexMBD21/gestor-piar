@@ -3,9 +3,18 @@ import { PLantillasPIAR } from '../lib/piarTemplates';
 import AjustesTable from './AjustesTable';
 import PmiTable from './PmiTable';
 import SignaturePad from './SignaturePad';
+import AnexoQuickNav from './AnexoQuickNav';
 
-export default function Anexo2Form({ showToast, switchTab }) {
-  const { getActiveStudent, savePiar, updateLocalPiarData, saveActivePiar, unsavedChanges } = usePiar();
+const ANEXO2_SECTIONS = [
+  { id: 'anexo2-sec-general', icon: 'edit_calendar', label: '1. Datos de Elaboración' },
+  { id: 'anexo2-sec-caracteristicas', icon: 'psychology', label: '2. Características Estudiante' },
+  { id: 'anexo2-sec-ajustes', icon: 'tune', label: '3. Ajustes Razonables' },
+  { id: 'anexo2-sec-pmi', icon: 'insights', label: '4. Recomendaciones PMI' },
+  { id: 'anexo2-sec-firmas', icon: 'draw', label: '5. Firmas de Responsables' }
+];
+
+export default function Anexo2Form({ switchTab }) {
+  const { getActiveStudent, updateLocalPiarData } = usePiar();
   const activeStudent = getActiveStudent();
   const isBlankTemplate = !activeStudent;
 
@@ -46,6 +55,8 @@ export default function Anexo2Form({ showToast, switchTab }) {
 
   return (
     <>
+      <AnexoQuickNav sections={ANEXO2_SECTIONS} ariaLabel="Secciones del Anexo 2" />
+
       <div className="card print-page">
         <div className="card-title-container">
           <h3 className="card-title">
@@ -85,138 +96,185 @@ export default function Anexo2Form({ showToast, switchTab }) {
         </div>
 
         <h5 className="section-subtitle">Datos del Estudiante</h5>
-        <div className="form-grid-4" style={{ backgroundColor: 'var(--bg-input)', padding: 16, borderRadius: 'var(--radius-md)', marginBottom: 24 }}>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Estudiante</label>
-            <div style={{ fontWeight: 600 }}>{isBlankTemplate ? '' : displayStudent.nombre}</div>
+        <div className="form-grid-4 student-summary-grid">
+          <div className="student-summary-item">
+            <div className="student-summary-icon">
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>person</span>
+            </div>
+            <div className="student-summary-content">
+              <span className="student-summary-label">Estudiante</span>
+              <div className={`student-summary-value ${!isBlankTemplate && displayStudent.nombre ? '' : 'student-summary-empty'}`}>
+                {!isBlankTemplate && displayStudent.nombre ? displayStudent.nombre : 'Sin seleccionar'}
+              </div>
+            </div>
           </div>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Identificación</label>
-            <div style={{ fontWeight: 600 }}>{isBlankTemplate ? '' : data.anexo1?.estudiante?.numeroIdentificacion}</div>
+
+          <div className="student-summary-item">
+            <div className="student-summary-icon">
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>badge</span>
+            </div>
+            <div className="student-summary-content">
+              <span className="student-summary-label">Identificación</span>
+              <div className={`student-summary-value ${!isBlankTemplate && data.anexo1?.estudiante?.numeroIdentificacion ? '' : 'student-summary-empty'}`}>
+                {!isBlankTemplate && data.anexo1?.estudiante?.numeroIdentificacion ? data.anexo1.estudiante.numeroIdentificacion : '—'}
+              </div>
+            </div>
           </div>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Edad</label>
-            <div style={{ fontWeight: 600 }}>{isBlankTemplate ? '' : (data.anexo1?.estudiante?.edad ? `${data.anexo1.estudiante.edad} años` : '')}</div>
+
+          <div className="student-summary-item">
+            <div className="student-summary-icon">
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>cake</span>
+            </div>
+            <div className="student-summary-content">
+              <span className="student-summary-label">Edad</span>
+              <div className={`student-summary-value ${!isBlankTemplate && data.anexo1?.estudiante?.edad ? '' : 'student-summary-empty'}`}>
+                {!isBlankTemplate && data.anexo1?.estudiante?.edad ? `${data.anexo1.estudiante.edad} años` : '—'}
+              </div>
+            </div>
           </div>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Grado</label>
-            <div style={{ fontWeight: 600 }}>{isBlankTemplate ? '' : displayStudent.grado}</div>
+
+          <div className="student-summary-item">
+            <div className="student-summary-icon">
+              <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>school</span>
+            </div>
+            <div className="student-summary-content">
+              <span className="student-summary-label">Grado</span>
+              <div className={`student-summary-value ${!isBlankTemplate && displayStudent.grado ? '' : 'student-summary-empty'}`}>
+                {!isBlankTemplate && displayStudent.grado ? displayStudent.grado : '—'}
+              </div>
+            </div>
           </div>
         </div>
         <div style={isBlankTemplate ? { pointerEvents: 'none', opacity: 0.85 } : {}}>
-          <h5 className="section-subtitle">Datos de Elaboración</h5>
-          <div className="form-grid-3">
-            <div className="form-group">
-              <label htmlFor="anexo2-general-fechaElaboracion">Fecha de Elaboración</label>
-              <input
-                type="date"
-                id="anexo2-general-fechaElaboracion"
-                className="form-control"
-                value={general.fechaElaboracion || ''}
-                onChange={e => handleGeneralChange('fechaElaboracion', e.target.value)}
-              />
+          {/* 1. Datos de Elaboración */}
+          <div id="anexo2-sec-general" className="anexo-section-anchor">
+            <h5 className="section-subtitle">Datos de Elaboración</h5>
+            <div className="form-grid-3">
+              <div className="form-group">
+                <label htmlFor="anexo2-general-fechaElaboracion">Fecha de Elaboración</label>
+                <input
+                  type="date"
+                  id="anexo2-general-fechaElaboracion"
+                  className="form-control"
+                  value={general.fechaElaboracion || ''}
+                  onChange={e => handleGeneralChange('fechaElaboracion', e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="anexo2-general-institucion">Institución Educativa</label>
+                <input
+                  type="text"
+                  id="anexo2-general-institucion"
+                  className="form-control"
+                  placeholder="I.E. Nombre"
+                  value={general.institucion || ''}
+                  onChange={e => handleGeneralChange('institucion', e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="anexo2-general-sede">Sede Educativa</label>
+                <input
+                  type="text"
+                  id="anexo2-general-sede"
+                  className="form-control"
+                  placeholder="Ej. Principal, Sede B"
+                  value={general.sede || ''}
+                  onChange={e => handleGeneralChange('sede', e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="anexo2-general-jornada">Jornada</label>
+                <input
+                  type="text"
+                  id="anexo2-general-jornada"
+                  className="form-control"
+                  placeholder="Ej. Mañana, Tarde"
+                  value={general.jornada || ''}
+                  onChange={e => handleGeneralChange('jornada', e.target.value)}
+                />
+              </div>
+              <div className="form-group col-span-2">
+                <label htmlFor="anexo2-general-docentesElaboran">Docentes que elaboran</label>
+                <input
+                  type="text"
+                  id="anexo2-general-docentesElaboran"
+                  className="form-control"
+                  placeholder="Nombres de los docentes"
+                  value={general.docentesElaboran || ''}
+                  onChange={e => handleGeneralChange('docentesElaboran', e.target.value)}
+                />
+              </div>
             </div>
+          </div>
+
+          {/* 2. Características del Estudiante */}
+          <div id="anexo2-sec-caracteristicas" className="anexo-section-anchor">
+            <h5 className="section-subtitle">1. Características del Estudiante</h5>
             <div className="form-group">
-              <label htmlFor="anexo2-general-institucion">Institución Educativa</label>
-              <input
-                type="text"
-                id="anexo2-general-institucion"
+              <label htmlFor="anexo2-caracteristicasEstudiante">
+                Descripción general del estudiante con énfasis en sus gustos, intereses o aspectos que le desagradan, expectativas de la familia
+              </label>
+              <textarea
+                id="anexo2-caracteristicasEstudiante"
                 className="form-control"
-                placeholder="I.E. Nombre"
-                value={general.institucion || ''}
-                onChange={e => handleGeneralChange('institucion', e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="anexo2-general-sede">Sede Educativa</label>
-              <input
-                type="text"
-                id="anexo2-general-sede"
-                className="form-control"
-                placeholder="Ej. Principal, Sede B"
-                value={general.sede || ''}
-                onChange={e => handleGeneralChange('sede', e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="anexo2-general-jornada">Jornada</label>
-              <input
-                type="text"
-                id="anexo2-general-jornada"
-                className="form-control"
-                placeholder="Ej. Mañana, Tarde"
-                value={general.jornada || ''}
-                onChange={e => handleGeneralChange('jornada', e.target.value)}
-              />
-            </div>
-            <div className="form-group col-span-2">
-              <label htmlFor="anexo2-general-docentesElaboran">Docentes que elaboran</label>
-              <input
-                type="text"
-                id="anexo2-general-docentesElaboran"
-                className="form-control"
-                placeholder="Nombres de los docentes"
-                value={general.docentesElaboran || ''}
-                onChange={e => handleGeneralChange('docentesElaboran', e.target.value)}
+                rows="4"
+                placeholder="Habilidades, gustos, expectativas, etc..."
+                value={caracteristicasEstudiante || ''}
+                onChange={e => handleChange('caracteristicasEstudiante', e.target.value)}
               />
             </div>
           </div>
 
-          <h5 className="section-subtitle">1. Características del Estudiante</h5>
-          <div className="form-group">
-            <label htmlFor="anexo2-caracteristicasEstudiante">
-              Descripción general del estudiante con énfasis en sus gustos, intereses o aspectos que le desagradan, expectativas de la familia
-            </label>
-            <textarea
-              id="anexo2-caracteristicasEstudiante"
-              className="form-control"
-              rows="4"
-              placeholder="Habilidades, gustos, expectativas, etc..."
-              value={caracteristicasEstudiante || ''}
-              onChange={e => handleChange('caracteristicasEstudiante', e.target.value)}
+          {/* 3. Ajustes Razonables */}
+          <div id="anexo2-sec-ajustes" className="anexo-section-anchor">
+            <AjustesTable
+              list={data.anexo2.ajustesRazonables || []}
+              onUpdate={newList => handleTableUpdate('anexo2', 'ajustesRazonables', newList)}
+              docentesElaboran={general.docentesElaboran || ''}
             />
           </div>
 
-          <AjustesTable
-            list={data.anexo2.ajustesRazonables || []}
-            onUpdate={newList => handleTableUpdate('anexo2', 'ajustesRazonables', newList)}
-          />
+          {/* 4. Recomendaciones PMI */}
+          <div id="anexo2-sec-pmi" className="anexo-section-anchor">
+            <PmiTable
+              list={data.anexo2.pmiRecomendaciones || []}
+              onUpdate={newList => handleTableUpdate('anexo2', 'pmiRecomendaciones', newList)}
+            />
+          </div>
 
-          <PmiTable
-            list={data.anexo2.pmiRecomendaciones || []}
-            onUpdate={newList => handleTableUpdate('anexo2', 'pmiRecomendaciones', newList)}
-          />
-
-          <h5 className="section-subtitle">Firmas de Responsables</h5>
-          <div className="signature-grid">
-            {[0, 1, 2].map(idx => (
-              <div key={idx} className="signature-input-card">
-                <label style={{ fontWeight: 600, display: 'block' }}>Responsable {idx + 1}</label>
-                <div style={{ marginTop: '4px' }}>
-                  <SignaturePad
-                    label={`Nombre y firma Responsable ${idx + 1}`}
-                    savedSignature={firmas?.[idx]?.signature || ''}
-                    onSave={val => handleFirmaChange(idx, 'signature', val)}
-                    onClear={() => handleFirmaChange(idx, 'signature', '')}
+          {/* 5. Firmas de Responsables */}
+          <div id="anexo2-sec-firmas" className="anexo-section-anchor">
+            <h5 className="section-subtitle">Firmas de Responsables</h5>
+            <div className="signature-grid">
+              {[0, 1, 2].map(idx => (
+                <div key={idx} className="signature-input-card">
+                  <label style={{ fontWeight: 600, display: 'block' }}>Responsable {idx + 1}</label>
+                  <div style={{ marginTop: '4px' }}>
+                    <SignaturePad
+                      label={`Nombre y firma Responsable ${idx + 1}`}
+                      savedSignature={firmas?.[idx]?.signature || ''}
+                      onSave={val => handleFirmaChange(idx, 'signature', val)}
+                      onClear={() => handleFirmaChange(idx, 'signature', '')}
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Nombre completo"
+                    value={firmas?.[idx]?.nombre || ''}
+                    onChange={e => handleFirmaChange(idx, 'nombre', e.target.value)}
+                    style={{ marginBottom: 8 }}
+                  />
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Cargo / Área"
+                    value={firmas?.[idx]?.area || ''}
+                    onChange={e => handleFirmaChange(idx, 'area', e.target.value)}
                   />
                 </div>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Nombre completo"
-                  value={firmas?.[idx]?.nombre || ''}
-                  onChange={e => handleFirmaChange(idx, 'nombre', e.target.value)}
-                  style={{ marginBottom: 8 }}
-                />
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="Cargo / Área"
-                  value={firmas?.[idx]?.area || ''}
-                  onChange={e => handleFirmaChange(idx, 'area', e.target.value)}
-                />
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -226,41 +284,11 @@ export default function Anexo2Form({ showToast, switchTab }) {
           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_back</span>
           <span>Anterior Anexo 1</span>
         </button>
-        
-        {unsavedChanges && !isBlankTemplate && (
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', animation: 'fadeIn 0.3s ease-in-out' }}>
-              <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: 'var(--warning)', animation: 'pulse 1.5s infinite ease-in-out' }} />
-              <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--warning)' }}>Tienes aportaciones sin guardar</span>
-            </div>
-          </div>
-        )}
-        
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          {!isBlankTemplate && (
-            <button 
-              type="button" 
-              className="btn-wizard-save" 
-              onClick={async () => {
-                const result = await saveActivePiar();
-                if (result && result.success) showToast('Aportación guardada correctamente');
-                else showToast(result?.message || 'Error al guardar', 'danger');
-              }}
-              disabled={!unsavedChanges}
-              style={{
-                opacity: !unsavedChanges ? 0.6 : 1,
-                cursor: !unsavedChanges ? 'not-allowed' : 'pointer'
-              }}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>save</span>
-              <span>Guardar Aportación</span>
-            </button>
-          )}
-          <button type="button" className="btn-wizard-next" onClick={() => switchTab('tab-anexo3')}>
-            <span>Siguiente Anexo 3</span>
-            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_forward</span>
-          </button>
-        </div>
+
+        <button type="button" className="btn-wizard-next" onClick={() => switchTab('tab-anexo3')}>
+          <span>Siguiente Anexo 3</span>
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>arrow_forward</span>
+        </button>
       </div>
     </>
   );

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { usePiar } from '../context/PiarContext';
-import { escHtml, PLantillasPIAR } from '../lib/piarTemplates';
+import { PLantillasPIAR } from '../lib/piarTemplates';
 import html2pdf from 'html2pdf.js';
 import AutoFitText from './AutoFitText';
 
@@ -55,7 +55,7 @@ export default function PreviewTab({ showToast, switchTab }) {
   const firmas = s.anexo3.firmas || {};
 
   // Separación de ajustes
-  const normAjustes = ajustes.filter(a => !a.area.toLowerCase().startsWith('otras'));
+  const normAjustes = ajustes.filter(a => !(a.area || '').toLowerCase().startsWith('otras'));
   const otrasCategories = [
     { key: 'Convivencia', label: 'Convivencia' },
     { key: 'Socialización', label: 'Socialización' },
@@ -63,7 +63,7 @@ export default function PreviewTab({ showToast, switchTab }) {
     { key: 'Autonomía', label: 'Autonomía' },
     { key: 'Autocontrol', label: 'Autocontrol' }
   ].map(cat => {
-    const found = ajustes.find(a => a.area.toLowerCase().includes(cat.key.toLowerCase()));
+    const found = ajustes.find(a => (a.area || '').toLowerCase().includes(cat.key.toLowerCase()));
     if (found && found.trimestres && found.trimestres.length > 0) {
       return {
         label: cat.label,
@@ -1107,43 +1107,85 @@ export default function PreviewTab({ showToast, switchTab }) {
             <p style={{ margin: '5px 0', fontSize: '5pt' }}>&nbsp;</p>
 
             <div style={{ fontWeight: 'bold', fontSize: '10pt', marginTop: 15, marginBottom: 8, pageBreakAfter: 'avoid', breakAfter: 'avoid' }}>2. Ajustes Razonables.</div>
-            <table className="piar-official-table" style={{ fontSize: '8pt' }}>
-              <thead>
-                <tr style={{ textAlign: 'center', backgroundColor: '#fff' }}>
-                  <th style={{ width: '12%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>ÁREA S/ A P R E N D I Z A J E S</th>
-                  <th style={{ width: '22%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>OBJETIVOS/PROPÓSITOS<br /><span style={{ fontWeight: 'normal', fontSize: '7.5pt' }}>(Estas son para todo el grado, de acuerdo con los EBC y los DBA)<br /><br /><strong>Primer trimestre</strong></span></th>
-                  <th style={{ width: '22%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>BARRERAS QUE SE EVIDENCIAN EN EL CONTEXTO SOBRE LAS QUE SE DEBEN TRABAJAR</th>
-                  <th style={{ width: '22%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>AJUSTES RAZONABLES<br /><span style={{ fontWeight: 'normal', fontSize: '7.5pt' }}>(Apoyos/estrategias)</span></th>
-                  <th style={{ width: '22%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>EVALUACIÓN DE LOS AJUSTES<br /><br /><span style={{ fontWeight: 'normal', fontSize: '7.5pt' }}>(Dejar espacio para observaciones. Realizar seguimiento 3 veces en el año como mínimo- de acuerdo con la periodicidad establecida en el Sistema Institucional de Evaluación de los Estudiantes SIEE)</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                {normAjustes.length === 0 ? (
+
+            {normAjustes.length === 0 ? (
+              <table className="piar-official-table" style={{ fontSize: '8pt', marginBottom: 14 }}>
+                <thead>
+                  <tr style={{ backgroundColor: '#f8fafc', textAlign: 'left' }}>
+                    <th colSpan="2" style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'normal', fontSize: '8.5pt' }}>
+                      <strong>Docente:</strong> {v(gen2.docentesElaboran)}
+                    </th>
+                    <th colSpan="2" style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'normal', fontSize: '8.5pt' }}>
+                      <strong>Estudiante:</strong> {isBlankTemplate ? '' : v(activeStudent?.nombre)}
+                    </th>
+                    <th colSpan="1" style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'normal', fontSize: '8.5pt' }}>
+                      <strong>Grado:</strong> {isBlankTemplate ? '' : v(activeStudent?.grado || gen2.grado)}
+                    </th>
+                  </tr>
+                  <tr style={{ textAlign: 'center', backgroundColor: '#fff' }}>
+                    <th style={{ width: '12%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>ÁREA S/ A P R E N D I Z A J E S</th>
+                    <th style={{ width: '22%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>OBJETIVOS/PROPÓSITOS<br /><span style={{ fontWeight: 'normal', fontSize: '7.5pt' }}>(Estas son para todo el grado, de acuerdo con los EBC y los DBA)<br /><br /><strong>Primer trimestre</strong></span></th>
+                    <th style={{ width: '22%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>BARRERAS QUE SE EVIDENCIAN EN EL CONTEXTO SOBRE LAS QUE SE DEBEN TRABAJAR</th>
+                    <th style={{ width: '22%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>AJUSTES RAZONABLES<br /><span style={{ fontWeight: 'normal', fontSize: '7.5pt' }}>(Apoyos/estrategias)</span></th>
+                    <th style={{ width: '22%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>EVALUACIÓN DE LOS AJUSTES<br /><br /><span style={{ fontWeight: 'normal', fontSize: '7.5pt' }}>(Dejar espacio para observaciones. Realizar seguimiento 3 veces en el año como mínimo- de acuerdo con la periodicidad establecida en el Sistema Institucional de Evaluación de los Estudiantes SIEE)</span></th>
+                  </tr>
+                </thead>
+                <tbody>
                   <tr>
                     <td colSpan="5" style={{ textAlign: 'center', color: '#94a3b8', fontStyle: 'italic', padding: 10 }}>Sin ajustes razonables registrados.</td>
                   </tr>
-                ) : (
-                  normAjustes.map(a => {
-                    const validTrimestres = (a.trimestres && a.trimestres.length > 0 ? a.trimestres : [a]).filter(t => Boolean(t.trimestre));
-                    
-                    if (validTrimestres.length === 0) {
-                      return (
-                        <tr key={a.id}>
-                          <td style={{ verticalAlign: 'middle', textAlign: 'center', fontWeight: 'bold' }}>
+                </tbody>
+              </table>
+            ) : (
+              normAjustes.map((a, areaIdx) => {
+                const validTrimestres = (a.trimestres && a.trimestres.length > 0 ? a.trimestres : [a]).filter(t => Boolean(t.trimestre));
+
+                return (
+                  <table
+                    key={a.id || `area-${areaIdx}`}
+                    className="piar-official-table"
+                    style={{ fontSize: '8pt', marginTop: areaIdx === 0 ? 0 : 16, marginBottom: 14 }}
+                  >
+                    <thead>
+                      {/* Encabezado de identificación por Área: Docente, Estudiante y Grado */}
+                      <tr style={{ backgroundColor: '#f8fafc', textAlign: 'left' }}>
+                        <th colSpan="2" style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'normal', fontSize: '8.5pt' }}>
+                          <strong>Docente:</strong> {v(a.docente || gen2.docentesElaboran)}
+                        </th>
+                        <th colSpan="2" style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'normal', fontSize: '8.5pt' }}>
+                          <strong>Estudiante:</strong> {isBlankTemplate ? '' : v(activeStudent?.nombre)}
+                        </th>
+                        <th colSpan="1" style={{ border: '1px solid #000', padding: '6px 8px', fontWeight: 'normal', fontSize: '8.5pt' }}>
+                          <strong>Grado:</strong> {isBlankTemplate ? '' : v(activeStudent?.grado || gen2.grado)}
+                        </th>
+                      </tr>
+                      {/* Encabezado de Columnas repetido por cada Área */}
+                      <tr style={{ textAlign: 'center', backgroundColor: '#fff' }}>
+                        <th style={{ width: '12%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>ÁREA S/ A P R E N D I Z A J E S</th>
+                        <th style={{ width: '22%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>OBJETIVOS/PROPÓSITOS<br /><span style={{ fontWeight: 'normal', fontSize: '7.5pt' }}>(Estas son para todo el grado, de acuerdo con los EBC y los DBA)<br /><br /><strong>Primer trimestre</strong></span></th>
+                        <th style={{ width: '22%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>BARRERAS QUE SE EVIDENCIAN EN EL CONTEXTO SOBRE LAS QUE SE DEBEN TRABAJAR</th>
+                        <th style={{ width: '22%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>AJUSTES RAZONABLES<br /><span style={{ fontWeight: 'normal', fontSize: '7.5pt' }}>(Apoyos/estrategias)</span></th>
+                        <th style={{ width: '22%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>EVALUACIÓN DE LOS AJUSTES<br /><br /><span style={{ fontWeight: 'normal', fontSize: '7.5pt' }}>(Dejar espacio para observaciones. Realizar seguimiento 3 veces en el año como mínimo- de acuerdo con la periodicidad establecida en el Sistema Institucional de Evaluación de los Estudiantes SIEE)</span></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {validTrimestres.length === 0 ? (
+                        <tr>
+                          <td style={{ verticalAlign: 'middle', textAlign: 'center', fontWeight: 'bold', width: '12%', border: '1px solid #000', padding: '6px' }}>
                             <strong style={{ display: 'block', fontSize: '9pt', textTransform: 'uppercase' }}>{a.area}</strong>
-                            {a.docente && <span style={{ fontWeight: 'normal', fontSize: '7.5pt', color: '#475569', display: 'block', marginTop: 2 }}>Docente: {a.docente}</span>}
+                            {a.asignatura && (
+                              <span style={{ fontWeight: 'normal', fontSize: '7.5pt', color: '#334155', display: 'block', marginTop: 4 }}>
+                                Asignatura: <strong>{a.asignatura}</strong>
+                              </span>
+                            )}
                           </td>
                           <td>—</td>
                           <td>—</td>
                           <td>—</td>
                           <td>—</td>
                         </tr>
-                      );
-                    }
-
-                    return (
-                      <React.Fragment key={a.id}>
-                        {validTrimestres.map((t, index) => (
+                      ) : (
+                        validTrimestres.map((t, index) => (
                           <React.Fragment key={t.id || `${a.id}-${index}`}>
                             {/* Celda divisora de Trimestre/Periodo que abarca todas las columnas */}
                             <tr className="trimestre-divider-row">
@@ -1165,7 +1207,11 @@ export default function PreviewTab({ showToast, switchTab }) {
                             <tr>
                               <td style={{ verticalAlign: 'middle', textAlign: 'center', fontWeight: 'bold', width: '12%', border: '1px solid #000', padding: '6px' }}>
                                 <strong style={{ display: 'block', fontSize: '9pt', textTransform: 'uppercase' }}>{a.area}</strong>
-                                {a.docente && <span style={{ fontWeight: 'normal', fontSize: '7.5pt', color: '#334155', display: 'block', marginTop: '4px' }}>Docente: {a.docente}</span>}
+                                {a.asignatura && (
+                                  <span style={{ fontWeight: 'normal', fontSize: '7.5pt', color: '#334155', display: 'block', marginTop: '4px' }}>
+                                    Asignatura: <strong>{a.asignatura}</strong>
+                                  </span>
+                                )}
                               </td>
                               <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>{v(t.objetivos)}</td>
                               <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>{v(t.barreras || t.bareras)}</td>
@@ -1173,19 +1219,31 @@ export default function PreviewTab({ showToast, switchTab }) {
                               <td style={{ border: '1px solid #000', padding: '6px', verticalAlign: 'top' }}>{v(t.evaluacion)}</td>
                             </tr>
                           </React.Fragment>
-                        ))}
-                      </React.Fragment>
-                    );
-                  })
-                )}
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                );
+              })
+            )}
 
-                {/* Otras categories rows */}
+            {/* Tabla para Otras categorías (Convivencia, Socialización, Participación, Autonomía, Autocontrol) */}
+            <table className="piar-official-table" style={{ fontSize: '8pt', marginTop: 16 }}>
+              <thead>
+                <tr style={{ textAlign: 'center', backgroundColor: '#fff' }}>
+                  <th style={{ width: '12%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>ÁREA S/ A P R E N D I Z A J E S</th>
+                  <th style={{ width: '22%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>OBJETIVOS/PROPÓSITOS<br /><span style={{ fontWeight: 'normal', fontSize: '7.5pt' }}>(Estas son para todo el grado, de acuerdo con los EBC y los DBA)</span></th>
+                  <th style={{ width: '22%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>BARRERAS QUE SE EVIDENCIAN EN EL CONTEXTO SOBRE LAS QUE SE DEBEN TRABAJAR</th>
+                  <th style={{ width: '22%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>AJUSTES RAZONABLES<br /><span style={{ fontWeight: 'normal', fontSize: '7.5pt' }}>(Apoyos/estrategias)</span></th>
+                  <th style={{ width: '22%', border: '1px solid #000', padding: 6, fontWeight: 'bold' }}>EVALUACIÓN DE LOS AJUSTES<br /><br /><span style={{ fontWeight: 'normal', fontSize: '7.5pt' }}>(Dejar espacio para observaciones. Realizar seguimiento 3 veces en el año como mínimo- de acuerdo con la periodicidad establecida en el Sistema Institucional de Evaluación de los Estudiantes SIEE)</span></th>
+                </tr>
+              </thead>
+              <tbody>
                 <tr>
                   <td rowSpan="5" style={{ fontWeight: 'bold', textAlign: 'center', verticalAlign: 'middle' }}>Otras</td>
                   <td style={{ fontWeight: 'bold', verticalAlign: 'top' }}>
                     {otrasCategories[0].label}
                     {otrasCategories[0].trimestre && <span style={{ fontWeight: 'normal', fontSize: '7.5pt', color: '#475569', display: 'block', marginTop: 4 }}>{otrasCategories[0].trimestre}</span>}
-                    <span style={{ fontWeight: 'normal', fontSize: '7.5pt', color: '#0f172a', display: 'block', marginTop: 2 }}>Docente: {otrasCategories[0].docente || '—'}</span>
                   </td>
                   <td>{v(otrasCategories[0].barreras)}</td>
                   <td>{v(otrasCategories[0].ajustes)}</td>
@@ -1196,7 +1254,6 @@ export default function PreviewTab({ showToast, switchTab }) {
                     <td style={{ fontWeight: 'bold', verticalAlign: 'top' }}>
                       {cat.label}
                       {cat.trimestre && <span style={{ fontWeight: 'normal', fontSize: '7.5pt', color: '#475569', display: 'block', marginTop: 4 }}>{cat.trimestre}</span>}
-                      <span style={{ fontWeight: 'normal', fontSize: '7.5pt', color: '#0f172a', display: 'block', marginTop: 2 }}>Docente: {cat.docente || '—'}</span>
                     </td>
                     <td>{v(cat.barreras)}</td>
                     <td>{v(cat.ajustes)}</td>
