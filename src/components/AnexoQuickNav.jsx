@@ -14,6 +14,7 @@ export default function AnexoQuickNav({ sections, ariaLabel }) {
   const isScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef(null);
   const scrollAnimRef = useRef(null);
+  const wasHiddenRef = useRef(true);
 
   // Sincronizar activeSectionId si sections cambia o el id actual no existe en la lista
   useEffect(() => {
@@ -48,18 +49,55 @@ export default function AnexoQuickNav({ sections, ariaLabel }) {
     const handleScroll = () => {
       // Si el usuario acaba de hacer clic en un botón, no sobreescribir durante la animación de scroll
       if (isScrollingRef.current) return;
-      if (!Array.isArray(sections)) return;
+      if (!Array.isArray(sections) || sections.length === 0) return;
 
-      // ScrollSpy: identificar qué sección está visible actualmente
-      const scrollPosition = window.scrollY + 160;
-      for (let i = sections.length - 1; i >= 0; i--) {
+      const navEl = navRef.current;
+      // Si el componente está en una pestaña oculta (display: none), ignorar eventos de scroll
+      if (!navEl || navEl.offsetParent === null) return;
+
+      const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+
+      // 1. Si el scroll está cerca del inicio superior, siempre debe ser la primera sección
+      if (currentScrollY < 120) {
+        if (sections[0]?.id) {
+          setActiveSectionId((prev) => (prev !== sections[0].id ? sections[0].id : prev));
+        }
+        return;
+      }
+
+      // 2. Si el scroll ha llegado al final de la página (fondo), activar la última sección
+      const isAtBottom = (window.innerHeight + currentScrollY) >= (document.documentElement.scrollHeight - 60);
+      if (isAtBottom) {
+        const lastSec = sections[sections.length - 1];
+        if (lastSec?.id) {
+          setActiveSectionId((prev) => (prev !== lastSec.id ? lastSec.id : prev));
+        }
+        return;
+      }
+
+      // 3. ScrollSpy preciso mediante getBoundingClientRect en el viewport
+      // Trigger a 130px (debajo del header y la barra sticky de secciones)
+      const triggerY = 130;
+      let matchedSectionId = sections[0].id;
+
+      for (let i = 0; i < sections.length; i++) {
         const sec = sections[i];
         if (!sec?.id) continue;
         const el = document.getElementById(sec.id);
-        if (el && el.offsetTop <= scrollPosition) {
-          setActiveSectionId(sec.id);
+        if (!el || el.offsetParent === null) continue;
+
+        const rect = el.getBoundingClientRect();
+        if (rect.top <= triggerY) {
+          matchedSectionId = sec.id;
+        } else {
+          // Como las secciones van en orden hacia abajo, si esta sección aún está por debajo del triggerY,
+          // la sección activa actual es la anterior
           break;
         }
+      }
+
+      if (matchedSectionId) {
+        setActiveSectionId((prev) => (prev !== matchedSectionId ? matchedSectionId : prev));
       }
     };
 
@@ -76,25 +114,82 @@ export default function AnexoQuickNav({ sections, ariaLabel }) {
   useEffect(() => {
     updateIndicator();
     const rafId = requestAnimationFrame(updateIndicator);
+    const timerId = setTimeout(updateIndicator, 60);
     window.addEventListener('resize', updateIndicator);
 
     let resizeObserver;
     if (navRef.current && typeof ResizeObserver !== 'undefined') {
       resizeObserver = new ResizeObserver(() => {
-        // Envolver en requestAnimationFrame para evitar errores de 'ResizeObserver loop limit exceeded'
         requestAnimationFrame(() => {
+          const navEl = navRef.current;
+          if (!navEl || navEl.offsetParent === null) {
+            wasHiddenRef.current = true;
+            return;
+          }
+
+          // Si acaba de transicionar de oculto a visible (por ejemplo al cambiar de pestaña)
+          if (wasHiddenRef.current) {
+            wasHiddenRef.current = false;
+            navEl.scrollLeft = 0;
+            const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+            if (currentScrollY < 120 && Array.isArray(sections) && sections.length > 0) {
+              setActiveSectionId(sections[0].id);
+            }
+          }
+
           updateIndicator();
         });
       });
       resizeObserver.observe(navRef.current);
     }
 
+    // Observador de mutación para detectar cuando el tab-content contenedor recibe la clase 'active'
+    let mutationObserver;
+    const tabContentParent = navRef.current?.closest('.tab-content');
+    if (tabContentParent && typeof MutationObserver !== 'undefined') {
+      mutationObserver = new MutationObserver(() => {
+        if (tabContentParent.classList.contains('active')) {
+          wasHiddenRef.current = false;
+          const navEl = navRef.current;
+          if (navEl) navEl.scrollLeft = 0;
+          const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+          if (currentScrollY < 120 && Array.isArray(sections) && sections.length > 0) {
+            setActiveSectionId(sections[0].id);
+          }
+          requestAnimationFrame(updateIndicator);
+        } else {
+          wasHiddenRef.current = true;
+        }
+      });
+      mutationObserver.observe(tabContentParent, { attributes: true, attributeFilter: ['class', 'style'] });
+    }
+
     return () => {
       cancelAnimationFrame(rafId);
+      clearTimeout(timerId);
       window.removeEventListener('resize', updateIndicator);
       if (resizeObserver) resizeObserver.disconnect();
+      if (mutationObserver) mutationObserver.disconnect();
     };
-  }, [updateIndicator]);
+  }, [updateIndicator, sections]);
+
+  // Asegurar que en pantallas angostas el botón activo sea visible en el contenedor scrolleable horizontalmente
+  useEffect(() => {
+    const activeBtn = btnRefs.current[activeSectionId];
+    const nav = navRef.current;
+    if (activeBtn && nav && nav.scrollWidth > nav.clientWidth) {
+      const btnLeft = activeBtn.offsetLeft;
+      const btnRight = btnLeft + activeBtn.offsetWidth;
+      const navScrollLeft = nav.scrollLeft;
+      const navVisibleRight = navScrollLeft + nav.clientWidth;
+
+      if (btnLeft < navScrollLeft) {
+        nav.scrollTo({ left: Math.max(0, btnLeft - 16), behavior: 'smooth' });
+      } else if (btnRight > navVisibleRight) {
+        nav.scrollTo({ left: btnRight - nav.clientWidth + 16, behavior: 'smooth' });
+      }
+    }
+  }, [activeSectionId]);
 
   const scrollToSection = (sectionId) => {
     const el = document.getElementById(sectionId);
