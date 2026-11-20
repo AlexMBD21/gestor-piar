@@ -7960,3 +7960,3742 @@ body.dark-mode .nav-link-preview.active {
 .sc-btn-more .material-symbols-outlined {
   font-size: 18px !important;
 }
+
+
+/* ==========================================================================
+   SUITE GESTOR PIAR · APARTADO 2: AULA ADAPTATIVA IA (GEMINI API)
+   Estándares: Impeccable + UX/UI Pro Max + Emil Kowalski Motion + Taste Skill
+   ========================================================================== */
+
+.aia-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 1. Login Role Switcher (Docente vs Estudiante) */
+.aia-login-role-switcher {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 4px;
+  margin-bottom: 18px;
+  border-radius: 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+}
+
+.aia-login-role-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 36px;
+  border: none;
+  border-radius: 9px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.aia-login-role-btn:hover {
+  color: var(--text-main);
+}
+
+.aia-login-role-btn.active {
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(43, 87, 154, 0.26);
+}
+
+.aia-login-role-btn:active {
+  transform: scale(0.98);
+}
+
+.aia-student-demo-fill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 7px 12px;
+  margin-top: -4px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  border: 1px dashed var(--primary);
+  background: rgba(43, 87, 154, 0.06);
+  color: var(--primary);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.aia-student-demo-fill:hover {
+  background: rgba(43, 87, 154, 0.12);
+}
+
+/* 2. Conmutador Único de la Suite en el Topbar (Apartado 1 vs Apartado 2) */
+.aia-topbar-suite-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+}
+
+.aia-topbar-sw-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 13px;
+  border: none;
+  border-radius: 999px;
+  font-size: 0.77rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.aia-topbar-sw-btn:hover {
+  color: var(--text-main);
+}
+
+.aia-topbar-sw-btn.active {
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(43, 87, 154, 0.28);
+}
+
+.aia-topbar-sw-btn:active {
+  transform: scale(0.97);
+}
+
+.aia-sc-btn-aula {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 30px;
+  padding: 3px 11px;
+  border-radius: 8px;
+  border: 1px solid rgba(43, 87, 154, 0.28);
+  background: rgba(43, 87, 154, 0.08);
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.aia-sc-btn-aula:hover {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+/* 3. Contenedor Principal del Apartado 2 (AulaAdaptativaSuite) */
+.aia-suite-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.aia-top-control-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+}
+
+.aia-student-context-selector {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 280px;
+}
+
+.aia-context-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgba(43, 87, 154, 0.12);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.aia-context-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.aia-context-eyebrow {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.aia-context-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.aia-student-select-input {
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-main);
+  font-size: 0.83rem;
+  font-weight: 600;
+  min-width: 240px;
+}
+
+.aia-credential-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px dashed var(--border-color);
+  background: var(--bg-app);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.aia-credential-chip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* Segmented Control de 3 Vistas (Emil Kowalski Craft) */
+.aia-mode-segmented {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 11px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+}
+
+.aia-seg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.79rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.aia-seg-btn:hover {
+  color: var(--text-main);
+}
+
+.aia-seg-btn.active {
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(43, 87, 154, 0.25);
+}
+
+.aia-seg-btn:active {
+  transform: scale(0.98);
+}
+
+.aia-seg-badge {
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+/* Barra de paquetes creados y estado de publicación */
+.aia-package-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+
+.aia-package-bar-left,
+.aia-package-bar-right {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.aia-package-bar-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.aia-package-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.aia-pkg-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  color: var(--text-main);
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.aia-pkg-pill.active {
+  border-color: var(--primary);
+  background: rgba(43, 87, 154, 0.1);
+  color: var(--primary);
+}
+
+.aia-pkg-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.aia-pkg-dot.pub {
+  background: #16a34a;
+}
+
+.aia-pkg-dot.draft {
+  background: #d97706;
+}
+
+.aia-publish-status-tag {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.aia-publish-status-tag.published {
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+}
+
+.aia-publish-status-tag.draft {
+  background: rgba(217, 119, 6, 0.12);
+  color: #d97706;
+}
+
+/* 4. Flujo Vertical Pedagógico (Paso 1 -> Paso 2 -> Paso 3 Debajo) */
+.aia-studio-vertical-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.aia-studio-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.aia-studio-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.aia-bento-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.03);
+}
+
+.aia-bento-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.aia-eyebrow {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--primary);
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.aia-bento-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.aia-status-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  color: var(--text-muted);
+}
+
+.aia-status-badge.ok {
+  border-color: rgba(22, 163, 74, 0.3);
+  background: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+}
+
+.aia-status-badge.readonly {
+  border-color: rgba(43, 87, 154, 0.25);
+  background: rgba(43, 87, 154, 0.08);
+  color: var(--primary);
+}
+
+/* ADN leído del PIAR */
+.aia-piar-dna-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.aia-dna-item {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+}
+
+.aia-dna-item.full {
+  grid-column: 1 / -1;
+}
+
+.aia-dna-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.aia-dna-value {
+  font-size: 0.83rem;
+  color: var(--text-main);
+}
+
+.aia-dna-text {
+  font-size: 0.8rem;
+  color: var(--text-main);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.aia-dna-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.aia-dna-area-chip {
+  font-size: 0.78rem;
+  padding: 7px 11px;
+  border-radius: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  text-align: left;
+  transition: all 0.18s ease;
+}
+
+.aia-dna-area-chip.clickable {
+  cursor: pointer;
+}
+
+.aia-dna-area-chip.clickable:hover {
+  border-color: var(--primary);
+  background: rgba(43, 87, 154, 0.05);
+}
+
+.aia-dna-area-chip.selected {
+  border-color: var(--primary);
+  background: rgba(43, 87, 154, 0.1);
+  box-shadow: 0 0 0 2px rgba(43, 87, 154, 0.14);
+}
+
+/* Formulario de Ingesta Multimodal y OCR */
+.aia-ingest-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aia-form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.aia-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.aia-field label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.aia-input {
+  width: 100%;
+  padding: 8px 11px;
+  border-radius: 9px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-input);
+  color: var(--text-main);
+  font-size: 0.83rem;
+  box-sizing: border-box;
+}
+
+.aia-api-config-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  color: var(--text-muted);
+  font-size: 0.73rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.aia-api-config-btn.connected {
+  border-color: rgba(22, 163, 74, 0.35);
+  background: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+}
+
+.aia-api-key-drawer {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg-app);
+  border: 1px dashed var(--primary);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.75rem;
+}
+
+.aia-ocr-dropzone {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1.5px dashed var(--border-color);
+  background: var(--bg-app);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.aia-ocr-dropzone:hover {
+  border-color: var(--primary);
+  background: rgba(43, 87, 154, 0.05);
+}
+
+.aia-ocr-icon {
+  font-size: 26px;
+  color: var(--primary);
+}
+
+.aia-ocr-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.aia-ocr-text strong {
+  font-size: 0.8rem;
+  color: var(--text-main);
+}
+
+.aia-ocr-text span {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* Informe Psicopedagógico para el Docente */
+.aia-teacher-report-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aia-report-block {
+  padding: 11px 13px;
+  border-radius: 10px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+}
+
+.aia-report-block-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.aia-report-block-text {
+  font-size: 0.81rem;
+  color: var(--text-main);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.aia-report-two-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.aia-report-list-box {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  font-size: 0.77rem;
+}
+
+.aia-report-list-box strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.aia-report-list-box ul {
+  margin: 0;
+  padding-left: 16px;
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.aia-factory-summary {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aia-factory-summary-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.aia-latest-score-pill {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+  font-size: 0.74rem;
+}
+
+.aia-factory-cards-mini {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.aia-factory-cards-mini.four-cols {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.aia-factory-cards-mini.five-cols {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+/* Acordeón contraíble de Paquetes Generados por Área / Materia */
+.aia-accordion-section-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.aia-accordion-section-title {
+  margin: 2px 0 0 0;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.aia-packages-accordion-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aia-collapsible-pkg-card {
+  padding: 10px 16px;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.aia-collapsible-pkg-card.expanded {
+  border-color: var(--primary);
+  box-shadow: 0 6px 20px rgba(43, 87, 154, 0.08);
+}
+
+.aia-collapsible-pkg-header {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-height: 42px;
+}
+
+.aia-collapsible-pkg-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-main);
+}
+
+.aia-collapsible-pkg-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(43, 87, 154, 0.1);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.aia-collapsible-pkg-title-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.aia-collapsible-pkg-subject {
+  font-size: 0.92rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--text-main);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.aia-collapsible-pkg-summary-pills {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  font-size: 0.69rem;
+  font-weight: 600;
+  line-height: 1.15;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.aia-collapsible-pkg-topic {
+  display: block;
+  width: 100%;
+  font-size: 0.76rem;
+  line-height: 1.25;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.aia-collapsible-pkg-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.aia-status-icon-badge {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: help;
+  flex-shrink: 0;
+}
+
+.aia-status-icon-badge.published {
+  background: rgba(22, 163, 74, 0.14);
+  color: #16a34a;
+  border: 1px solid rgba(22, 163, 74, 0.28);
+}
+
+.aia-status-icon-badge.draft {
+  background: rgba(217, 119, 6, 0.14);
+  color: #d97706;
+  border: 1px solid rgba(217, 119, 6, 0.28);
+}
+
+.aia-status-icon-badge::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 7px);
+  right: 0;
+  white-space: nowrap;
+  padding: 5px 10px;
+  border-radius: 7px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+  z-index: 40;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.22);
+}
+
+.aia-status-icon-badge:hover::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Secuencia animada del Reloj de Arena (Arena baja -> llena base -> gira 180° -> repite) */
+.aia-hg-flip-group {
+  transform-origin: 12px 12px;
+  animation: aiaHourglassFlip 3.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.aia-hg-sand-top {
+  transform-origin: 12px 12px;
+  animation: aiaSandTopDrain 3.4s linear infinite;
+}
+
+.aia-hg-sand-bottom {
+  transform-origin: 12px 19.5px;
+  animation: aiaSandBottomFill 3.4s linear infinite;
+}
+
+.aia-hg-sand-stream {
+  stroke-dasharray: 3 2;
+  animation: aiaSandStreamFlow 3.4s linear infinite;
+}
+
+.aia-published-live-svg {
+  animation: aiaPublishedPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes aiaSandTopDrain {
+  0%, 5% {
+    transform: scaleY(1);
+  }
+  75%, 100% {
+    transform: scaleY(0);
+  }
+}
+
+@keyframes aiaSandBottomFill {
+  0%, 8% {
+    transform: scaleY(0);
+  }
+  76%, 100% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes aiaSandStreamFlow {
+  0%, 4% {
+    opacity: 0;
+    stroke-dashoffset: 0;
+  }
+  8%, 73% {
+    opacity: 1;
+    stroke-dashoffset: -14;
+  }
+  76%, 100% {
+    opacity: 0;
+    stroke-dashoffset: -16;
+  }
+}
+
+@keyframes aiaHourglassFlip {
+  0%, 78% {
+    transform: rotate(0deg);
+  }
+  94%, 100% {
+    transform: rotate(180deg);
+  }
+}
+
+@keyframes aiaPublishedPop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.aia-collapse-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  color: var(--text-main);
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.aia-collapse-toggle-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.aia-collapsible-pkg-body {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+  animation: fadeIn 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.aia-factory-mini-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+}
+
+.aia-factory-mini-item .material-symbols-outlined {
+  color: var(--primary);
+  font-size: 20px;
+}
+
+.aia-factory-mini-item strong {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-main);
+}
+
+.aia-factory-mini-item small {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.aia-factory-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Botones reutilizables del ecosistema IA */
+.aia-btn-primary,
+.aia-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 15px;
+  border-radius: 10px;
+  font-size: 0.81rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.aia-btn-primary {
+  border: none;
+  background: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(43, 87, 154, 0.24);
+}
+
+.aia-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.07);
+  transform: translateY(-1px);
+}
+
+.aia-btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.aia-btn-secondary {
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  color: var(--text-main);
+}
+
+.aia-btn-secondary:hover:not(:disabled) {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.aia-btn-primary:active,
+.aia-btn-secondary:active {
+  transform: scale(0.98);
+}
+
+.aia-btn-full {
+  width: 100%;
+}
+
+.aia-btn-sm {
+  height: 32px;
+  padding: 0 11px;
+  font-size: 0.75rem;
+}
+
+/* 5. Portal Educativo del Estudiante y Modo Espejo */
+.aia-student-page-shell {
+  min-height: 100vh;
+  background: var(--bg-app);
+  padding: 20px 24px 48px 24px;
+}
+
+.aia-student-page-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.aia-student-theme-floating {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  z-index: 90;
+}
+
+.aia-theme-icon-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.aia-student-portal-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.aia-student-standalone-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 20px;
+  border-radius: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+
+.aia-student-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.aia-student-brand-badge {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  background: var(--primary);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.aia-student-brand h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.aia-student-brand span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* Banner de Diagnóstico Amigable para el Estudiante */
+.aia-friendly-diag-card {
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  transition: all 0.2s ease;
+}
+
+.aia-friendly-diag-card.collapsed {
+  padding: 12px 18px;
+}
+
+.aia-friendly-diag-top {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.aia-friendly-diag-badges {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
+.aia-subject-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: rgba(43, 87, 154, 0.12);
+  color: var(--primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.aia-topic-tag {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 340px;
+}
+
+.aia-mirror-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(217, 119, 6, 0.12);
+  color: #d97706;
+  font-size: 0.73rem;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.aia-friendly-diag-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.aia-welcome-collapse-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.aia-welcome-collapse-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.aia-friendly-header-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.aia-friendly-title {
+  font-size: 1.08rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.aia-friendly-message {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 6px 0 12px 0;
+}
+
+.aia-friendly-highlights {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.aia-friendly-pill-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+}
+
+.aia-friendly-pill-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.aia-friendly-pill-icon.goal {
+  background: rgba(43, 87, 154, 0.12);
+  color: var(--primary);
+}
+
+.aia-friendly-pill-icon.tip {
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+}
+
+.aia-friendly-pill-icon .material-symbols-outlined {
+  font-size: 18px;
+}
+
+.aia-friendly-pill-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.aia-friendly-pill-box small {
+  display: block;
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.aia-friendly-pill-box strong {
+  font-size: 0.81rem;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.42;
+}
+
+/* Navegación de los 5 Módulos Didácticos */
+.aia-student-module-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+.aia-module-nav-card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 11px 13px;
+  border-radius: 13px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.aia-module-nav-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.aia-module-nav-card.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(43, 87, 154, 0.24);
+}
+
+.aia-module-nav-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.67rem;
+  font-weight: 800;
+}
+
+.aia-module-metric {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: rgba(140, 144, 159, 0.14);
+}
+
+.aia-module-nav-card.active .aia-module-metric {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.aia-module-nav-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.83rem;
+  font-weight: 700;
+}
+
+.aia-module-icon-wrap {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: rgba(43, 87, 154, 0.1);
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.aia-module-nav-card.active .aia-module-icon-wrap {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.aia-module-icon {
+  font-size: 16px;
+}
+
+.aia-module-mini-bar {
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(140, 144, 159, 0.16);
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.aia-module-nav-card.active .aia-module-mini-bar {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.aia-module-mini-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--primary);
+  transition: width 0.25s ease;
+}
+
+.aia-module-nav-card.active .aia-module-mini-bar-fill {
+  background: #ffffff;
+}
+
+/* 6. Superficie de Medios (Diapositivas, Audio, Video y Examen) */
+.aia-media-surface {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.aia-media-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.aia-media-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aia-step-pill {
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.aia-badge-soft {
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.aia-telemetry-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+/* Diapositivas - Stepper compacto en línea */
+.aia-slide-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+}
+
+.aia-slide-Segment {
+  min-width: 34px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.aia-slide-Segment:hover {
+  color: var(--primary);
+  background: rgba(43, 87, 154, 0.08);
+}
+
+.aia-slide-Segment.viewed {
+  color: var(--primary);
+  background: rgba(43, 87, 154, 0.1);
+}
+
+.aia-slide-Segment.current {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(43, 87, 154, 0.25);
+}
+
+.aia-slide-stage {
+  padding: 18px 20px;
+  border-radius: 14px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  animation: fadeIn 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.aia-slide-heading {
+  font-size: 1.08rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.aia-slide-body {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.aia-analogy-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(43, 87, 154, 0.08);
+  border-left: 4px solid var(--primary);
+}
+
+.aia-analogy-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(43, 87, 154, 0.14);
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.aia-analogy-icon .material-symbols-outlined {
+  font-size: 17px;
+}
+
+.aia-analogy-label {
+  font-size: 0.69rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 2px;
+}
+
+.aia-analogy-text {
+  font-size: 0.84rem;
+  color: var(--text-main);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.aia-slide-bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.aia-takeaway-card,
+.aia-microcheck-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 11px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+
+.aia-takeaway-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.aia-takeaway-icon {
+  color: #16a34a;
+}
+
+.aia-takeaway-caption {
+  display: block;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #16a34a;
+  font-weight: 800;
+}
+
+.aia-takeaway-value {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.42;
+}
+
+.aia-microcheck-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.aia-microcheck-q {
+  font-size: 0.82rem;
+  color: var(--text-main);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.aia-microcheck-btn {
+  align-self: flex-start;
+  padding: 5px 11px;
+  border-radius: 7px;
+  border: 1px solid var(--primary);
+  background: rgba(43, 87, 154, 0.06);
+  color: var(--primary);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.aia-microcheck-btn.verified {
+  border-color: #16a34a;
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+}
+
+.aia-slide-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-color);
+}
+
+.aia-slide-counter {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Reproductor de Cápsula de Audio */
+.aia-audio-console {
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.aia-audio-top-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+}
+
+.aia-audio-play-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: none;
+  background: var(--primary);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(43, 87, 154, 0.3);
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.aia-audio-play-btn:active {
+  transform: scale(0.94);
+}
+
+.aia-audio-meta {
+  flex: 1;
+  min-width: 200px;
+}
+
+.aia-audio-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 3px 0;
+}
+
+.aia-audio-sub {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.aia-speed-group {
+  display: flex;
+  gap: 4px;
+}
+
+.aia-speed-pill {
+  padding: 4px 8px;
+  border-radius: 7px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 0.73rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.aia-speed-pill.active {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+.aia-waveform-bar-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aia-progress-track {
+  width: 100%;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(140, 144, 159, 0.2);
+  overflow: hidden;
+}
+
+.aia-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--primary);
+  transition: width 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.aia-waveform-bars {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  gap: 5px;
+  padding: 0 8px;
+}
+
+.aia-wave-bar {
+  flex: 0 0 4px;
+  width: 4px;
+  border-radius: 999px;
+  background: rgba(140, 144, 159, 0.32);
+  transition: height 0.2s ease, background-color 0.2s ease;
+}
+
+.aia-wave-bar.passed {
+  background: var(--primary);
+}
+
+.aia-wave-bar.animating {
+  animation: aiaWavePulse 0.75s ease-in-out infinite alternate;
+}
+
+@keyframes aiaWavePulse {
+  0% {
+    transform: scaleY(0.65);
+  }
+  100% {
+    transform: scaleY(1.25);
+  }
+}
+
+.aia-transcript-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aia-transcript-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.aia-completed-tag {
+  color: #16a34a;
+}
+
+.aia-transcript-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 11px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.aia-transcript-item.active {
+  border-color: var(--primary);
+  background: rgba(43, 87, 154, 0.08);
+}
+
+.aia-transcript-time {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--primary);
+  padding-top: 2px;
+}
+
+.aia-transcript-text {
+  font-size: 0.84rem;
+  color: var(--text-main);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Video-Guía Paso a Paso */
+.aia-video-frame {
+  border-radius: 14px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  background: var(--bg-app);
+}
+
+.aia-video-screen {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aia-video-scene-badge {
+  align-self: flex-start;
+  padding: 3px 9px;
+  border-radius: 6px;
+  background: rgba(43, 87, 154, 0.12);
+  color: var(--primary);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.aia-video-scene-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.aia-video-visual-cue {
+  padding: 14px 16px;
+  border-radius: 11px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.aia-video-narration {
+  font-size: 0.88rem;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.aia-video-scaffolding-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  background: rgba(22, 163, 74, 0.1);
+  color: #16a34a;
+  font-size: 0.8rem;
+}
+
+.aia-video-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-color);
+}
+
+.aia-video-play-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 9px;
+  border: none;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 0.79rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.aia-video-progress-wrap {
+  flex: 1;
+}
+
+.aia-video-time {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.aia-scene-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.aia-scene-card {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  text-align: left;
+  cursor: pointer;
+}
+
+.aia-scene-card.current {
+  border-color: var(--primary);
+  background: rgba(43, 87, 154, 0.08);
+}
+
+.aia-scene-card-top {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.aia-scene-check {
+  color: #16a34a;
+}
+
+.aia-scene-card-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+/* 7. Examen Adaptativo Multi-Intento */
+.aia-attempts-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 11px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+}
+
+.aia-attempts-strip-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.aia-attempts-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.aia-attempt-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-size: 0.76rem;
+  cursor: pointer;
+}
+
+.aia-attempt-pill.active {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+.aia-improvement-tag {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(22, 163, 74, 0.16);
+  color: #16a34a;
+  font-size: 0.69rem;
+  font-weight: 700;
+}
+
+.aia-attempt-pill.active .aia-improvement-tag {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.aia-quiz-intro-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 15px;
+  border-radius: 11px;
+  background: rgba(43, 87, 154, 0.08);
+  border: 1px solid rgba(43, 87, 154, 0.22);
+}
+
+.aia-quiz-intro-banner p {
+  margin: 2px 0 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.aia-quiz-progress-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.aia-questions-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.aia-question-card {
+  padding: 15px 17px;
+  border-radius: 12px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aia-question-card.review-correct {
+  border-left: 4px solid #16a34a;
+}
+
+.aia-question-card.review-failed {
+  border-left: 4px solid #d97706;
+}
+
+.aia-question-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.aia-question-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aia-question-num {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.aia-question-skill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.aia-tts-mini-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 9px;
+  border-radius: 7px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.aia-question-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+  margin: 0;
+  line-height: 1.45;
+}
+
+.aia-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.aia-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.aia-option-btn:hover {
+  border-color: var(--primary);
+}
+
+.aia-option-btn.selected {
+  border-color: var(--primary);
+  background: rgba(43, 87, 154, 0.1);
+  font-weight: 600;
+}
+
+.aia-option-letter {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.73rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.aia-option-btn.selected .aia-option-letter {
+  background: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+.aia-option-label {
+  font-size: 0.81rem;
+  line-height: 1.35;
+}
+
+/* Revisión del Intento */
+.aia-attempt-summary-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 13px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+}
+
+.aia-attempt-score-circle {
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--primary);
+  color: #ffffff;
+  text-align: center;
+}
+
+.aia-attempt-score-circle strong {
+  display: block;
+  font-size: 1.3rem;
+}
+
+.aia-attempt-score-circle span {
+  font-size: 0.7rem;
+}
+
+.aia-attempt-summary-info {
+  flex: 1;
+  min-width: 220px;
+}
+
+.aia-attempt-summary-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 0.96rem;
+}
+
+.aia-attempt-summary-info p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.aia-review-status {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.aia-review-status.ok {
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+}
+
+.aia-review-status.fail {
+  background: rgba(217, 119, 6, 0.14);
+  color: #d97706;
+}
+
+.aia-review-feedback-box {
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  font-size: 0.8rem;
+}
+
+.aia-review-ok-text {
+  margin: 0;
+  color: #16a34a;
+}
+
+.aia-review-hint-content p {
+  margin: 0 0 8px 0;
+}
+
+.aia-remediation-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.aia-remediation-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.aia-link-pill {
+  padding: 4px 9px;
+  border-radius: 7px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* 8. Panel Analítico Docente (Telemetría + Matriz de Intentos) */
+.aia-analytics-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.aia-telemetry-bento-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.aia-telemetry-stat-card {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aia-telemetry-stat-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.aia-telemetry-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(43, 87, 154, 0.12);
+  color: var(--primary);
+}
+
+.aia-telemetry-pill {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+}
+
+.aia-telemetry-pill.high {
+  background: rgba(22, 163, 74, 0.14);
+  color: #16a34a;
+}
+
+.aia-telemetry-pill.mid {
+  background: rgba(217, 119, 6, 0.14);
+  color: #d97706;
+}
+
+.aia-telemetry-stat-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.aia-telemetry-stat-metrics {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.aia-header-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.aia-improvement-banner-pill {
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.aia-attempts-selector-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.aia-attempts-selector-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.aia-attempt-inspector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  margin-bottom: 14px;
+}
+
+.aia-inspector-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.aia-inspector-label {
+  font-size: 0.69rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.aia-inspector-big {
+  font-size: 1.1rem;
+  color: var(--primary);
+}
+
+.aia-inspector-sub {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.aia-inspector-snapshot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.aia-inspector-ok {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #16a34a;
+}
+
+.aia-failed-skills-list {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 0.77rem;
+  color: #d97706;
+}
+
+.aia-matrix-wrapper {
+  overflow-x: auto;
+}
+
+.aia-matrix-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+}
+
+.aia-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.79rem;
+}
+
+.aia-matrix-table th,
+.aia-matrix-table td {
+  padding: 9px 11px;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+}
+
+.aia-matrix-table th {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--bg-app);
+}
+
+.aia-matrix-cell-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.aia-matrix-cell-badge.pass {
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+}
+
+.aia-matrix-cell-badge.fail {
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+}
+
+.aia-mastery-tag {
+  font-size: 0.73rem;
+  font-weight: 700;
+}
+
+.aia-mastery-tag.ok {
+  color: #16a34a;
+}
+
+.aia-mastery-tag.pending {
+  color: #d97706;
+}
+
+/* Video YouTube por Enlace (sin alojar archivos en servidor) */
+.aia-video-mode-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+}
+
+.aia-video-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.aia-video-mode-btn.active {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.aia-yt-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aia-yt-teacher-bar {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(43, 87, 154, 0.06);
+  border: 1px dashed rgba(43, 87, 154, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aia-yt-teacher-bar-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.aia-yt-teacher-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.aia-yt-search-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-decoration: none;
+}
+
+.aia-yt-search-link:hover {
+  text-decoration: underline;
+}
+
+.aia-yt-input-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.aia-input-compact {
+  flex: 2;
+  min-width: 220px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-size: 0.79rem;
+}
+
+.aia-yt-title-input {
+  flex: 1;
+  min-width: 160px;
+}
+
+.aia-yt-feedback {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.aia-yt-feedback.ok {
+  color: #16a34a;
+}
+
+.aia-yt-feedback.error {
+  color: #dc2626;
+}
+
+.aia-yt-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.aia-yt-channel {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.aia-yt-player-shell {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background: #0f172a;
+}
+
+.aia-yt-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+}
+
+.aia-yt-moments-box {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aia-yt-moments-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.82rem;
+}
+
+.aia-yt-moments-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* PASO 04 · Juegos Didácticos Adaptativos */
+.aia-games-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.aia-game-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.aia-game-tab:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.aia-game-tab.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+.aia-game-tab.done:not(.active) {
+  border-color: rgba(22, 163, 74, 0.45);
+  color: #16a34a;
+}
+
+.aia-game-tab-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.aia-game-done-check {
+  font-weight: 900;
+}
+
+.aia-game-stage {
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aia-game-stage-header {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.aia-game-instructions {
+  margin: 0;
+  font-size: 0.83rem;
+  color: var(--text-muted);
+}
+
+.aia-game-board-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aia-game-status-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.79rem;
+  color: var(--text-muted);
+}
+
+.aia-game-inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.aia-game-win-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(22, 163, 74, 0.12);
+  border: 1px solid rgba(22, 163, 74, 0.32);
+  color: #16a34a;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.aia-game-hint-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(217, 119, 6, 0.12);
+  border: 1px solid rgba(217, 119, 6, 0.32);
+  color: #d97706;
+  font-size: 0.81rem;
+  font-weight: 600;
+}
+
+/* Juego 1: Memoria */
+.aia-memory-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.aia-memory-card {
+  min-height: 92px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: all 0.18s ease;
+}
+
+.aia-memory-card:hover:not(.matched) {
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.aia-memory-card.flipped {
+  border-color: var(--primary);
+  background: rgba(43, 87, 154, 0.08);
+}
+
+.aia-memory-card.matched {
+  border-color: #16a34a;
+  background: rgba(22, 163, 74, 0.1);
+  cursor: default;
+}
+
+.aia-memory-card.mismatch {
+  border-color: #d97706;
+  background: rgba(217, 119, 6, 0.1);
+}
+
+.aia-memory-card-back {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.aia-memory-card-face {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.aia-memory-kind {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.aia-memory-text {
+  font-size: 0.79rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+/* Juego 2: Ordenar Pasos */
+.aia-order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aia-order-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+
+.aia-order-row.correct {
+  border-color: #16a34a;
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.aia-order-row.wrong {
+  border-color: #d97706;
+  background: rgba(217, 119, 6, 0.08);
+}
+
+.aia-order-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.76rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.aia-order-text {
+  flex: 1;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.aia-order-arrows {
+  display: flex;
+  gap: 4px;
+}
+
+.aia-order-arrow-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  color: var(--text-main);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.aia-order-arrow-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.aia-order-arrow-btn .material-symbols-outlined {
+  font-size: 16px;
+}
+
+/* Juego 3: Clasificar */
+.aia-classify-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aia-classify-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: 11px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+
+.aia-classify-item.correct {
+  border-color: #16a34a;
+  background: rgba(22, 163, 74, 0.07);
+}
+
+.aia-classify-item.wrong {
+  border-color: #d97706;
+  background: rgba(217, 119, 6, 0.07);
+}
+
+.aia-classify-text {
+  margin: 0;
+  flex: 1;
+  min-width: 220px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.aia-classify-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.aia-classify-pill {
+  padding: 6px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  color: var(--text-main);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.aia-classify-pill.ok {
+  border-color: #16a34a;
+  background: rgba(22, 163, 74, 0.14);
+  color: #16a34a;
+}
+
+.aia-classify-pill.err {
+  border-color: #d97706;
+  background: rgba(217, 119, 6, 0.14);
+  color: #d97706;
+}
+
+/* Juego 4: Completar la Frase */
+.aia-fill-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aia-fill-card {
+  padding: 12px 14px;
+  border-radius: 11px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.aia-fill-card.correct {
+  border-color: #16a34a;
+}
+
+.aia-fill-card.wrong {
+  border-color: #d97706;
+}
+
+.aia-fill-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.aia-fill-sentence {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-main);
+}
+
+.aia-fill-blank {
+  display: inline-block;
+  padding: 1px 9px;
+  margin: 0 3px;
+  border-radius: 7px;
+  border: 1px dashed var(--primary);
+  background: rgba(43, 87, 154, 0.08);
+  color: var(--primary);
+  font-weight: 800;
+}
+
+.aia-fill-blank.ok {
+  border-style: solid;
+  border-color: #16a34a;
+  background: rgba(22, 163, 74, 0.12);
+  color: #16a34a;
+}
+
+.aia-fill-blank.err {
+  border-style: solid;
+  border-color: #d97706;
+  background: rgba(217, 119, 6, 0.12);
+  color: #d97706;
+}
+
+.aia-fill-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.aia-fill-option-btn {
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  color: var(--text-main);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.aia-fill-option-btn.selected.ok {
+  border-color: #16a34a;
+  background: rgba(22, 163, 74, 0.14);
+  color: #16a34a;
+}
+
+.aia-fill-option-btn.selected.err {
+  border-color: #d97706;
+  background: rgba(217, 119, 6, 0.14);
+  color: #d97706;
+}
+
+/* =========================================================
+   8. Visor de Diapositivas estilo PowerPoint / Google Slides
+   ========================================================= */
+.aia-ppt-shell {
+  outline: none;
+}
+
+.aia-ppt-shell.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  border-radius: 0;
+  overflow-y: auto;
+  padding: 20px 28px;
+  background: var(--bg-card);
+}
+
+.aia-ppt-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.aia-ppt-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.aia-ppt-external-shell {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+  background: #0f172a;
+}
+
+.aia-ppt-workspace {
+  display: grid;
+  grid-template-columns: 190px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.aia-ppt-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 10px;
+  border-radius: 14px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  max-height: 540px;
+  overflow-y: auto;
+}
+
+.aia-ppt-thumb {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 10px;
+  border: 1.5px solid transparent;
+  background: var(--bg-card);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.aia-ppt-thumb:hover {
+  border-color: rgba(43, 87, 154, 0.35);
+  transform: translateY(-1px);
+}
+
+.aia-ppt-thumb.current {
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(43, 87, 154, 0.18);
+}
+
+.aia-ppt-thumb-num {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  min-width: 18px;
+}
+
+.aia-ppt-thumb.current .aia-ppt-thumb-num {
+  color: var(--primary);
+}
+
+.aia-ppt-thumb-check {
+  font-size: 0.68rem;
+  color: #16a34a;
+  font-weight: 900;
+}
+
+.aia-ppt-thumb-preview {
+  flex: 1;
+  min-width: 0;
+  aspect-ratio: 16 / 9;
+  padding: 5px 7px;
+  border-radius: 7px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+
+.aia-ppt-thumb-ribbon {
+  height: 3px;
+  width: 100%;
+  border-radius: 999px;
+}
+
+.aia-ppt-thumb-title {
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.aia-ppt-thumb-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: auto;
+}
+
+.aia-ppt-thumb-lines i {
+  display: block;
+  height: 3px;
+  width: 85%;
+  border-radius: 99px;
+  background: rgba(140, 144, 159, 0.28);
+}
+
+.aia-ppt-thumb-lines i.short {
+  width: 56%;
+}
+
+.aia-ppt-stage {
+  min-width: 0;
+}
+
+.aia-ppt-canvas {
+  position: relative;
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  overflow: hidden;
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+  animation: fadeIn 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.aia-ppt-canvas-accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+}
+
+.aia-ppt-canvas-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.aia-ppt-slide-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.aia-ppt-deck-brand {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.aia-ppt-canvas-body {
+  display: grid;
+  grid-template-columns: 1.25fr 0.95fr;
+  gap: 18px;
+  align-items: center;
+}
+
+.aia-ppt-text-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aia-ppt-slide-title {
+  margin: 0;
+  font-size: 1.22rem;
+  line-height: 1.28;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.aia-ppt-slide-lead {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-main);
+}
+
+.aia-ppt-bullets {
+  list-style: none;
+  margin: 2px 0 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aia-ppt-bullets li {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.4;
+}
+
+.aia-ppt-bullet-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.aia-ppt-visual-col {
+  display: flex;
+}
+
+.aia-ppt-diagram {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aia-ppt-diagram-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--slide-accent, var(--primary));
+}
+
+.aia-ppt-diagram-head .material-symbols-outlined {
+  font-size: 17px;
+}
+
+.aia-ppt-steps-visual {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aia-ppt-step-node {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--primary);
+}
+
+.aia-ppt-step-num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.aia-ppt-step-node small {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.aia-ppt-step-node strong {
+  display: block;
+  font-size: 0.77rem;
+  color: var(--text-main);
+}
+
+.aia-ppt-compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.aia-ppt-compare-card {
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+}
+
+.aia-ppt-compare-card p {
+  margin: 6px 0 0 0;
+  font-size: 0.77rem;
+  line-height: 1.4;
+  color: var(--text-main);
+}
+
+.aia-ppt-compare-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.aia-ppt-compare-badge.avoid {
+  background: rgba(220, 38, 38, 0.12);
+  color: #dc2626;
+}
+
+.aia-ppt-compare-badge.apply {
+  background: rgba(22, 163, 74, 0.14);
+  color: #16a34a;
+}
+
+.aia-ppt-flow-svg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.aia-ppt-svg {
+  width: 100%;
+  max-width: 290px;
+  height: auto;
+  color: var(--text-main);
+}
+
+.aia-ppt-diagram-caption {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.aia-ppt-concept-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aia-ppt-hub-core {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1.5px solid var(--primary);
+  font-size: 0.8rem;
+}
+
+.aia-ppt-hub-branches {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.aia-ppt-hub-branch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  font-size: 0.77rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.aia-ppt-hub-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.aia-ppt-canvas-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Reproductor Cine Video-Guía y Escenas siempre visibles */
+.aia-video-cinema {
+  border: 1px solid rgba(43, 87, 154, 0.28);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.aia-video-cinema-stage {
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.03), rgba(43, 87, 154, 0.07));
+}
+
+.aia-video-cinema-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.aia-video-cinema-cue {
+  border-left: 4px solid var(--primary);
+}
+
+.aia-yt-empty-theater {
+  aspect-ratio: 16 / 9;
+  min-height: 240px;
+  border-radius: 14px;
+  padding: 28px 24px;
+  border: 1.5px dashed rgba(43, 87, 154, 0.35);
+  background: var(--bg-app);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 10px;
+}
+
+.aia-yt-empty-theater h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.aia-yt-empty-theater p {
+  margin: 0;
+  max-width: 520px;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.aia-yt-empty-icon {
+  font-size: 40px;
+  color: var(--primary);
+}
+
+.aia-yt-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.aia-scene-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aia-scene-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+@media screen and (max-width: 1180px) {
+  .aia-student-module-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .aia-telemetry-bento-grid,
+  .aia-factory-cards-mini.five-cols,
+  .aia-games-tabs {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media screen and (max-width: 960px) {
+  .aia-studio-grid,
+  .aia-telemetry-bento-grid,
+  .aia-attempt-inspector,
+  .aia-student-module-grid,
+  .aia-scene-grid,
+  .aia-games-tabs,
+  .aia-factory-cards-mini.five-cols,
+  .aia-friendly-highlights,
+  .aia-slide-bottom-grid,
+  .aia-options-grid,
+  .aia-ppt-workspace,
+  .aia-ppt-canvas-body,
+  .aia-ppt-compare-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .aia-ppt-sidebar {
+    flex-direction: row;
+    overflow-x: auto;
+    max-height: none;
+  }
+
+  .aia-ppt-thumb {
+    min-width: 145px;
+  }
+}
