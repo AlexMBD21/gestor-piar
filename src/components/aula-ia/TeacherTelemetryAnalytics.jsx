@@ -7,7 +7,6 @@ export default function TeacherTelemetryAnalytics({ pkg, activity }) {
   const attempts = Array.isArray(activity?.attempts) ? activity.attempts : [];
   const questions = Array.isArray(pkg?.quizQuestions) ? pkg.quizQuestions : [];
   const totalSlides = pkg?.slides?.length || 5;
-  const totalScenes = pkg?.videoGuide?.scenes?.length || 4;
   const gamesList = getPackageGames(pkg);
   const totalGames = gamesList.length || 4;
 
@@ -75,20 +74,20 @@ export default function TeacherTelemetryAnalytics({ pkg, activity }) {
             </div>
           </div>
 
-          {/* Audio / Podcast TTS */}
+          {/* Lectura en Voz Alta integrada en Diapositivas */}
           <div className="aia-telemetry-stat-card">
             <div className="aia-telemetry-stat-top">
               <div className="aia-telemetry-icon-box audio">
-                <span className="material-symbols-outlined">headphones</span>
+                <span className="material-symbols-outlined">volume_up</span>
               </div>
               <span className={`aia-telemetry-pill aia-tabular ${audioPct >= 80 ? 'high' : 'mid'}`}>
                 {audioPct}% Escuchado
               </span>
             </div>
-            <div className="aia-telemetry-stat-title">Cápsula de Audio (TTS)</div>
+            <div className="aia-telemetry-stat-title">Lectura en Voz Alta (Láminas)</div>
             <div className="aia-telemetry-stat-metrics aia-tabular">
               <span>
-                Clics en Play: <strong>{activity?.audioPlayCount || 0} veces</strong>
+                Activaciones: <strong>{activity?.audioPlayCount || 0} veces</strong>
               </span>
               <span>
                 Estado: <strong>{activity?.audioCompleted ? 'Completado ✓' : 'En progreso'}</strong>
@@ -99,23 +98,23 @@ export default function TeacherTelemetryAnalytics({ pkg, activity }) {
             </div>
           </div>
 
-          {/* Video / Guía Paso a Paso */}
+          {/* Video YouTube */}
           <div className="aia-telemetry-stat-card">
             <div className="aia-telemetry-stat-top">
               <div className="aia-telemetry-icon-box video">
                 <span className="material-symbols-outlined">smart_display</span>
               </div>
               <span className={`aia-telemetry-pill aia-tabular ${videoPct >= 80 ? 'high' : 'mid'}`}>
-                {videoPct}% Reproducido
+                {videoPct}% Visto
               </span>
             </div>
-            <div className="aia-telemetry-stat-title">Video / Guía Paso a Paso</div>
+            <div className="aia-telemetry-stat-title">Video YouTube de Apoyo</div>
             <div className="aia-telemetry-stat-metrics aia-tabular">
               <span>
-                Clics en Play: <strong>{activity?.videoPlayCount || 0} veces</strong>
+                Interacciones: <strong>{activity?.videoPlayCount || 0} veces</strong>
               </span>
               <span>
-                Escenas vistas: <strong>{activity?.videoScenesViewed?.length || 0}/{totalScenes}</strong>
+                Estado: <strong>{activity?.videoCompleted ? 'Confirmado ✓' : 'Pendiente'}</strong>
               </span>
             </div>
             <div className="aia-progress-track">

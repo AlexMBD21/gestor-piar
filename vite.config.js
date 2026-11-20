@@ -4,6 +4,9 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   envPrefix: ['VITE_', 'NEXT_PUBLIC_', 'Gemini_', 'GEMINI_'],
+  optimizeDeps: {
+    include: ['pptxgenjs']
+  },
   plugins: [
     react(),
     VitePWA({

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import localforage from 'localforage';
 import { supabase } from '../lib/supabaseClient';
 import { generateAdaptivePackageWithGemini, extractYoutubeVideoId } from '../lib/piarAiEngine';
@@ -34,6 +34,7 @@ export function AulaIaProvider({ children }) {
   const [packagesByStudent, setPackagesByStudent] = useState({});
   const [activityByPackage, setActivityByPackage] = useState({});
   const [ready, setReady] = useState(false);
+  const deletedPackageIdsRef = useRef(new Set());
 
   // Cargar datos persistidos en localforage / localStorage al iniciar
   useEffect(() => {
@@ -107,10 +108,12 @@ export function AulaIaProvider({ children }) {
       if (!piar?.id) return;
       const dbPackages = piar?.data?.aula_ia_packages;
       if (Array.isArray(dbPackages) && dbPackages.length > 0) {
+        const filteredDb = dbPackages.filter((p) => !deletedPackageIdsRef.current.has(p?.id));
+        if (filteredDb.length === 0) return;
         setPackagesByStudent((prev) => {
           const localList = prev[piar.id] || [];
-          if (localList.length >= dbPackages.length) return prev;
-          const next = { ...prev, [piar.id]: dbPackages };
+          if (localList.length >= filteredDb.length) return prev;
+          const next = { ...prev, [piar.id]: filteredDb };
           persistPackages(next);
           return next;
         });
@@ -197,6 +200,40 @@ export function AulaIaProvider({ children }) {
       });
     },
     [persistPackages, syncStudentPackagesToDatabase]
+  );
+
+  const deleteAdaptivePackage = useCallback(
+    (piarId, packageId, piarObj = null) => {
+      if (!piarId || !packageId) return;
+      deletedPackageIdsRef.current.add(packageId);
+
+      setPackagesByStudent((prev) => {
+        const list = prev[piarId] || [];
+        const updated = list.filter((pkg) => pkg.id !== packageId);
+        const next = { ...prev, [piarId]: updated };
+        persistPackages(next);
+        if (piarObj) {
+          syncStudentPackagesToDatabase(piarObj, updated);
+        }
+        return next;
+      });
+
+      setActivityByPackage((prev) => {
+        if (!prev[packageId]) return prev;
+        const next = { ...prev };
+        delete next[packageId];
+        persistActivity(next);
+        return next;
+      });
+
+      try {
+        window.localStorage.removeItem(`piar_slide_mastery_${packageId}`);
+        window.localStorage.removeItem(`piar_slide_embed_${packageId}`);
+      } catch {
+        // Ignorar restricciones de almacenamiento
+      }
+    },
+    [persistPackages, persistActivity, syncStudentPackagesToDatabase]
   );
 
   // Actualizar enlace de video YouTube en un paquete existente (sin alojar video en el servidor)
@@ -442,6 +479,7 @@ export function AulaIaProvider({ children }) {
         hydrateFromPiarRecord,
         createAdaptivePackage,
         togglePackagePublishStatus,
+        deleteAdaptivePackage,
         updatePackageYoutubeVideo,
         recordSlideTelemetry,
         recordAudioTelemetry,

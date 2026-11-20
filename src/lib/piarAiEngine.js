@@ -168,13 +168,13 @@ export function buildDefaultYoutubeVideo(subject = '', topic = '') {
 
   if (domain === 'ciencias' && (norm.includes('químic') || norm.includes('quimic') || norm.includes('materia') || norm.includes('físic') || norm.includes('fisic'))) {
     return {
-      videoId: 'aG3j675kZbc',
-      title: `Todo sobre la Materia y sus Propiedades (${cleanSubject})`,
+      videoId: 'swcjamDFsn0',
+      title: `La Materia y sus Propiedades (${cleanSubject})`,
       channelTitle: 'Happy Learning Español',
       searchQuery,
       keyMoments: [
-        '0:35 Concepto base con ejemplos cotidianos',
-        '1:45 Estados y cambios de la materia paso a paso',
+        '0:35 Concepto base de la materia con ejemplos cotidianos',
+        '1:45 Propiedades generales y específicas paso a paso',
         '2:30 Resumen visual para repasar antes del examen'
       ]
     };
@@ -798,10 +798,12 @@ function buildCompletePackageObject({
 }) {
   const normalizedGames = normalizeGames(generated.games);
   const defaultYoutube = buildDefaultYoutubeVideo(subject, topic);
-  const aiVideoId = extractYoutubeVideoId(generated.youtubeVideo?.videoId);
-  const youtubeVideo = aiVideoId
-    ? { ...defaultYoutube, ...generated.youtubeVideo, videoId: aiVideoId }
-    : { ...defaultYoutube, ...(generated.youtubeVideo || {}), videoId: defaultYoutube.videoId };
+  // Nunca confiar en un videoId inventado por el LLM; conservar solo búsqueda, título y momentos clave de la IA + videoId verificado por defecto
+  const youtubeVideo = {
+    ...defaultYoutube,
+    ...(generated.youtubeVideo || {}),
+    videoId: defaultYoutube.videoId
+  };
 
   return {
     id: `pkg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -2228,9 +2230,9 @@ function buildContextualPedagogicalContent({
   return {
     teacherDiagnosis: {
       deficitType: carenciaObservada || 'Metodológica y de Memoria de Trabajo',
-      cognitiveCalibration: `Contenido calibrado para ${age} años (Grado ${profile.grado}) en el área de ${subject}. Se redujo la densidad léxica de los enunciados y se estructuró el tema "${topic}" en 5 diapositivas visuales, audio guiado y práctica interactiva.`,
+      cognitiveCalibration: `Contenido calibrado para ${age} años (Grado ${profile.grado}) en el área de ${subject}. Se redujo la densidad léxica de los enunciados y se estructuró el tema "${topic}" en 5 diapositivas visuales con lectura en voz alta, video de apoyo en YouTube y práctica interactiva.`,
       rootCauseAnalysis: `Al cruzar el desempeño actual con el Anexo 2 del PIAR de ${profile.nombreCompleto}, se identifica que el estudiante comprende la noción inicial del tema, pero experimenta sobrecarga ejecutiva al encadenar pasos sin apoyo gráfico (${areaMatch.barreras}). ${teacherNotes ? `Observación docente integrada: "${teacherNotes}".` : ''}`,
-      pedagogicalStrategy: `Aplicación directa del Ajuste Razonable pactado en su PIAR: "${areaMatch.ajustes}". Se diseñaron 5 láminas de presentación visual, una cápsula auditiva conversacional, guía en video segmentada y juegos antes de la evaluación multi-intento.`,
+      pedagogicalStrategy: `Aplicación directa del Ajuste Razonable pactado en su PIAR: "${areaMatch.ajustes}". Se diseñaron 5 láminas de presentación visual (con voz y descarga PowerPoint), un video de apoyo en YouTube con puntos clave y 4 juegos didácticos antes de la evaluación multi-intento.`,
       detectedStrengths: [
         'Excelente receptividad cuando el concepto se conecta con ejemplos visuales y cercanos',
         'Capacidad para resolver el primer paso operativo cuando la instrucción está resaltada',
@@ -2243,9 +2245,9 @@ function buildContextualPedagogicalContent({
     },
     studentDiagnosis: {
       greetingTitle: `¡Hola, ${firstName}! Preparé esta ruta especial para ti`,
-      encouragementMessage: `Revisamos tu avance en ${subject} y vimos que tienes muy buena base. Para que "${topic}" te resulte súper claro y práctico, organizamos una presentación visual en 5 láminas, un audio corto, video paso a paso y juegos interactivos.`,
-      learningGoal: `Dominar "${topic}" en 3 pasos sencillos y superar tu reto interactivo a tu propio ritmo.`,
-      superpowerTip: `Usa tu superpoder visual: primero explora las 5 láminas tipo presentación, dale Play al audio y luego diviértete con los juegos antes de tu examen.`
+      encouragementMessage: `Revisamos tu avance en ${subject} y vimos que tienes muy buena base. Para que "${topic}" te resulte súper claro y práctico, organizamos 5 diapositivas con voz y descarga PowerPoint, un video de apoyo en YouTube y juegos interactivos.`,
+      learningGoal: `Dominar "${topic}" en pasos sencillos y superar tu reto interactivo a tu propio ritmo.`,
+      superpowerTip: `Usa tu superpoder visual: primero explora las 5 láminas (puedes escucharlas en voz alta), mira el video de YouTube y luego diviértete con los juegos antes de tu examen.`
     },
     ...domainContent,
     youtubeVideo: buildDefaultYoutubeVideo(subject, topic)

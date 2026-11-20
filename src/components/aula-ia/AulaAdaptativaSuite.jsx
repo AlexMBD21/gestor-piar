@@ -17,7 +17,8 @@ export default function AulaAdaptativaSuite({
     activityByPackage,
     hydrateFromPiarRecord,
     createAdaptivePackage,
-    togglePackagePublishStatus
+    togglePackagePublishStatus,
+    deleteAdaptivePackage
   } = useAulaIa();
 
   const validPiars = piars.filter((p) => p.data?.id !== 'blanco-temp');
@@ -35,6 +36,7 @@ export default function AulaAdaptativaSuite({
 
   // Controla qué tarjeta de materia generada está desplegada (acordeón contraíble para no alargar la pantalla)
   const [expandedPkgId, setExpandedPkgId] = useState(null);
+  const [pendingDeletePkg, setPendingDeletePkg] = useState(null);
 
   const currentPkg =
     studentPackages.find((p) => p.id === selectedPkgId) || studentPackages[0] || null;
@@ -83,10 +85,32 @@ export default function AulaAdaptativaSuite({
   useEffect(() => {
     setSelectedAreaIndex(0);
     setExpandedPkgId(null);
+    setPendingDeletePkg(null);
     if (activeStudent) {
       hydrateFromPiarRecord(activeStudent);
     }
   }, [activeStudent, hydrateFromPiarRecord]);
+
+  useEffect(() => {
+    if (!pendingDeletePkg) return undefined;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setPendingDeletePkg(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [pendingDeletePkg]);
+
+  const handleConfirmDeletePackage = () => {
+    if (!pendingDeletePkg || !activeStudent?.id) return;
+    const deleted = pendingDeletePkg;
+    deleteAdaptivePackage(activeStudent.id, deleted.id, activeStudent);
+    if (selectedPkgId === deleted.id) setSelectedPkgId(null);
+    if (expandedPkgId === deleted.id) setExpandedPkgId(null);
+    setPendingDeletePkg(null);
+    if (showToast) {
+      showToast(`Material de ${deleted.subject} eliminado correctamente.`);
+    }
+  };
 
   if (!activeStudent || !profile) {
     return (
@@ -387,7 +411,7 @@ export default function AulaAdaptativaSuite({
                           <div className="aia-collapsible-pkg-title-wrap">
                             <strong className="aia-collapsible-pkg-subject">{pkg.subject}</strong>
                             <span className="aia-collapsible-pkg-summary-pills">
-                              {pkg.slides?.length || 5} Diapositivas · Audio TTS · Video/YouTube · Juegos IA · Examen
+                              {pkg.slides?.length || 5} Diapositivas (.pptx) · Video YouTube · Juegos IA · Examen
                             </span>
                             <span className="aia-collapsible-pkg-topic">{pkg.topic}</span>
                           </div>
@@ -555,6 +579,18 @@ export default function AulaAdaptativaSuite({
                               <span>Despublicar</span>
                             </button>
                           )}
+
+                          <button
+                            type="button"
+                            className="aia-btn-danger-icon"
+                            onClick={() => setPendingDeletePkg(pkg)}
+                            title={`Eliminar material de ${pkg.subject}`}
+                            aria-label={`Eliminar material de ${pkg.subject}`}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                              delete
+                            </span>
+                          </button>
                         </div>
                       </div>
 
@@ -637,32 +673,20 @@ export default function AulaAdaptativaSuite({
                               )}
                             </div>
 
-                            <div className="aia-factory-cards-mini five-cols">
+                            <div className="aia-factory-cards-mini four-cols">
                               <div className="aia-factory-mini-item">
                                 <span className="material-symbols-outlined">slideshow</span>
                                 <div>
-                                  <strong>{pkg.slides?.length || 5} Diapositivas</strong>
-                                  <small>Con analogías y autoverificación</small>
-                                </div>
-                              </div>
-
-                              <div className="aia-factory-mini-item">
-                                <span className="material-symbols-outlined">headphones</span>
-                                <div>
-                                  <strong>Cápsula de Audio TTS</strong>
-                                  <small>
-                                    {pkg.audioCapsule?.segments?.length || 4} bloques narrados
-                                  </small>
+                                  <strong>{pkg.slides?.length || 5} Diapositivas (.pptx)</strong>
+                                  <small>Con voz, analogías y descarga PowerPoint</small>
                                 </div>
                               </div>
 
                               <div className="aia-factory-mini-item">
                                 <span className="material-symbols-outlined">smart_display</span>
                                 <div>
-                                  <strong>Video-Guía / YouTube</strong>
-                                  <small>
-                                    {pkg.videoGuide?.scenes?.length || 4} escenas + enlace externo
-                                  </small>
+                                  <strong>Video YouTube</strong>
+                                  <small>Video de apoyo + puntos clave IA</small>
                                 </div>
                               </div>
 
@@ -849,6 +873,18 @@ export default function AulaAdaptativaSuite({
                     {currentPkg.status === 'published' ? 'Despublicar' : 'Aprobar y Publicar'}
                   </span>
                 </button>
+
+                <button
+                  type="button"
+                  className="aia-btn-danger-icon"
+                  onClick={() => setPendingDeletePkg(currentPkg)}
+                  title={`Eliminar material de ${currentPkg.subject}`}
+                  aria-label={`Eliminar material de ${currentPkg.subject}`}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                    delete
+                  </span>
+                </button>
               </div>
             </div>
           )}
@@ -891,6 +927,48 @@ export default function AulaAdaptativaSuite({
           )}
 
           <TeacherTelemetryAnalytics pkg={currentPkg} activity={currentActivity} />
+        </div>
+      )}
+
+      {/* Modal de confirmación antes de eliminar un material */}
+      {pendingDeletePkg && (
+        <div
+          className="aia-confirm-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="aia-delete-pkg-title"
+          onClick={() => setPendingDeletePkg(null)}
+        >
+          <div className="aia-confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="aia-confirm-modal-icon">
+              <span className="material-symbols-outlined">delete_forever</span>
+            </div>
+            <h3 id="aia-delete-pkg-title">¿Eliminar este material?</h3>
+            <p>
+              Se eliminará el paquete de <strong>{pendingDeletePkg.subject}</strong> (
+              {pendingDeletePkg.topic}) junto con su progreso y telemetría local. Podrás volver a
+              generarlo con el Agente IA cuando quieras.
+            </p>
+            <div className="aia-confirm-modal-actions">
+              <button
+                type="button"
+                className="aia-btn-secondary"
+                onClick={() => setPendingDeletePkg(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="aia-btn-danger"
+                onClick={handleConfirmDeletePackage}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>
+                  delete
+                </span>
+                <span>Eliminar material</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

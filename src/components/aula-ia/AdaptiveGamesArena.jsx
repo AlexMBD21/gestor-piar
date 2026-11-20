@@ -440,7 +440,7 @@ export default function AdaptiveGamesArena({ pkg, activity, onCompleteGames }) {
       {/* Cabecera con tipo de juego y progreso */}
       <div className="aia-media-header">
         <div className="aia-media-title-group">
-          <span className="aia-step-pill">PASO 04 · Juegos Didácticos</span>
+          <span className="aia-step-pill">PASO 03 · Juegos Didácticos</span>
           <span className="aia-badge-soft">{meta.skill}</span>
         </div>
 

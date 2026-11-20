@@ -1,6 +1,18 @@
 import { useState, useRef } from 'react';
 import { useAulaIa } from '../../context/AulaIaContext';
 
+function parseTargetSlideIndex(remediationRef, fallbackIdx, totalSlides) {
+  const safeTotal = Math.max(1, totalSlides || 5);
+  const match = String(remediationRef || '').match(/diapositivas?\s*(\d+)/i);
+  if (match?.[1]) {
+    const parsed = Number.parseInt(match[1], 10);
+    if (!Number.isNaN(parsed) && parsed >= 1) {
+      return Math.min(parsed - 1, safeTotal - 1);
+    }
+  }
+  return fallbackIdx % safeTotal;
+}
+
 export default function AdaptiveQuizMultiAttempt({ pkg, activity, onNavigateToMedia }) {
   const { submitQuizAttempt } = useAulaIa();
   const questions = Array.isArray(pkg?.quizQuestions) ? pkg.quizQuestions : [];
@@ -275,26 +287,36 @@ export default function AdaptiveQuizMultiAttempt({ pkg, activity, onNavigateToMe
                             <span>Recurso recomendado: {q.remediationRef}</span>
                             {onNavigateToMedia && (
                               <div className="aia-remediation-btns">
-                                <button
-                                  type="button"
-                                  className="aia-link-pill"
-                                  onClick={() => onNavigateToMedia('slides')}
-                                >
-                                  📊 Ir a Diapositivas
-                                </button>
-                                <button
-                                  type="button"
-                                  className="aia-link-pill"
-                                  onClick={() => onNavigateToMedia('audio')}
-                                >
-                                  🎧 Escuchar Audio
-                                </button>
+                                {(() => {
+                                  const targetSlideIdx = parseTargetSlideIndex(
+                                    q.remediationRef,
+                                    qIdx,
+                                    pkg?.slides?.length || 5
+                                  );
+                                  return (
+                                    <button
+                                      type="button"
+                                      className="aia-link-pill"
+                                      onClick={() =>
+                                        onNavigateToMedia('slides', {
+                                          slideIndex: targetSlideIdx,
+                                          skillTag: q.skillTag,
+                                          hint: q.hint,
+                                          question: q.question,
+                                          remediationRef: q.remediationRef
+                                        })
+                                      }
+                                    >
+                                      📊 Repasar Lámina {targetSlideIdx + 1}
+                                    </button>
+                                  );
+                                })()}
                                 <button
                                   type="button"
                                   className="aia-link-pill"
                                   onClick={() => onNavigateToMedia('video')}
                                 >
-                                  🎬 Ver Video-Guía
+                                  🎬 Ver Video YouTube
                                 </button>
                               </div>
                             )}

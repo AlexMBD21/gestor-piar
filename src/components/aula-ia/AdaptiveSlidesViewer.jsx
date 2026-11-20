@@ -1,36 +1,37 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAulaIa } from '../../context/AulaIaContext';
+import { exportAdaptivePackageToPptx } from '../../lib/exportPiarPptx';
 
 const VISUAL_THEMES = {
   concept: {
-    label: 'Mapa Conceptual',
+    label: 'Idea Principal',
     icon: 'hub',
     accent: '#2563eb',
-    soft: 'rgba(37, 99, 235, 0.12)'
+    soft: 'rgba(37, 99, 235, 0.11)'
   },
   steps: {
-    label: 'Ruta Paso a Paso',
+    label: 'Paso a Paso',
     icon: 'alt_route',
     accent: '#059669',
-    soft: 'rgba(5, 150, 105, 0.12)'
+    soft: 'rgba(5, 150, 105, 0.11)'
   },
   comparison: {
-    label: 'Contraste Visual',
+    label: 'Evitar vs. Aplicar',
     icon: 'compare',
     accent: '#d97706',
-    soft: 'rgba(217, 119, 6, 0.12)'
+    soft: 'rgba(217, 119, 6, 0.11)'
   },
   example: {
     label: 'Ejemplo Guiado',
     icon: 'lightbulb',
     accent: '#7c3aed',
-    soft: 'rgba(124, 58, 237, 0.12)'
+    soft: 'rgba(124, 58, 237, 0.11)'
   },
   summary: {
-    label: 'Resumen Ejecutivo',
+    label: 'Resumen Clave',
     icon: 'verified',
     accent: '#0284c7',
-    soft: 'rgba(2, 132, 199, 0.12)'
+    soft: 'rgba(2, 132, 199, 0.11)'
   }
 };
 
@@ -55,178 +56,157 @@ function deriveBullets(slide) {
   return sentences.slice(0, 3);
 }
 
-/**
- * Convierte enlaces compartidos de Google Slides / PowerPoint Online / Canva en URL embebible.
- */
-function normalizePresentationEmbedUrl(rawUrl = '') {
-  const trimmed = typeof rawUrl === 'string' ? rawUrl.trim() : '';
-  if (!trimmed) return null;
+function cleanSlideShortTitle(title = '', fallback = '') {
+  const stripped = String(title || '')
+    .replace(/^\d+\.\s*/, '')
+    .trim();
+  return stripped || fallback;
+}
+
+function loadMasteryMap(storageKey) {
+  if (!storageKey) return {};
   try {
-    const withProto = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-    const parsed = new URL(withProto);
-    if (!['http:', 'https:'].includes(parsed.protocol)) return null;
-
-    if (parsed.hostname.includes('docs.google.com') && parsed.pathname.includes('/presentation/d/')) {
-      const idMatch = parsed.pathname.match(/\/presentation\/d\/([a-zA-Z0-9_-]+)/);
-      if (idMatch?.[1]) {
-        return `https://docs.google.com/presentation/d/${idMatch[1]}/embed?start=false&loop=false&delayms=5000`;
-      }
-      if (parsed.pathname.includes('/presentation/d/e/')) {
-        return withProto.replace(/\/pub\b/, '/embed');
-      }
-    }
-
-    if (parsed.hostname.includes('canva.com') && !parsed.searchParams.has('embed')) {
-      parsed.searchParams.set('embed', '');
-      return parsed.toString();
-    }
-
-    return parsed.toString();
+    const raw = window.localStorage.getItem(storageKey);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : {};
   } catch {
-    return null;
+    return {};
   }
 }
 
-function SlideVisualDiagram({ visualType, slide, bullets }) {
-  const theme = VISUAL_THEMES[visualType] || VISUAL_THEMES.concept;
-  const shortPills = bullets.slice(0, 3).map((b) => (b.length > 34 ? `${b.slice(0, 32)}…` : b));
+function SlideKeyPoints({ visualType, bullets, theme, activeStepIdx, onSelectStep }) {
+  if (!Array.isArray(bullets) || bullets.length === 0) return null;
 
   if (visualType === 'steps') {
-    const stepColors = ['#16a34a', '#d97706', '#2563eb'];
-    const labels = ['PASO 1 · OBSERVAR', 'PASO 2 · EJECUTAR', 'PASO 3 · VALIDAR'];
     return (
-      <div className="aia-ppt-diagram" style={{ '--slide-accent': theme.accent }}>
-        <div className="aia-ppt-diagram-head">
-          <span className="material-symbols-outlined">{theme.icon}</span>
-          <span>{theme.label}</span>
-        </div>
-        <div className="aia-ppt-steps-visual">
-          {[0, 1, 2].map((i) => (
-            <div key={i} className="aia-ppt-step-node" style={{ borderLeftColor: stepColors[i] }}>
-              <span className="aia-ppt-step-num" style={{ background: stepColors[i] }}>
-                {i + 1}
+      <div className="aia-calm-steps-list" role="list" aria-label="Pasos ordenados">
+        {bullets.map((b, i) => {
+          const isCurrent = i === activeStepIdx;
+          const isDone = i < activeStepIdx;
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onSelectStep(i)}
+              className={`aia-calm-step-card ${isCurrent ? 'active' : ''} ${isDone ? 'done' : ''}`}
+              style={{ '--slide-accent': theme.accent }}
+            >
+              <span className="aia-calm-step-num aia-tabular">
+                {isDone ? '✓' : i + 1}
               </span>
-              <div>
-                <small style={{ color: stepColors[i] }}>{labels[i]}</small>
-                <strong>{shortPills[i] || slide?.keyTakeaway || 'Avanza en orden'}</strong>
-              </div>
-            </div>
-          ))}
-        </div>
+              <span className="aia-calm-step-body">
+                <small>Paso {i + 1}</small>
+                <strong>{b}</strong>
+              </span>
+            </button>
+          );
+        })}
       </div>
     );
   }
 
   if (visualType === 'comparison') {
+    const avoidText =
+      bullets.find((b) => /evita|no\s|error|afán|prisa|confund/i.test(b)) ||
+      'Actuar con afán o pasar al siguiente paso sin observar primero la señal o dato principal.';
+    const applyList = bullets.filter((b) => b !== avoidText);
+
     return (
-      <div className="aia-ppt-diagram" style={{ '--slide-accent': theme.accent }}>
-        <div className="aia-ppt-diagram-head">
-          <span className="material-symbols-outlined">{theme.icon}</span>
-          <span>{theme.label}</span>
-        </div>
-        <div className="aia-ppt-compare-grid">
-          <div className="aia-ppt-compare-card avoid">
-            <div className="aia-ppt-compare-badge avoid">✕ Evitar</div>
-            <p>Actuar por afán o mezclar datos sin observar primero.</p>
+      <div className="aia-calm-compare-grid">
+        <div className="aia-calm-compare-card avoid">
+          <div className="aia-calm-compare-head avoid">
+            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+              block
+            </span>
+            <span>Qué evitar</span>
           </div>
-          <div className="aia-ppt-compare-card apply">
-            <div className="aia-ppt-compare-badge apply">✓ Aplicar</div>
-            <p>{shortPills[0] || slide?.keyTakeaway}</p>
+          <p>{avoidText}</p>
+        </div>
+
+        <div className="aia-calm-compare-card apply">
+          <div className="aia-calm-compare-head apply">
+            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+              check_circle
+            </span>
+            <span>Cómo hacerlo bien</span>
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (visualType === 'example') {
-    return (
-      <div className="aia-ppt-diagram" style={{ '--slide-accent': theme.accent }}>
-        <div className="aia-ppt-diagram-head">
-          <span className="material-symbols-outlined">{theme.icon}</span>
-          <span>{theme.label}</span>
-        </div>
-        <div className="aia-ppt-flow-svg">
-          <svg viewBox="0 0 280 130" className="aia-ppt-svg" aria-hidden="true">
-            <defs>
-              <marker id="aiaArrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
-                <path d="M0,0 L6,3 L0,6 Z" fill="#7c3aed" />
-              </marker>
-            </defs>
-            <rect x="8" y="28" width="72" height="54" rx="10" fill="rgba(124,58,237,0.14)" stroke="#7c3aed" strokeWidth="1.8" />
-            <text x="44" y="51" textAnchor="middle" fill="#7c3aed" fontSize="10" fontWeight="800">INICIO</text>
-            <text x="44" y="66" textAnchor="middle" fill="currentColor" fontSize="9">Observar</text>
-            <line x1="82" y1="55" x2="100" y2="55" stroke="#7c3aed" strokeWidth="2" markerEnd="url(#aiaArrow)" />
-
-            <rect x="104" y="28" width="72" height="54" rx="10" fill="rgba(124,58,237,0.2)" stroke="#7c3aed" strokeWidth="1.8" />
-            <text x="140" y="51" textAnchor="middle" fill="#7c3aed" fontSize="10" fontWeight="800">PROCESO</text>
-            <text x="140" y="66" textAnchor="middle" fill="currentColor" fontSize="9">Aplicar guía</text>
-            <line x1="178" y1="55" x2="196" y2="55" stroke="#7c3aed" strokeWidth="2" markerEnd="url(#aiaArrow)" />
-
-            <rect x="200" y="28" width="72" height="54" rx="10" fill="rgba(22,163,74,0.16)" stroke="#16a34a" strokeWidth="1.8" />
-            <text x="236" y="51" textAnchor="middle" fill="#16a34a" fontSize="10" fontWeight="800">LOGRO</text>
-            <text x="236" y="66" textAnchor="middle" fill="currentColor" fontSize="9">Verificar ✓</text>
-          </svg>
-          <p className="aia-ppt-diagram-caption">{shortPills[1] || slide?.keyTakeaway}</p>
+          <ul className="aia-calm-compare-list">
+            {(applyList.length > 0 ? applyList : bullets).map((item, idx) => (
+              <li key={idx}>{item}</li>
+            ))}
+          </ul>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="aia-ppt-diagram" style={{ '--slide-accent': theme.accent }}>
-      <div className="aia-ppt-diagram-head">
-        <span className="material-symbols-outlined">{theme.icon}</span>
-        <span>{theme.label}</span>
-      </div>
-      <div className="aia-ppt-concept-hub">
-        <div className="aia-ppt-hub-core" style={{ background: theme.soft, borderColor: theme.accent, color: theme.accent }}>
-          <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>{theme.icon}</span>
-          <strong>{slide?.badge || 'Idea Central'}</strong>
-        </div>
-        <div className="aia-ppt-hub-branches">
-          {(shortPills.length > 0 ? shortPills : [slide?.keyTakeaway || 'Idea clave']).map((pill, i) => (
-            <div key={i} className="aia-ppt-hub-branch">
-              <span className="aia-ppt-hub-dot" style={{ background: theme.accent }} />
-              <span>{pill}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+    <ul className="aia-calm-points-list">
+      {bullets.map((b, i) => (
+        <li key={i} className="aia-calm-point-item">
+          <span
+            className="aia-calm-point-num aia-tabular"
+            style={{ background: theme.soft, color: theme.accent }}
+          >
+            {i + 1}
+          </span>
+          <span className="aia-calm-point-text">{b}</span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
 export default function AdaptiveSlidesViewer({
   pkg,
   activity,
-  isMirrorPreview = false,
+  remediationFocus = null,
+  onClearRemediation,
+  onReturnToQuiz,
   onCompleteSlides
 }) {
-  const { recordSlideTelemetry } = useAulaIa();
+  const { recordSlideTelemetry, recordAudioTelemetry } = useAulaIa();
   const slides = Array.isArray(pkg?.slides) ? pkg.slides : [];
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [showCheckAnswer, setShowCheckAnswer] = useState(false);
+  const [activeStepIdx, setActiveStepIdx] = useState(0);
+  const [showCheckGuide, setShowCheckGuide] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isExportingPptx, setIsExportingPptx] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [deckMode, setDeckMode] = useState('native'); // 'native' | 'external'
-  const [showEmbedForm, setShowEmbedForm] = useState(false);
 
-  const storageKey = pkg?.id ? `piar_slide_embed_${pkg.id}` : null;
-  const [externalUrl, setExternalUrl] = useState(() => {
-    if (pkg?.presentationUrl) return pkg.presentationUrl;
-    if (!storageKey) return '';
-    try {
-      return window.localStorage.getItem(storageKey) || '';
-    } catch {
-      return '';
-    }
-  });
-  const [embedInput, setEmbedInput] = useState(externalUrl);
-  const [embedFeedback, setEmbedFeedback] = useState(null);
+  const masteryStorageKey = pkg?.id ? `piar_slide_mastery_${pkg.id}` : null;
+  const [masteryByStep, setMasteryByStep] = useState(() => loadMasteryMap(masteryStorageKey));
 
   const deckContainerRef = useRef(null);
 
-  const currentSlide = slides[currentIndex] || slides[0];
+  const safeIndex = Math.min(Math.max(0, currentIndex), Math.max(0, slides.length - 1));
+  const currentSlide = slides[safeIndex] || slides[0];
   const viewedSlides = activity?.slidesViewed || [1];
+
+  const stopSpeech = () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setIsSpeaking(false);
+  };
+
+  useEffect(() => {
+    setMasteryByStep(loadMasteryMap(masteryStorageKey));
+  }, [masteryStorageKey]);
+
+  // Salto automático desde un error del examen a la diapositiva exacta
+  useEffect(() => {
+    if (!remediationFocus || slides.length === 0) return;
+    const targetIdx = Math.min(
+      Math.max(0, Number(remediationFocus.slideIndex) || 0),
+      slides.length - 1
+    );
+    setCurrentIndex(targetIdx);
+    setActiveStepIdx(0);
+    setShowCheckGuide(false);
+    stopSpeech();
+  }, [remediationFocus, slides.length]);
 
   useEffect(() => {
     if (!pkg?.id || !currentSlide?.step) return;
@@ -238,31 +218,133 @@ export default function AdaptiveSlidesViewer({
       setIsFullscreen(Boolean(document.fullscreenElement));
     };
     document.addEventListener('fullscreenchange', onFsChange);
-    return () => document.removeEventListener('fullscreenchange', onFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onFsChange);
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
   }, []);
 
   if (slides.length === 0) return null;
 
   const progressPct = Math.round((viewedSlides.length / slides.length) * 100);
-  const visualType = resolveVisualType(currentSlide, currentIndex);
+  const visualType = resolveVisualType(currentSlide, safeIndex);
   const theme = VISUAL_THEMES[visualType] || VISUAL_THEMES.concept;
   const bullets = deriveBullets(currentSlide);
-  const normalizedEmbed = normalizePresentationEmbedUrl(externalUrl);
+  const slideKey = String(currentSlide.step || safeIndex + 1);
+  const currentMastery = masteryByStep[slideKey] || null; // 'understood' | 'review' | null
+
+  const reviewCount = slides.filter((s, idx) => {
+    const key = String(s.step || idx + 1);
+    return masteryByStep[key] === 'review';
+  }).length;
 
   const selectSlide = (idx) => {
     if (idx < 0 || idx >= slides.length) return;
-    setShowCheckAnswer(false);
+    stopSpeech();
+    setShowCheckGuide(false);
+    setActiveStepIdx(0);
     setCurrentIndex(idx);
   };
 
-  const goPrev = () => selectSlide(currentIndex - 1);
+  const goPrev = () => selectSlide(safeIndex - 1);
 
   const goNext = () => {
-    if (currentIndex < slides.length - 1) {
-      selectSlide(currentIndex + 1);
+    stopSpeech();
+    if (safeIndex < slides.length - 1) {
+      selectSlide(safeIndex + 1);
     } else if (onCompleteSlides) {
       onCompleteSlides();
     }
+  };
+
+  const handleSetMastery = (status) => {
+    const nextMap = { ...masteryByStep, [slideKey]: status };
+    setMasteryByStep(nextMap);
+    if (masteryStorageKey) {
+      try {
+        window.localStorage.setItem(masteryStorageKey, JSON.stringify(nextMap));
+      } catch {
+        // Ignorar cuota de almacenamiento
+      }
+    }
+  };
+
+  const handleToggleSpeech = () => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    if (isSpeaking) {
+      stopSpeech();
+      return;
+    }
+
+    try {
+      window.speechSynthesis.cancel();
+      const parts = [
+        cleanSlideShortTitle(currentSlide.title),
+        currentSlide.content,
+        bullets.length > 0 ? `Puntos clave: ${bullets.join('. ')}` : '',
+        currentSlide.visualAnalogy ? `Imagínalo así: ${currentSlide.visualAnalogy}` : '',
+        currentSlide.keyTakeaway ? `Recuerda esto para tu examen: ${currentSlide.keyTakeaway}` : ''
+      ].filter(Boolean);
+
+      const utterance = new SpeechSynthesisUtterance(parts.join('. '));
+      utterance.lang = 'es-CO';
+      utterance.rate = 0.94;
+      utterance.onend = () => {
+        setIsSpeaking(false);
+        if (pkg?.id) {
+          recordAudioTelemetry(pkg.id, {
+            incrementPlay: false,
+            progressPercent: Math.min(100, Math.round(((safeIndex + 1) / slides.length) * 100)),
+            addedSeconds: 12,
+            completed: safeIndex === slides.length - 1
+          });
+        }
+      };
+      utterance.onerror = () => setIsSpeaking(false);
+
+      if (pkg?.id) {
+        recordAudioTelemetry(pkg.id, {
+          incrementPlay: true,
+          progressPercent: Math.max(
+            activity?.audioMaxPercent || 0,
+            Math.round(((safeIndex + 1) / slides.length) * 100)
+          ),
+          addedSeconds: 3
+        });
+      }
+
+      setIsSpeaking(true);
+      window.speechSynthesis.speak(utterance);
+    } catch {
+      setIsSpeaking(false);
+    }
+  };
+
+  const handleDownloadPptx = async () => {
+    if (isExportingPptx) return;
+    setIsExportingPptx(true);
+    try {
+      await exportAdaptivePackageToPptx(pkg);
+    } catch {
+      // Silencioso si el navegador bloquea la descarga
+    } finally {
+      setIsExportingPptx(false);
+    }
+  };
+
+  const handleJumpToNextReview = () => {
+    const idx = slides.findIndex((s, i) => {
+      const key = String(s.step || i + 1);
+      return masteryByStep[key] === 'review' && i !== safeIndex;
+    });
+    if (idx >= 0) {
+      selectSlide(idx);
+      return;
+    }
+    const firstIdx = slides.findIndex((s, i) => masteryByStep[String(s.step || i + 1)] === 'review');
+    if (firstIdx >= 0) selectSlide(firstIdx);
   };
 
   const handleToggleFullscreen = async () => {
@@ -287,48 +369,10 @@ export default function AdaptiveSlidesViewer({
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     if (e.key === 'ArrowRight') {
       e.preventDefault();
-      if (currentIndex < slides.length - 1) selectSlide(currentIndex + 1);
+      if (safeIndex < slides.length - 1) selectSlide(safeIndex + 1);
     } else if (e.key === 'ArrowLeft') {
       e.preventDefault();
-      if (currentIndex > 0) selectSlide(currentIndex - 1);
-    }
-  };
-
-  const handleSaveEmbed = (e) => {
-    e.preventDefault();
-    const valid = normalizePresentationEmbedUrl(embedInput);
-    if (!valid) {
-      setEmbedFeedback({
-        type: 'error',
-        text: 'Pega un enlace válido de Google Slides, PowerPoint Online o Canva.'
-      });
-      return;
-    }
-    setExternalUrl(valid);
-    setEmbedInput(valid);
-    setDeckMode('external');
-    setShowEmbedForm(false);
-    setEmbedFeedback(null);
-    if (storageKey) {
-      try {
-        window.localStorage.setItem(storageKey, valid);
-      } catch {
-        // Ignorar cuota de almacenamiento
-      }
-    }
-  };
-
-  const handleClearEmbed = () => {
-    setExternalUrl('');
-    setEmbedInput('');
-    setDeckMode('native');
-    setShowEmbedForm(false);
-    if (storageKey) {
-      try {
-        window.localStorage.removeItem(storageKey);
-      } catch {
-        // Ignorar
-      }
+      if (safeIndex > 0) selectSlide(safeIndex - 1);
     }
   };
 
@@ -339,273 +383,324 @@ export default function AdaptiveSlidesViewer({
       onKeyDown={handleKeyDown}
       className={`aia-media-surface aia-ppt-shell ${isFullscreen ? 'is-fullscreen' : ''}`}
     >
-      {/* Barra superior estilo PowerPoint / Google Slides */}
+      {/* Banner de Foco de Refuerzo cuando llega desde un error en el examen */}
+      {remediationFocus && (
+        <div className="aia-remediation-focus-bar" role="status">
+          <div className="aia-remediation-focus-info">
+            <span className="material-symbols-outlined aia-remediation-focus-icon">
+              target
+            </span>
+            <div>
+              <div className="aia-remediation-focus-title">
+                Repasando tu punto a fortalecer:{' '}
+                <strong>{remediationFocus.skillTag || 'Concepto del examen'}</strong>
+              </div>
+              {remediationFocus.hint && (
+                <p className="aia-remediation-focus-hint">{remediationFocus.hint}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="aia-remediation-focus-actions">
+            {onReturnToQuiz && (
+              <button
+                type="button"
+                className="aia-btn-primary aia-btn-sm"
+                onClick={onReturnToQuiz}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                  quiz
+                </span>
+                <span>Volver al examen</span>
+              </button>
+            )}
+            {onClearRemediation && (
+              <button
+                type="button"
+                className="aia-btn-secondary aia-btn-sm"
+                onClick={onClearRemediation}
+                title="Cerrar aviso de repaso"
+                aria-label="Cerrar aviso de repaso"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                  close
+                </span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Barra superior limpia: Voz + Descarga PowerPoint real (.pptx) + Pantalla completa */}
       <div className="aia-ppt-toolbar">
         <div className="aia-media-title-group">
           <span className="aia-step-pill aia-tabular">
-            Diapositiva {currentIndex + 1} de {slides.length}
+            Lámina {safeIndex + 1} de {slides.length}
           </span>
-          <span className="aia-badge-soft">{pkg?.subject} · Presentación Visual</span>
           <span className="aia-telemetry-chip aia-tabular">
             <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-              visibility
+              check_circle
             </span>
-            <span>{progressPct}% completado</span>
+            <span>{progressPct}% explorado</span>
           </span>
+          {reviewCount > 0 && (
+            <button
+              type="button"
+              className="aia-review-counter-pill aia-tabular"
+              onClick={handleJumpToNextReview}
+              title="Ir a una lámina marcada para repasar"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                bookmark
+              </span>
+              <span>{reviewCount} por repasar</span>
+            </button>
+          )}
         </div>
 
         <div className="aia-ppt-toolbar-actions">
-          {normalizedEmbed && (
-            <div className="aia-video-mode-tabs" role="tablist" aria-label="Fuente de diapositivas">
-              <button
-                type="button"
-                onClick={() => setDeckMode('native')}
-                className={`aia-video-mode-btn ${deckMode === 'native' ? 'active' : ''}`}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                  slideshow
-                </span>
-                <span>Láminas IA</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setDeckMode('external')}
-                className={`aia-video-mode-btn ${deckMode === 'external' ? 'active' : ''}`}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                  co_present
-                </span>
-                <span>Google Slides / PPT</span>
-              </button>
-            </div>
-          )}
+          <button
+            type="button"
+            className={`aia-tts-btn ${isSpeaking ? 'speaking' : ''}`}
+            onClick={handleToggleSpeech}
+            title={isSpeaking ? 'Detener lectura en voz alta' : 'Escuchar esta lámina en voz alta'}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>
+              {isSpeaking ? 'stop_circle' : 'volume_up'}
+            </span>
+            <span>{isSpeaking ? 'Detener voz' : 'Escuchar lámina'}</span>
+          </button>
 
-          {isMirrorPreview && (
-            <button
-              type="button"
-              className="aia-btn-secondary aia-btn-sm"
-              onClick={() => setShowEmbedForm((v) => !v)}
-              title="Vincular una presentación externa de Google Slides o PowerPoint"
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                add_link
-              </span>
-              <span>{normalizedEmbed ? 'Editar Slides Externo' : 'Vincular Google Slides / PPT'}</span>
-            </button>
-          )}
+          <button
+            type="button"
+            className="aia-btn-secondary aia-btn-sm"
+            onClick={handleDownloadPptx}
+            disabled={isExportingPptx}
+            title="Descargar esta presentación como archivo PowerPoint (.pptx) para repasar sin internet"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+              {isExportingPptx ? 'hourglass_top' : 'download'}
+            </span>
+            <span>{isExportingPptx ? 'Generando .pptx...' : 'Descargar PowerPoint'}</span>
+          </button>
 
           <button
             type="button"
             className="aia-btn-secondary aia-btn-sm"
             onClick={handleToggleFullscreen}
-            title={isFullscreen ? 'Salir de pantalla completa' : 'Ver en modo presentación'}
+            title={isFullscreen ? 'Salir de pantalla completa' : 'Ver en pantalla completa'}
           >
             <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
               {isFullscreen ? 'fullscreen_exit' : 'present_to_all'}
             </span>
-            <span>{isFullscreen ? 'Salir' : 'Presentar'}</span>
+            <span>{isFullscreen ? 'Salir' : 'Pantalla completa'}</span>
           </button>
         </div>
       </div>
 
-      {/* Formulario opcional docente para incrustar Google Slides / PowerPoint */}
-      {isMirrorPreview && showEmbedForm && (
-        <form onSubmit={handleSaveEmbed} className="aia-yt-teacher-bar">
-          <div className="aia-yt-teacher-bar-head">
-            <span className="aia-yt-teacher-tag">
-              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                co_present
-              </span>
-              <span>Vincular Presentación de Google Slides, PowerPoint Online o Canva</span>
-            </span>
-          </div>
-          <div className="aia-yt-input-row">
-            <input
-              type="url"
-              className="aia-input-compact"
-              placeholder="Pega el enlace compartido de Google Slides (docs.google.com/presentation/...)"
-              value={embedInput}
-              onChange={(e) => {
-                setEmbedInput(e.target.value);
-                setEmbedFeedback(null);
-              }}
-            />
-            <button type="submit" className="aia-btn-primary aia-btn-sm">
-              Incrustar presentación
-            </button>
-            {normalizedEmbed && (
+      {/* Lienzo Educativo Limpio */}
+      <div className="aia-ppt-workspace">
+        {/* Índice lateral limpio de capítulos */}
+        <aside className="aia-ppt-sidebar" aria-label="Índice de láminas">
+          {slides.map((s, idx) => {
+            const vType = resolveVisualType(s, idx);
+            const vTheme = VISUAL_THEMES[vType] || VISUAL_THEMES.concept;
+            const sKey = String(s.step || idx + 1);
+            const mastery = masteryByStep[sKey];
+            const isViewed = viewedSlides.includes(s.step);
+            const isCurrent = idx === safeIndex;
+            const shortTitle = cleanSlideShortTitle(s.title, s.badge || `Lámina ${idx + 1}`);
+
+            return (
               <button
+                key={s.step || idx}
                 type="button"
-                className="aia-btn-secondary aia-btn-sm"
-                onClick={handleClearEmbed}
+                onClick={() => selectSlide(idx)}
+                aria-current={isCurrent ? 'true' : undefined}
+                className={`aia-ppt-chapter ${isCurrent ? 'current' : ''} ${
+                  mastery === 'review' ? 'needs-review' : ''
+                } ${mastery === 'understood' ? 'understood' : ''}`}
+                style={{ '--chapter-accent': vTheme.accent }}
               >
-                Quitar enlace
-              </button>
-            )}
-          </div>
-          {embedFeedback && (
-            <p className={`aia-yt-feedback ${embedFeedback.type}`}>{embedFeedback.text}</p>
-          )}
-        </form>
-      )}
-
-      {/* Modo Presentación Externa incrustada o Estudio Interactivo PowerPoint */}
-      {deckMode === 'external' && normalizedEmbed ? (
-        <div className="aia-ppt-external-shell">
-          <iframe
-            className="aia-yt-iframe"
-            src={normalizedEmbed}
-            title={`Presentación ${pkg?.topic || pkg?.subject}`}
-            allowFullScreen
-          />
-        </div>
-      ) : (
-        <div className="aia-ppt-workspace">
-          {/* Tira lateral izquierda de miniaturas estilo PowerPoint */}
-          <aside className="aia-ppt-sidebar" aria-label="Diapositivas de la presentación">
-            {slides.map((s, idx) => {
-              const vType = resolveVisualType(s, idx);
-              const vTheme = VISUAL_THEMES[vType] || VISUAL_THEMES.concept;
-              const isViewed = viewedSlides.includes(s.step);
-              const isCurrent = idx === currentIndex;
-              return (
-                <button
-                  key={s.step || idx}
-                  type="button"
-                  onClick={() => selectSlide(idx)}
-                  className={`aia-ppt-thumb ${isCurrent ? 'current' : ''} ${isViewed ? 'viewed' : ''}`}
-                >
-                  <div className="aia-ppt-thumb-num aia-tabular">
-                    <span>{String(idx + 1).padStart(2, '0')}</span>
-                    {isViewed && <span className="aia-ppt-thumb-check">✓</span>}
-                  </div>
-                  <div className="aia-ppt-thumb-preview">
-                    <span
-                      className="aia-ppt-thumb-ribbon"
-                      style={{ background: vTheme.accent }}
-                    />
-                    <span className="aia-ppt-thumb-title">{s.badge || `Lámina ${idx + 1}`}</span>
-                    <div className="aia-ppt-thumb-lines" aria-hidden="true">
-                      <i />
-                      <i />
-                      <i className="short" />
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
-          </aside>
-
-          {/* Lienzo principal 16:9 */}
-          <div className="aia-ppt-stage">
-            <article className="aia-ppt-canvas" key={currentSlide.step}>
-              <div
-                className="aia-ppt-canvas-accent"
-                style={{ background: theme.accent }}
-              />
-
-              <div className="aia-ppt-canvas-top">
-                <span
-                  className="aia-ppt-slide-badge"
-                  style={{ background: theme.soft, color: theme.accent }}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                    {theme.icon}
-                  </span>
-                  <span>{currentSlide.badge}</span>
+                <span className="aia-ppt-chapter-num aia-tabular">
+                  {String(idx + 1).padStart(2, '0')}
                 </span>
-                <span className="aia-ppt-deck-brand aia-tabular">
-                  {pkg?.subject} · Lámina {currentIndex + 1}/{slides.length}
+
+                <span className="aia-ppt-chapter-info">
+                  <span className="aia-ppt-chapter-badge">{s.badge || vTheme.label}</span>
+                  <strong className="aia-ppt-chapter-title">{shortTitle}</strong>
                 </span>
-              </div>
 
-              <div className="aia-ppt-canvas-body">
-                <div className="aia-ppt-text-col">
-                  <h3 className="aia-ppt-slide-title">{currentSlide.title}</h3>
-                  <p className="aia-ppt-slide-lead">{currentSlide.content}</p>
-
-                  {bullets.length > 0 && (
-                    <ul className="aia-ppt-bullets">
-                      {bullets.map((b, i) => (
-                        <li key={i}>
-                          <span
-                            className="aia-ppt-bullet-dot"
-                            style={{ background: theme.accent }}
-                          />
-                          <span>{b}</span>
-                        </li>
-                      ))}
-                    </ul>
+                <span className="aia-ppt-chapter-status" aria-hidden="true">
+                  {mastery === 'review' ? (
+                    <span className="material-symbols-outlined review-mark" title="Marcada para repasar">
+                      bookmark
+                    </span>
+                  ) : mastery === 'understood' || isViewed ? (
+                    <span className="material-symbols-outlined ok-mark" title="Vista / Entendida">
+                      check_circle
+                    </span>
+                  ) : (
+                    <span className="aia-ppt-chapter-dot" />
                   )}
-                </div>
+                </span>
+              </button>
+            );
+          })}
+        </aside>
 
-                <div className="aia-ppt-visual-col">
-                  <SlideVisualDiagram
-                    visualType={visualType}
-                    slide={currentSlide}
-                    bullets={bullets}
-                  />
-                </div>
+        {/* Lienzo principal calmado: 2 zonas sin texto repetido ni truncado */}
+        <div className="aia-ppt-stage">
+          <article className="aia-ppt-canvas" key={currentSlide.step}>
+            <div className="aia-ppt-canvas-accent" style={{ background: theme.accent }} />
+
+            <div className="aia-ppt-canvas-top">
+              <span
+                className="aia-ppt-slide-badge"
+                style={{ background: theme.soft, color: theme.accent }}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                  {theme.icon}
+                </span>
+                <span>{currentSlide.badge || theme.label}</span>
+              </span>
+
+              <span className="aia-ppt-deck-brand aia-tabular">
+                {pkg?.subject} · Lámina {safeIndex + 1} de {slides.length}
+              </span>
+            </div>
+
+            <div className="aia-ppt-canvas-body">
+              {/* Zona 1: Comprensión Principal */}
+              <div className="aia-ppt-text-col">
+                <h3 className="aia-ppt-slide-title">
+                  {cleanSlideShortTitle(currentSlide.title, currentSlide.badge)}
+                </h3>
+
+                {currentSlide.content && (
+                  <p className="aia-ppt-slide-lead">{currentSlide.content}</p>
+                )}
+
+                <SlideKeyPoints
+                  visualType={visualType}
+                  bullets={bullets}
+                  theme={theme}
+                  activeStepIdx={activeStepIdx}
+                  onSelectStep={setActiveStepIdx}
+                />
               </div>
 
-              {/* Zona inferior de la diapositiva: Analogía, Llave y Autoverificación */}
-              <div className="aia-ppt-canvas-footer">
-                <div className="aia-analogy-box">
-                  <span className="aia-analogy-icon" aria-hidden="true">
-                    <span className="material-symbols-outlined">lightbulb</span>
-                  </span>
-                  <div>
-                    <div className="aia-analogy-label">Analogía Visual</div>
-                    <p className="aia-analogy-text">{currentSlide.visualAnalogy}</p>
+              {/* Zona 2: Tarjetas Ancla (Analogía + Llave para tu examen, sin duplicar bullets) */}
+              <div className="aia-ppt-anchor-col">
+                {currentSlide.visualAnalogy && (
+                  <div className="aia-calm-analogy-card">
+                    <div className="aia-calm-card-head">
+                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                        lightbulb
+                      </span>
+                      <span>Imagínalo así</span>
+                    </div>
+                    <p className="aia-calm-analogy-text">{currentSlide.visualAnalogy}</p>
                   </div>
-                </div>
+                )}
 
-                <div className="aia-slide-bottom-grid">
-                  <div className="aia-takeaway-card">
-                    <div className="aia-takeaway-header">
-                      <span
-                        className="material-symbols-outlined aia-takeaway-icon"
-                        style={{ fontSize: '16px' }}
-                      >
+                {currentSlide.keyTakeaway && (
+                  <div
+                    className="aia-calm-takeaway-card"
+                    style={{ '--slide-accent': theme.accent, '--slide-soft': theme.soft }}
+                  >
+                    <div className="aia-calm-card-head takeaway">
+                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
                         verified
                       </span>
-                      <span className="aia-takeaway-caption">Llave para tu examen</span>
+                      <span>Recuerda esto para tu examen</span>
                     </div>
-                    <strong className="aia-takeaway-value">{currentSlide.keyTakeaway}</strong>
+                    <strong className="aia-calm-takeaway-text">{currentSlide.keyTakeaway}</strong>
                   </div>
+                )}
+              </div>
+            </div>
 
-                  <div className="aia-microcheck-card">
-                    <div className="aia-microcheck-header">
+            {/* Pie interactivo de Autoverificación real */}
+            {currentSlide.checkQuestion && (
+              <div className="aia-calm-check-box">
+                <div className="aia-calm-check-row">
+                  <div className="aia-calm-check-q-wrap">
+                    <span className="aia-calm-check-kicker">
                       <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
                         psychology_alt
                       </span>
-                      <span>Autoverificación rápida</span>
-                    </div>
-                    <p className="aia-microcheck-q">{currentSlide.checkQuestion}</p>
+                      <span>Comprueba si quedó claro</span>
+                    </span>
+                    <p className="aia-calm-check-question">{currentSlide.checkQuestion}</p>
+                  </div>
+
+                  {!showCheckGuide && (
                     <button
                       type="button"
-                      className={`aia-microcheck-btn ${showCheckAnswer ? 'verified' : ''}`}
-                      onClick={() => setShowCheckAnswer((v) => !v)}
+                      className="aia-calm-check-reveal-btn"
+                      onClick={() => setShowCheckGuide(true)}
                     >
-                      {showCheckAnswer
-                        ? '✓ ¡Excelente! Concepto verificado'
-                        : 'Ya pensé mi respuesta · Verificar'}
+                      <span>Ver idea guía</span>
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                        visibility
+                      </span>
                     </button>
-                  </div>
+                  )}
                 </div>
-              </div>
-            </article>
-          </div>
-        </div>
-      )}
 
-      {/* Controles de navegación tipo Presentador */}
+                {showCheckGuide && (
+                  <div className="aia-calm-check-answer">
+                    <p className="aia-calm-check-guide-text">
+                      <strong>Idea guía:</strong>{' '}
+                      {currentSlide.keyTakeaway || bullets[0] || currentSlide.content}
+                    </p>
+
+                    <div className="aia-calm-mastery-actions">
+                      <span className="aia-calm-mastery-prompt">¿Cómo te sientes con esta lámina?</span>
+                      <div className="aia-calm-mastery-btns">
+                        <button
+                          type="button"
+                          className={`aia-mastery-btn ok ${
+                            currentMastery === 'understood' ? 'selected' : ''
+                          }`}
+                          onClick={() => handleSetMastery('understood')}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                            check_circle
+                          </span>
+                          <span>Ya lo entendí</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className={`aia-mastery-btn review ${
+                            currentMastery === 'review' ? 'selected' : ''
+                          }`}
+                          onClick={() => handleSetMastery('review')}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                            bookmark_add
+                          </span>
+                          <span>Marcar para repasar</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </article>
+        </div>
+      </div>
+
+      {/* Navegación inferior calmada */}
       <div className="aia-slide-footer">
         <button
           type="button"
           className="aia-btn-secondary"
           onClick={goPrev}
-          disabled={currentIndex === 0}
+          disabled={safeIndex === 0}
         >
           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
             arrow_back
@@ -613,16 +708,31 @@ export default function AdaptiveSlidesViewer({
           <span>Anterior</span>
         </button>
 
-        <span className="aia-slide-counter aia-tabular">
-          Lectura activa: {activity?.slidesTimeSec || 12}s · Usa flechas ← / →
-        </span>
+        <div className="aia-slide-dots-nav" aria-label="Progreso de láminas">
+          {slides.map((s, idx) => {
+            const sKey = String(s.step || idx + 1);
+            const mastery = masteryByStep[sKey];
+            return (
+              <button
+                key={s.step || idx}
+                type="button"
+                onClick={() => selectSlide(idx)}
+                className={`aia-slide-dot ${idx === safeIndex ? 'active' : ''} ${
+                  mastery === 'review' ? 'review' : mastery === 'understood' ? 'done' : ''
+                }`}
+                aria-label={`Ir a lámina ${idx + 1}`}
+                title={`Lámina ${idx + 1}: ${cleanSlideShortTitle(s.title, s.badge)}`}
+              />
+            );
+          })}
+        </div>
 
         <button type="button" className="aia-btn-primary" onClick={goNext}>
           <span>
-            {currentIndex < slides.length - 1 ? 'Siguiente Diapositiva' : 'Ir a Cápsula de Audio'}
+            {safeIndex < slides.length - 1 ? 'Siguiente lámina' : 'Ir a Video YouTube'}
           </span>
           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-            {currentIndex < slides.length - 1 ? 'arrow_forward' : 'headphones'}
+            {safeIndex < slides.length - 1 ? 'arrow_forward' : 'smart_display'}
           </span>
         </button>
       </div>

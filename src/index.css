@@ -9130,36 +9130,93 @@ body.dark-mode .nav-link-preview.active {
   color: var(--text-muted);
 }
 
-/* Banner de Diagnóstico Amigable para el Estudiante */
+/* Escala de lectura accesible (DUA) en el Portal del Estudiante */
+.aia-student-portal-wrap[data-font-scale='large'] .aia-student-stage-container {
+  font-size: 1.08rem;
+}
+
+.aia-student-portal-wrap[data-font-scale='large'] .aia-ppt-slide-title {
+  font-size: 1.5rem;
+}
+
+.aia-student-portal-wrap[data-font-scale='large'] .aia-ppt-slide-lead,
+.aia-student-portal-wrap[data-font-scale='large'] .aia-calm-point-text,
+.aia-student-portal-wrap[data-font-scale='large'] .aia-calm-analogy-text,
+.aia-student-portal-wrap[data-font-scale='large'] .aia-calm-takeaway-text {
+  font-size: 1.04rem;
+  line-height: 1.68;
+}
+
+.aia-student-portal-wrap[data-font-scale='xlarge'] .aia-student-stage-container {
+  font-size: 1.16rem;
+}
+
+.aia-student-portal-wrap[data-font-scale='xlarge'] .aia-ppt-slide-title {
+  font-size: 1.66rem;
+}
+
+.aia-student-portal-wrap[data-font-scale='xlarge'] .aia-ppt-slide-lead,
+.aia-student-portal-wrap[data-font-scale='xlarge'] .aia-calm-point-text,
+.aia-student-portal-wrap[data-font-scale='xlarge'] .aia-calm-analogy-text,
+.aia-student-portal-wrap[data-font-scale='xlarge'] .aia-calm-takeaway-text {
+  font-size: 1.14rem;
+  line-height: 1.72;
+}
+
+/* Banner de Diagnóstico Amigable Compacto + Controles DUA */
 .aia-friendly-diag-card {
-  padding: 16px 20px;
-  border-radius: 16px;
+  padding: 11px 16px;
+  border-radius: 14px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
   transition: all 0.2s ease;
 }
 
-.aia-friendly-diag-card.collapsed {
-  padding: 12px 18px;
+.aia-friendly-diag-card.expanded {
+  padding: 15px 18px;
 }
 
 .aia-friendly-diag-top {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: 10px;
 }
 
 .aia-friendly-diag-badges {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   min-width: 0;
   flex: 1;
+}
+
+.aia-focus-topic-inline {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.aia-focus-topic-kicker {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.aia-focus-topic-text {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 440px;
 }
 
 .aia-subject-tag {
@@ -9168,7 +9225,7 @@ body.dark-mode .nav-link-preview.active {
   gap: 5px;
   padding: 4px 11px;
   border-radius: 999px;
-  background: rgba(43, 87, 154, 0.12);
+  background: rgba(43, 87, 154, 0.11);
   color: var(--primary);
   font-size: 0.75rem;
   font-weight: 800;
@@ -9211,6 +9268,38 @@ body.dark-mode .nav-link-preview.active {
   flex-shrink: 0;
 }
 
+.aia-dua-chip-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  color: var(--text-main);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
+}
+
+.aia-dua-chip-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.aia-dua-chip-btn.active {
+  background: rgba(43, 87, 154, 0.12);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.aia-friendly-expanded-body {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
 .aia-welcome-collapse-btn {
   width: 28px;
   height: 28px;
@@ -9237,16 +9326,16 @@ body.dark-mode .nav-link-preview.active {
 }
 
 .aia-friendly-title {
-  font-size: 1.08rem;
+  font-size: 1.04rem;
   font-weight: 800;
   color: var(--text-main);
   margin: 0;
 }
 
 .aia-friendly-message {
-  font-size: 0.86rem;
+  font-size: 0.87rem;
   color: var(--text-muted);
-  line-height: 1.5;
+  line-height: 1.55;
   margin: 6px 0 12px 0;
 }
 
@@ -9308,31 +9397,31 @@ body.dark-mode .nav-link-preview.active {
 }
 
 .aia-friendly-pill-box strong {
-  font-size: 0.81rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--text-main);
-  line-height: 1.42;
+  line-height: 1.45;
 }
 
-/* Navegación de los 5 Módulos Didácticos */
+/* Navegación compacta de los 4 Módulos Didácticos */
 .aia-student-module-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 10px;
 }
 
 .aia-module-nav-card {
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  padding: 11px 13px;
-  border-radius: 13px;
+  gap: 6px;
+  padding: 9px 11px;
+  border-radius: 12px;
   border: 1px solid var(--border-color);
   background: var(--bg-card);
   color: var(--text-main);
   text-align: left;
   cursor: pointer;
-  transition: all 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
 }
 
 .aia-module-nav-card:hover {
@@ -9344,26 +9433,62 @@ body.dark-mode .nav-link-preview.active {
   background: var(--primary);
   border-color: var(--primary);
   color: #ffffff;
-  box-shadow: 0 6px 16px rgba(43, 87, 154, 0.24);
+  box-shadow: 0 5px 14px rgba(43, 87, 154, 0.2);
+}
+
+.aia-module-nav-inline {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.aia-module-text-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
 }
 
 .aia-module-nav-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.67rem;
+  gap: 6px;
+  font-size: 0.65rem;
   font-weight: 800;
 }
 
+.aia-module-step {
+  opacity: 0.78;
+  letter-spacing: 0.03em;
+}
+
 .aia-module-metric {
-  padding: 2px 7px;
+  padding: 1px 6px;
   border-radius: 999px;
   background: rgba(140, 144, 159, 0.14);
+  font-size: 0.64rem;
+  white-space: nowrap;
+}
+
+.aia-module-metric.done {
+  background: rgba(22, 163, 74, 0.14);
+  color: #15803d;
 }
 
 .aia-module-nav-card.active .aia-module-metric {
   background: rgba(255, 255, 255, 0.22);
   color: #ffffff;
+}
+
+.aia-module-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .aia-module-nav-main {
@@ -9375,9 +9500,9 @@ body.dark-mode .nav-link-preview.active {
 }
 
 .aia-module-icon-wrap {
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
   background: rgba(43, 87, 154, 0.1);
   color: var(--primary);
   display: inline-flex;
@@ -9397,11 +9522,10 @@ body.dark-mode .nav-link-preview.active {
 
 .aia-module-mini-bar {
   width: 100%;
-  height: 4px;
+  height: 3px;
   border-radius: 999px;
   background: rgba(140, 144, 159, 0.16);
   overflow: hidden;
-  margin-top: 2px;
 }
 
 .aia-module-nav-card.active .aia-module-mini-bar {
@@ -11136,7 +11260,7 @@ body.dark-mode .nav-link-preview.active {
 }
 
 /* =========================================================
-   8. Visor de Diapositivas estilo PowerPoint / Google Slides
+   8. Visor de Diapositivas Calmado y Accesible (DUA / PIAR)
    ========================================================= */
 .aia-ppt-shell {
   outline: none;
@@ -11152,13 +11276,61 @@ body.dark-mode .nav-link-preview.active {
   background: var(--bg-card);
 }
 
-.aia-ppt-toolbar {
+/* Banner de foco de refuerzo (Puente Examen -> Diapositiva exacta) */
+.aia-remediation-focus-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(217, 119, 6, 0.1);
+  border: 1px solid rgba(217, 119, 6, 0.35);
+}
+
+.aia-remediation-focus-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.aia-remediation-focus-icon {
+  font-size: 20px;
+  color: #d97706;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.aia-remediation-focus-title {
+  font-size: 0.85rem;
+  color: var(--text-main);
+  line-height: 1.4;
+}
+
+.aia-remediation-focus-hint {
+  margin: 4px 0 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.aia-remediation-focus-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.aia-ppt-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 10px;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -11167,6 +11339,51 @@ body.dark-mode .nav-link-preview.active {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+}
+
+.aia-review-counter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(217, 119, 6, 0.35);
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.aia-review-counter-pill:hover {
+  background: rgba(217, 119, 6, 0.2);
+  transform: translateY(-1px);
+}
+
+.aia-tts-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 9px;
+  border: 1px solid rgba(43, 87, 154, 0.32);
+  background: rgba(43, 87, 154, 0.09);
+  color: var(--primary);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.aia-tts-btn:hover {
+  background: rgba(43, 87, 154, 0.16);
+}
+
+.aia-tts-btn.speaking {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
 }
 
 .aia-ppt-external-shell {
@@ -11181,131 +11398,145 @@ body.dark-mode .nav-link-preview.active {
 
 .aia-ppt-workspace {
   display: grid;
-  grid-template-columns: 190px 1fr;
+  grid-template-columns: 215px 1fr;
   gap: 16px;
   align-items: start;
 }
 
+/* Índice lateral limpio de capítulos */
 .aia-ppt-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  padding: 10px;
+  gap: 7px;
+  padding: 9px;
   border-radius: 14px;
   background: var(--bg-app);
   border: 1px solid var(--border-color);
-  max-height: 540px;
+  max-height: 560px;
   overflow-y: auto;
 }
 
-.aia-ppt-thumb {
+.aia-ppt-chapter {
   display: flex;
-  align-items: stretch;
-  gap: 8px;
-  padding: 7px 8px;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
   border-radius: 10px;
   border: 1.5px solid transparent;
   background: var(--bg-card);
-  cursor: pointer;
+  color: var(--text-main);
   text-align: left;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
 }
 
-.aia-ppt-thumb:hover {
-  border-color: rgba(43, 87, 154, 0.35);
-  transform: translateY(-1px);
+.aia-ppt-chapter:hover {
+  border-color: rgba(43, 87, 154, 0.32);
 }
 
-.aia-ppt-thumb.current {
-  border-color: var(--primary);
-  box-shadow: 0 4px 12px rgba(43, 87, 154, 0.18);
+.aia-ppt-chapter.current {
+  border-color: var(--chapter-accent, var(--primary));
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.07);
 }
 
-.aia-ppt-thumb-num {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.68rem;
-  font-weight: 800;
-  color: var(--text-muted);
-  min-width: 18px;
+.aia-ppt-chapter.needs-review {
+  border-left: 3px solid #d97706;
 }
 
-.aia-ppt-thumb.current .aia-ppt-thumb-num {
-  color: var(--primary);
-}
-
-.aia-ppt-thumb-check {
-  font-size: 0.68rem;
-  color: #16a34a;
-  font-weight: 900;
-}
-
-.aia-ppt-thumb-preview {
-  flex: 1;
-  min-width: 0;
-  aspect-ratio: 16 / 9;
-  padding: 5px 7px;
+.aia-ppt-chapter-num {
+  width: 24px;
+  height: 24px;
   border-radius: 7px;
-  border: 1px solid var(--border-color);
   background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.aia-ppt-chapter.current .aia-ppt-chapter-num {
+  background: var(--chapter-accent, var(--primary));
+  border-color: var(--chapter-accent, var(--primary));
+  color: #ffffff;
+}
+
+.aia-ppt-chapter-info {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  overflow: hidden;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
 }
 
-.aia-ppt-thumb-ribbon {
-  height: 3px;
-  width: 100%;
-  border-radius: 999px;
-}
-
-.aia-ppt-thumb-title {
+.aia-ppt-chapter-badge {
   font-size: 0.64rem;
   font-weight: 700;
-  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.aia-ppt-thumb-lines {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  margin-top: auto;
+.aia-ppt-chapter-title {
+  font-size: 0.77rem;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.aia-ppt-thumb-lines i {
-  display: block;
-  height: 3px;
-  width: 85%;
-  border-radius: 99px;
-  background: rgba(140, 144, 159, 0.28);
+.aia-ppt-chapter-status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.aia-ppt-thumb-lines i.short {
-  width: 56%;
+.aia-ppt-chapter-status .material-symbols-outlined {
+  font-size: 16px;
+}
+
+.aia-ppt-chapter-status .ok-mark {
+  color: #16a34a;
+}
+
+.aia-ppt-chapter-status .review-mark {
+  color: #d97706;
+}
+
+.aia-ppt-chapter-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border-color);
 }
 
 .aia-ppt-stage {
   min-width: 0;
 }
 
+/* Lienzo principal calmado: mucho aire visual, alto contraste, sin redundancia */
 .aia-ppt-canvas {
   position: relative;
   border-radius: 16px;
   border: 1px solid var(--border-color);
-  background: var(--bg-app);
+  background: var(--bg-card);
   overflow: hidden;
-  padding: 22px 24px;
+  padding: 24px 26px 22px 26px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
-  animation: fadeIn 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  gap: 20px;
+  box-shadow: 0 6px 22px rgba(15, 23, 42, 0.05);
+  animation: fadeIn 0.22s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .aia-ppt-canvas-accent {
@@ -11313,7 +11544,7 @@ body.dark-mode .nav-link-preview.active {
   top: 0;
   left: 0;
   right: 0;
-  height: 5px;
+  height: 4px;
 }
 
 .aia-ppt-canvas-top {
@@ -11327,255 +11558,453 @@ body.dark-mode .nav-link-preview.active {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 5px 11px;
   border-radius: 8px;
-  font-size: 0.72rem;
+  font-size: 0.73rem;
   font-weight: 800;
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
 .aia-ppt-deck-brand {
-  font-size: 0.74rem;
+  font-size: 0.76rem;
   font-weight: 600;
   color: var(--text-muted);
 }
 
 .aia-ppt-canvas-body {
   display: grid;
-  grid-template-columns: 1.25fr 0.95fr;
-  gap: 18px;
-  align-items: center;
+  grid-template-columns: 1.32fr 0.88fr;
+  gap: 24px;
+  align-items: start;
 }
 
 .aia-ppt-text-col {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 15px;
+  min-width: 0;
 }
 
 .aia-ppt-slide-title {
   margin: 0;
-  font-size: 1.22rem;
+  font-size: 1.38rem;
   line-height: 1.28;
   font-weight: 800;
   color: var(--text-main);
+  letter-spacing: -0.01em;
 }
 
 .aia-ppt-slide-lead {
   margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.55;
+  font-size: 0.96rem;
+  line-height: 1.65;
   color: var(--text-main);
 }
 
-.aia-ppt-bullets {
+/* Lista limpia de puntos clave (completos, nunca truncados) */
+.aia-calm-points-list {
   list-style: none;
   margin: 2px 0 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
-.aia-ppt-bullets li {
+.aia-calm-point-item {
   display: flex;
   align-items: flex-start;
-  gap: 9px;
-  font-size: 0.85rem;
+  gap: 11px;
+  padding: 10px 13px;
+  border-radius: 11px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+}
+
+.aia-calm-point-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.aia-calm-point-text {
+  font-size: 0.92rem;
   font-weight: 600;
   color: var(--text-main);
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
-.aia-ppt-bullet-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-top: 6px;
-  flex-shrink: 0;
-}
-
-.aia-ppt-visual-col {
-  display: flex;
-}
-
-.aia-ppt-diagram {
-  width: 100%;
-  padding: 14px 16px;
-  border-radius: 14px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
+/* Modo Paso a Paso interactivo */
+.aia-calm-steps-list {
   display: flex;
   flex-direction: column;
+  gap: 9px;
+}
+
+.aia-calm-step-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-app);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.aia-calm-step-card:hover {
+  border-color: var(--slide-accent, var(--primary));
+}
+
+.aia-calm-step-card.active {
+  border-color: var(--slide-accent, var(--primary));
+  background: var(--bg-card);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.aia-calm-step-card.done {
+  border-color: rgba(22, 163, 74, 0.35);
+}
+
+.aia-calm-step-num {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.aia-calm-step-card.active .aia-calm-step-num {
+  background: var(--slide-accent, var(--primary));
+  border-color: var(--slide-accent, var(--primary));
+  color: #ffffff;
+}
+
+.aia-calm-step-card.done .aia-calm-step-num {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #ffffff;
+}
+
+.aia-calm-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.aia-calm-step-body small {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+.aia-calm-step-body strong {
+  font-size: 0.91rem;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.48;
+}
+
+/* Modo Contraste: Qué evitar vs Cómo hacerlo bien */
+.aia-calm-compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
-.aia-ppt-diagram-head {
+.aia-calm-compare-card {
+  padding: 13px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aia-calm-compare-card.avoid {
+  border-top: 3px solid #dc2626;
+}
+
+.aia-calm-compare-card.apply {
+  border-top: 3px solid #16a34a;
+}
+
+.aia-calm-compare-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.aia-calm-compare-head.avoid {
+  color: #dc2626;
+}
+
+.aia-calm-compare-head.apply {
+  color: #16a34a;
+}
+
+.aia-calm-compare-card p {
+  margin: 0;
+  font-size: 0.87rem;
+  line-height: 1.5;
+  color: var(--text-main);
+}
+
+.aia-calm-compare-list {
+  margin: 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.87rem;
+  line-height: 1.48;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+/* Zona derecha: Tarjetas Ancla (Analogía + Llave para tu examen) */
+.aia-ppt-anchor-col {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  min-width: 0;
+}
+
+.aia-calm-analogy-card {
+  padding: 15px 16px;
+  border-radius: 13px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aia-calm-takeaway-card {
+  padding: 15px 16px;
+  border-radius: 13px;
+  background: var(--slide-soft, rgba(43, 87, 154, 0.08));
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--slide-accent, var(--primary));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aia-calm-card-head {
+  display: inline-flex;
   align-items: center;
   gap: 7px;
   font-size: 0.72rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+.aia-calm-card-head.takeaway {
   color: var(--slide-accent, var(--primary));
 }
 
-.aia-ppt-diagram-head .material-symbols-outlined {
-  font-size: 17px;
-}
-
-.aia-ppt-steps-visual {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.aia-ppt-step-node {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: var(--bg-app);
-  border: 1px solid var(--border-color);
-  border-left: 4px solid var(--primary);
-}
-
-.aia-ppt-step-num {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  color: #ffffff;
-  font-size: 0.72rem;
-  font-weight: 800;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.aia-ppt-step-node small {
-  display: block;
-  font-size: 0.66rem;
-  font-weight: 800;
-}
-
-.aia-ppt-step-node strong {
-  display: block;
-  font-size: 0.77rem;
-  color: var(--text-main);
-}
-
-.aia-ppt-compare-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.aia-ppt-compare-card {
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-app);
-}
-
-.aia-ppt-compare-card p {
-  margin: 6px 0 0 0;
-  font-size: 0.77rem;
-  line-height: 1.4;
-  color: var(--text-main);
-}
-
-.aia-ppt-compare-badge {
-  display: inline-block;
-  padding: 2px 7px;
-  border-radius: 6px;
-  font-size: 0.68rem;
-  font-weight: 800;
-}
-
-.aia-ppt-compare-badge.avoid {
-  background: rgba(220, 38, 38, 0.12);
-  color: #dc2626;
-}
-
-.aia-ppt-compare-badge.apply {
-  background: rgba(22, 163, 74, 0.14);
-  color: #16a34a;
-}
-
-.aia-ppt-flow-svg {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.aia-ppt-svg {
-  width: 100%;
-  max-width: 290px;
-  height: auto;
-  color: var(--text-main);
-}
-
-.aia-ppt-diagram-caption {
+.aia-calm-analogy-text {
   margin: 0;
-  font-size: 0.76rem;
-  color: var(--text-muted);
-  text-align: center;
+  font-size: 0.9rem;
+  line-height: 1.58;
+  color: var(--text-main);
 }
 
-.aia-ppt-concept-hub {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.aia-calm-takeaway-text {
+  font-size: 0.94rem;
+  font-weight: 700;
+  line-height: 1.5;
+  color: var(--text-main);
 }
 
-.aia-ppt-hub-core {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  align-self: flex-start;
-  padding: 7px 12px;
-  border-radius: 10px;
-  border: 1.5px solid var(--primary);
-  font-size: 0.8rem;
-}
-
-.aia-ppt-hub-branches {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.aia-ppt-hub-branch {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 10px;
-  border-radius: 9px;
+/* Autoverificación interactiva real */
+.aia-calm-check-box {
+  padding: 14px 16px;
+  border-radius: 12px;
   background: var(--bg-app);
   border: 1px solid var(--border-color);
-  font-size: 0.77rem;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aia-calm-check-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.aia-calm-check-q-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.aia-calm-check-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--primary);
+}
+
+.aia-calm-check-question {
+  margin: 0;
+  font-size: 0.91rem;
   font-weight: 600;
   color: var(--text-main);
+  line-height: 1.48;
 }
 
-.aia-ppt-hub-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
+.aia-calm-check-reveal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: 9px;
+  border: 1px solid var(--primary);
+  background: var(--bg-card);
+  color: var(--primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
   flex-shrink: 0;
+  transition: background 0.18s ease, color 0.18s ease;
 }
 
-.aia-ppt-canvas-footer {
+.aia-calm-check-reveal-btn:hover {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.aia-calm-check-answer {
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-color);
   display: flex;
   flex-direction: column;
-  gap: 11px;
-  padding-top: 6px;
-  border-top: 1px solid var(--border-color);
+  gap: 10px;
+}
+
+.aia-calm-check-guide-text {
+  margin: 0;
+  font-size: 0.89rem;
+  line-height: 1.55;
+  color: var(--text-main);
+}
+
+.aia-calm-mastery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.aia-calm-mastery-prompt {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.aia-calm-mastery-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.aia-mastery-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.aia-mastery-btn.ok:hover,
+.aia-mastery-btn.ok.selected {
+  border-color: #16a34a;
+  background: rgba(22, 163, 74, 0.14);
+  color: #15803d;
+}
+
+.aia-mastery-btn.review:hover,
+.aia-mastery-btn.review.selected {
+  border-color: #d97706;
+  background: rgba(217, 119, 6, 0.14);
+  color: #b45309;
+}
+
+/* Puntos de progreso en el pie */
+.aia-slide-dots-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.aia-slide-dot {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border-radius: 999px;
+  border: none;
+  background: var(--border-color);
+  cursor: pointer;
+  transition: width 0.2s ease, background 0.2s ease;
+}
+
+.aia-slide-dot.active {
+  width: 24px;
+  background: var(--primary);
+}
+
+.aia-slide-dot.done:not(.active) {
+  background: #16a34a;
+}
+
+.aia-slide-dot.review:not(.active) {
+  background: #d97706;
 }
 
 /* Reproductor Cine Video-Guía y Escenas siempre visibles */
@@ -11660,6 +12089,113 @@ body.dark-mode .nav-link-preview.active {
   color: var(--text-muted);
 }
 
+/* Botón y modal de confirmación para eliminar materiales IA */
+.aia-btn-danger-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid rgba(220, 38, 38, 0.25);
+  background: rgba(220, 38, 38, 0.06);
+  color: var(--danger, #dc2626);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.aia-btn-danger-icon:hover {
+  background: var(--danger, #dc2626);
+  border-color: var(--danger, #dc2626);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.aia-btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--danger, #dc2626);
+  background: var(--danger, #dc2626);
+  color: #ffffff;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.18s ease, transform 0.18s ease;
+}
+
+.aia-btn-danger:hover {
+  filter: brightness(0.92);
+  transform: translateY(-1px);
+}
+
+.aia-confirm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(15, 23, 42, 0.52);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn 0.18s ease;
+}
+
+.aia-confirm-modal {
+  width: 100%;
+  max-width: 430px;
+  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  padding: 24px;
+  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.24);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aia-confirm-modal-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(220, 38, 38, 0.12);
+  color: var(--danger, #dc2626);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.aia-confirm-modal-icon .material-symbols-outlined {
+  font-size: 24px;
+}
+
+.aia-confirm-modal h3 {
+  margin: 0;
+  font-size: 1.08rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.aia-confirm-modal p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.aia-confirm-modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
 @media screen and (max-width: 1180px) {
   .aia-student-module-grid {
     grid-template-columns: repeat(3, 1fr);
@@ -11685,7 +12221,7 @@ body.dark-mode .nav-link-preview.active {
   .aia-options-grid,
   .aia-ppt-workspace,
   .aia-ppt-canvas-body,
-  .aia-ppt-compare-grid {
+  .aia-calm-compare-grid {
     grid-template-columns: 1fr;
   }
 
@@ -11695,7 +12231,12 @@ body.dark-mode .nav-link-preview.active {
     max-height: none;
   }
 
-  .aia-ppt-thumb {
-    min-width: 145px;
+  .aia-ppt-chapter {
+    min-width: 175px;
+    flex-shrink: 0;
+  }
+
+  .aia-focus-topic-text {
+    max-width: 240px;
   }
 }

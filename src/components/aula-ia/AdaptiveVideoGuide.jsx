@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useAulaIa } from '../../context/AulaIaContext';
 import { buildDefaultYoutubeVideo, extractYoutubeVideoId } from '../../lib/piarAiEngine';
+
+const DEAD_LEGACY_VIDEO_IDS = new Set(['aG3j675kZbc']);
 
 export default function AdaptiveVideoGuide({
   pkg,
@@ -9,14 +11,11 @@ export default function AdaptiveVideoGuide({
   onCompleteVideo
 }) {
   const { recordVideoTelemetry, updatePackageYoutubeVideo } = useAulaIa();
-  const guide = pkg?.videoGuide || {};
-  const scenes = Array.isArray(guide.scenes) ? guide.scenes : [];
 
   const defaultYt = buildDefaultYoutubeVideo(pkg?.subject, pkg?.topic);
-  const customVideoId = extractYoutubeVideoId(pkg?.youtubeVideo?.videoId);
-  const pkgDomainMismatchVideo =
-    pkg?.youtubeVideo?.videoId === 'aG3j675kZbc' && defaultYt.videoId !== 'aG3j675kZbc';
-  const resolvedVideoId = pkgDomainMismatchVideo ? defaultYt.videoId : customVideoId || defaultYt.videoId;
+  const rawPkgVideoId = extractYoutubeVideoId(pkg?.youtubeVideo?.videoId);
+  const isDeadLegacyId = rawPkgVideoId && DEAD_LEGACY_VIDEO_IDS.has(rawPkgVideoId);
+  const resolvedVideoId = isDeadLegacyId ? defaultYt.videoId : rawPkgVideoId || defaultYt.videoId;
 
   const ytResource = {
     ...defaultYt,
@@ -24,93 +23,62 @@ export default function AdaptiveVideoGuide({
     videoId: resolvedVideoId
   };
 
-  const [viewMode, setViewMode] = useState(() => (resolvedVideoId ? 'youtube' : 'scenes'));
   const [youtubeInput, setYoutubeInput] = useState('');
   const [youtubeTitleInput, setYoutubeTitleInput] = useState('');
   const [urlFeedback, setUrlFeedback] = useState(null);
+  // 'idle' | 'checking' | 'available' | 'unavailable'
+  const [videoAvailability, setVideoAvailability] = useState(() =>
+    resolvedVideoId ? 'checking' : 'unavailable'
+  );
+  const [verifiedMeta, setVerifiedMeta] = useState(null);
 
-  const [currentSceneIdx, setCurrentSceneIdx] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [sceneElapsed, setSceneElapsed] = useState(0);
-  const timerRef = useRef(null);
-
-  const currentScene = scenes[currentSceneIdx] || scenes[0] || {};
-  const sceneDuration = currentScene.durationSec || 25;
-  const viewedScenes = activity?.videoScenesViewed || [];
-
+  // Verificación real contra YouTube oEmbed para nunca mostrar la pantalla negra de "Video no disponible"
   useEffect(() => {
-    setViewMode(resolvedVideoId ? 'youtube' : 'scenes');
-    setIsPlaying(false);
-    setSceneElapsed(0);
-    setCurrentSceneIdx(0);
-    if (timerRef.current) clearInterval(timerRef.current);
-  }, [pkg?.id, resolvedVideoId]);
+    if (!resolvedVideoId) {
+      setVideoAvailability('unavailable');
+      setVerifiedMeta(null);
+      return undefined;
+    }
 
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, []);
+    let cancelled = false;
+    const controller = new AbortController();
+    setVideoAvailability('checking');
+    setVerifiedMeta(null);
 
-  const handleTogglePlay = () => {
-    if (!isPlaying) {
-      setIsPlaying(true);
-      recordVideoTelemetry(pkg.id, {
-        incrementPlay: true,
-        sceneNumber: currentScene.sceneNumber || currentSceneIdx + 1,
-        totalScenes: Math.max(1, scenes.length),
-        addedSeconds: 2
+    const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(
+      `https://www.youtube.com/watch?v=${resolvedVideoId}`
+    )}&format=json`;
+
+    fetch(oembedUrl, { signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) throw new Error('unavailable');
+        return res.json();
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setVerifiedMeta({
+          title: data?.title || null,
+          authorName: data?.author_name || null
+        });
+        setVideoAvailability('available');
+      })
+      .catch((err) => {
+        if (cancelled || err?.name === 'AbortError') return;
+        // Si no hay conexión (offline), no bloquear: intentar cargar el iframe normalmente
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+          setVideoAvailability('available');
+          return;
+        }
+        setVideoAvailability('unavailable');
       });
 
-      timerRef.current = setInterval(() => {
-        setSceneElapsed((prev) => {
-          const next = prev + 2;
-          if (next >= sceneDuration) {
-            if (currentSceneIdx < scenes.length - 1) {
-              const nextIdx = currentSceneIdx + 1;
-              setCurrentSceneIdx(nextIdx);
-              recordVideoTelemetry(pkg.id, {
-                incrementPlay: false,
-                sceneNumber: scenes[nextIdx]?.sceneNumber || nextIdx + 1,
-                totalScenes: Math.max(1, scenes.length),
-                addedSeconds: 3,
-                completed: nextIdx === scenes.length - 1
-              });
-              return 0;
-            }
-            clearInterval(timerRef.current);
-            setIsPlaying(false);
-            recordVideoTelemetry(pkg.id, {
-              incrementPlay: false,
-              sceneNumber: currentScene.sceneNumber || scenes.length,
-              totalScenes: Math.max(1, scenes.length),
-              addedSeconds: 3,
-              completed: true
-            });
-            return sceneDuration;
-          }
-          return next;
-        });
-      }, 900);
-    } else {
-      setIsPlaying(false);
-      if (timerRef.current) clearInterval(timerRef.current);
-    }
-  };
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [resolvedVideoId]);
 
-  const selectScene = (idx) => {
-    setCurrentSceneIdx(idx);
-    setSceneElapsed(0);
-    recordVideoTelemetry(pkg.id, {
-      incrementPlay: false,
-      sceneNumber: scenes[idx]?.sceneNumber || idx + 1,
-      totalScenes: Math.max(1, scenes.length),
-      addedSeconds: 4,
-      completed: idx === scenes.length - 1
-    });
-  };
-
-  const handleSaveYoutubeLink = (e) => {
+  const handleSaveYoutubeLink = async (e) => {
     e.preventDefault();
     const id = extractYoutubeVideoId(youtubeInput);
     if (!id) {
@@ -120,14 +88,32 @@ export default function AdaptiveVideoGuide({
       });
       return;
     }
+
+    // Verificar antes de guardar que el video existe y permite incrustación
+    try {
+      const checkRes = await fetch(
+        `https://www.youtube.com/oembed?url=${encodeURIComponent(
+          `https://www.youtube.com/watch?v=${id}`
+        )}&format=json`
+      );
+      if (!checkRes.ok) {
+        setUrlFeedback({
+          type: 'error',
+          text: 'Ese video no está disponible o tiene bloqueada la reproducción incrustada en YouTube. Prueba con otro enlace.'
+        });
+        return;
+      }
+    } catch {
+      // Si falla la red, permitir guardar el enlace igualmente
+    }
+
     const ok = updatePackageYoutubeVideo(pkg.piarId, pkg.id, youtubeInput, youtubeTitleInput);
     if (ok) {
       setYoutubeInput('');
       setYoutubeTitleInput('');
-      setViewMode('youtube');
       setUrlFeedback({
         type: 'ok',
-        text: 'Video de YouTube actualizado por enlace (sin alojar archivos en el servidor).'
+        text: 'Video de YouTube verificado y actualizado correctamente.'
       });
     }
   };
@@ -135,58 +121,28 @@ export default function AdaptiveVideoGuide({
   const handleConfirmYoutubeWatched = () => {
     recordVideoTelemetry(pkg.id, {
       incrementPlay: true,
-      sceneNumber: Math.max(1, scenes.length),
-      totalScenes: Math.max(1, scenes.length),
+      sceneNumber: 4,
+      totalScenes: 4,
       addedSeconds: 15,
       completed: true
     });
   };
 
-  if (scenes.length === 0 && !ytResource?.videoId) return null;
-
-  const sceneProgressPct = Math.min(100, Math.round((sceneElapsed / sceneDuration) * 100));
   const youtubeSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(
     ytResource.searchQuery || `${pkg?.subject || ''} ${pkg?.topic || ''}`
   )}`;
 
+  const displayTitle = verifiedMeta?.title || ytResource.title;
+  const displayChannel = verifiedMeta?.authorName || ytResource.channelTitle || 'YouTube Educativo';
+  const canRenderIframe = Boolean(ytResource.videoId) && videoAvailability === 'available';
+
   return (
     <div className="aia-media-surface">
-      {/* Header con selector de modo y telemetría */}
+      {/* Cabecera limpia de Video YouTube */}
       <div className="aia-media-header">
         <div className="aia-media-title-group">
-          <span className="aia-step-pill">PASO 03 · Video y Guía</span>
-          <div className="aia-video-mode-tabs" role="tablist" aria-label="Formato de video de apoyo">
-            <button
-              type="button"
-              onClick={() => {
-                setViewMode('youtube');
-                if (ytResource.videoId) {
-                  recordVideoTelemetry(pkg.id, {
-                    incrementPlay: true,
-                    sceneNumber: 1,
-                    totalScenes: Math.max(1, scenes.length),
-                    addedSeconds: 3
-                  });
-                }
-              }}
-              className={`aia-video-mode-btn ${viewMode === 'youtube' ? 'active' : ''}`}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                ondemand_video
-              </span>
-              <span>Video de Apoyo (YouTube)</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('scenes')}
-              className={`aia-video-mode-btn ${viewMode === 'scenes' ? 'active' : ''}`}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                movie_filter
-              </span>
-              <span>Video-Guía Animada ({scenes.length} Escenas)</span>
-            </button>
-          </div>
+          <span className="aia-step-pill">PASO 02 · Video de Apoyo (YouTube)</span>
+          <span className="aia-badge-soft">{pkg?.subject}</span>
         </div>
 
         <div className="aia-telemetry-chip">
@@ -194,12 +150,12 @@ export default function AdaptiveVideoGuide({
             smart_display
           </span>
           <span className="aia-tabular">
-            Clics Play: {activity?.videoPlayCount || 0} · Visto: {activity?.videoMaxPercent || 0}%
+            {activity?.videoCompleted ? '✓ Video completado' : 'Video de refuerzo'}
           </span>
         </div>
       </div>
 
-      {/* Barra de supervisión docente para vincular/cambiar enlace de YouTube */}
+      {/* Barra de supervisión docente para vincular o cambiar el enlace de YouTube */}
       {isMirrorPreview && (
         <form onSubmit={handleSaveYoutubeLink} className="aia-yt-teacher-bar">
           <div className="aia-yt-teacher-bar-head">
@@ -209,9 +165,9 @@ export default function AdaptiveVideoGuide({
               </span>
               <span>
                 Supervisión Docente ·{' '}
-                {ytResource.videoId
+                {canRenderIframe
                   ? 'Cambiar Video de YouTube por Enlace'
-                  : 'Vincular Video Real de YouTube para esta Área'}
+                  : 'Vincular Video de YouTube para esta Área'}
               </span>
             </span>
             <a
@@ -241,7 +197,7 @@ export default function AdaptiveVideoGuide({
             <input
               type="text"
               className="aia-input-compact aia-yt-title-input"
-              placeholder="Título opcional para el alumno"
+              placeholder="Título opcional para el estudiante"
               value={youtubeTitleInput}
               onChange={(e) => setYoutubeTitleInput(e.target.value)}
             />
@@ -256,206 +212,109 @@ export default function AdaptiveVideoGuide({
         </form>
       )}
 
-      {/* Reproductor Principal: YouTube 16:9 o Video-Guía Animada 16:9 */}
-      {viewMode === 'youtube' ? (
-        <div className="aia-yt-wrap">
-          <div className="aia-yt-meta-row">
-            <div>
-              <h3 className="aia-video-scene-title">{ytResource.title}</h3>
-              <span className="aia-yt-channel">
-                Canal sugerido: <strong>{ytResource.channelTitle || 'YouTube Educativo'}</strong> ·
-                Reproducción externa por enlace (sin alojar archivos en servidor)
-              </span>
-            </div>
-            <a
-              href={youtubeSearchUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="aia-btn-secondary aia-btn-sm"
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                open_in_new
-              </span>
-              <span>Buscar más videos en YouTube</span>
-            </a>
+      {/* Reproductor Real de YouTube 16:9 (verificado) */}
+      <div className="aia-yt-wrap">
+        <div className="aia-yt-meta-row">
+          <div>
+            <h3 className="aia-video-scene-title">{displayTitle}</h3>
+            <span className="aia-yt-channel">
+              Canal: <strong>{displayChannel}</strong>
+            </span>
           </div>
+          <a
+            href={youtubeSearchUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="aia-btn-secondary aia-btn-sm"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+              open_in_new
+            </span>
+            <span>Ver más en YouTube</span>
+          </a>
+        </div>
 
-          {ytResource.videoId ? (
-            <div className="aia-yt-player-shell">
-              <iframe
-                className="aia-yt-iframe"
-                src={`https://www.youtube-nocookie.com/embed/${ytResource.videoId}?rel=0`}
-                title={ytResource.title || 'Video educativo de apoyo'}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-          ) : (
-            <div className="aia-yt-empty-theater">
-              <span className="material-symbols-outlined aia-yt-empty-icon">
-                ondemand_video
-              </span>
-              <h4>Video externo pendiente de enlace para {pkg?.subject}</h4>
-              <p>
-                Para proteger el servidor no inventamos enlaces ni alojamos archivos.{' '}
-                {isMirrorPreview
-                  ? 'Haz clic en "Buscar video en YouTube" arriba, copia la URL y pégala en el campo para incrustarlo al instante.'
-                  : 'Tu profesor puede vincular un enlace de YouTube, o puedes explorar ahora mismo la Video-Guía Animada de 4 escenas.'}
-              </p>
-              <div className="aia-yt-empty-actions">
-                <a
-                  href={youtubeSearchUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="aia-btn-primary aia-btn-sm"
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                    search
-                  </span>
-                  <span>Buscar en YouTube</span>
-                </a>
-                {scenes.length > 0 && (
-                  <button
-                    type="button"
-                    className="aia-btn-secondary aia-btn-sm"
-                    onClick={() => setViewMode('scenes')}
-                  >
-                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                      movie_filter
-                    </span>
-                    <span>Ver Video-Guía Animada ({scenes.length} Escenas)</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
-
-          <div className="aia-yt-moments-box">
-            <div className="aia-yt-moments-head">
-              <strong>Puntos clave para prestar atención en el video</strong>
-              <button
-                type="button"
-                className="aia-btn-secondary aia-btn-sm"
-                onClick={handleConfirmYoutubeWatched}
+        {videoAvailability === 'checking' ? (
+          <div className="aia-yt-empty-theater">
+            <span className="material-symbols-outlined aia-yt-empty-icon">
+              hourglass_top
+            </span>
+            <h4>Verificando disponibilidad del video en YouTube...</h4>
+            <p>Comprobando que el enlace esté activo y listo para reproducirse aquí.</p>
+          </div>
+        ) : canRenderIframe ? (
+          <div className="aia-yt-player-shell">
+            <iframe
+              className="aia-yt-iframe"
+              src={`https://www.youtube-nocookie.com/embed/${ytResource.videoId}?rel=0`}
+              title={displayTitle || 'Video educativo de apoyo'}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        ) : (
+          <div className="aia-yt-empty-theater">
+            <span className="material-symbols-outlined aia-yt-empty-icon">
+              ondemand_video
+            </span>
+            <h4>
+              {ytResource.videoId
+                ? `El video sugerido no está disponible en YouTube para ${pkg?.subject}`
+                : `Video de YouTube pendiente de enlace para ${pkg?.subject}`}
+            </h4>
+            <p>
+              {isMirrorPreview
+                ? 'Haz clic en "Buscar en YouTube" para elegir un video activo de este tema, copia su URL y pégala en la barra superior para incrustarlo verificado al instante.'
+                : 'Puedes abrir la búsqueda recomendada en YouTube para ver explicaciones de este tema o continuar a los Juegos Didácticos.'}
+            </p>
+            <div className="aia-yt-empty-actions">
+              <a
+                href={youtubeSearchUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="aia-btn-primary aia-btn-sm"
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                  check_circle
+                  search
                 </span>
-                <span>
-                  {activity?.videoCompleted ? '✓ Video visto y registrado' : 'Ya vi el video'}
-                </span>
-              </button>
+                <span>Buscar en YouTube</span>
+              </a>
             </div>
-            {Array.isArray(ytResource.keyMoments) && ytResource.keyMoments.length > 0 && (
-              <ul className="aia-yt-moments-list">
-                {ytResource.keyMoments.map((m, idx) => (
-                  <li key={idx}>{m}</li>
-                ))}
-              </ul>
-            )}
           </div>
-        </div>
-      ) : (
-        scenes.length > 0 && (
-          <div className={`aia-video-frame aia-video-cinema ${isPlaying ? 'playing' : ''}`}>
-            <div className="aia-video-screen aia-video-cinema-stage">
-              <div className="aia-video-cinema-top">
-                <span className="aia-video-scene-badge aia-tabular">
-                  ESCENA 0{currentSceneIdx + 1} DE {scenes.length} ·{' '}
-                  {isPlaying ? '● REPRODUCIENDO' : 'LISTO PARA REPRODUCIR'}
-                </span>
-                <span className="aia-badge-soft aia-tabular">{guide.durationLabel || '2 min'}</span>
-              </div>
+        )}
 
-              <h3 className="aia-video-scene-title">{currentScene.title}</h3>
-
-              <div className="aia-video-visual-cue aia-video-cinema-cue">
-                <span>{currentScene.visualCue}</span>
-              </div>
-
-              <p className="aia-video-narration">{currentScene.narration}</p>
-
-              <div className="aia-video-scaffolding-pill">
-                <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>
-                  task_alt
-                </span>
-                <span>
-                  <strong>Paso de Andamiaje:</strong> {currentScene.scaffoldingStep}
-                </span>
-              </div>
-            </div>
-
-            <div className="aia-video-controls">
-              <button
-                type="button"
-                className={`aia-video-play-btn ${isPlaying ? 'playing' : ''}`}
-                onClick={handleTogglePlay}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
-                  {isPlaying ? 'pause' : 'play_arrow'}
-                </span>
-                <span>{isPlaying ? 'Pausar Video-Guía' : 'Reproducir Video-Guía'}</span>
-              </button>
-
-              <div className="aia-video-progress-wrap">
-                <div className="aia-progress-track">
-                  <div className="aia-progress-fill" style={{ width: `${sceneProgressPct}%` }} />
-                </div>
-              </div>
-
-              <span className="aia-video-time aia-tabular">
-                Escenas vistas: {viewedScenes.length}/{scenes.length}
+        {/* Guía de atención generada por el Agente IA */}
+        <div className="aia-yt-moments-box">
+          <div className="aia-yt-moments-head">
+            <strong>Puntos clave para prestar atención en el video</strong>
+            <button
+              type="button"
+              className={`aia-btn-sm ${activity?.videoCompleted ? 'aia-btn-primary' : 'aia-btn-secondary'}`}
+              onClick={handleConfirmYoutubeWatched}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                check_circle
               </span>
-            </div>
+              <span>
+                {activity?.videoCompleted ? '✓ Video visto y registrado' : 'Marcar como visto'}
+              </span>
+            </button>
           </div>
-        )
-      )}
-
-      {/* Cuadrícula siempre visible con las 4 escenas paso a paso */}
-      {scenes.length > 0 && (
-        <div className="aia-scene-section">
-          <div className="aia-scene-section-head">
-            <span>Capítulos del Video-Guía ({scenes.length} pasos clave)</span>
-            {viewMode === 'youtube' && (
-              <button
-                type="button"
-                className="aia-yt-search-link"
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
-                onClick={() => setViewMode('scenes')}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                  play_circle
-                </span>
-                <span>Abrir en reproductor animado</span>
-              </button>
-            )}
-          </div>
-          <div className="aia-scene-grid">
-            {scenes.map((sc, idx) => {
-              const isSeen = viewedScenes.includes(sc.sceneNumber || idx + 1);
-              const isCurrent = idx === currentSceneIdx;
-              return (
-                <button
-                  key={sc.sceneNumber || idx}
-                  type="button"
-                  onClick={() => selectScene(idx)}
-                  className={`aia-scene-card ${isCurrent ? 'current' : ''} ${isSeen ? 'seen' : ''}`}
-                >
-                  <div className="aia-scene-card-top">
-                    <span className="aia-tabular">Escena {idx + 1}</span>
-                    {isSeen && <span className="aia-scene-check">✓ Vista</span>}
-                  </div>
-                  <div className="aia-scene-card-title">{sc.title}</div>
-                </button>
-              );
-            })}
-          </div>
+          {Array.isArray(ytResource.keyMoments) && ytResource.keyMoments.length > 0 && (
+            <ul className="aia-yt-moments-list">
+              {ytResource.keyMoments.map((m, idx) => (
+                <li key={idx}>{m}</li>
+              ))}
+            </ul>
+          )}
         </div>
-      )}
+      </div>
 
       <div className="aia-slide-footer">
-        <span className="aia-slide-counter aia-tabular">
-          Participación en video registrada: {activity?.videoMaxPercent || 0}%
+        <span className="aia-slide-counter">
+          {activity?.videoCompleted
+            ? '✓ Excelente, ya registraste tu video de apoyo.'
+            : 'Cuando termines de verlo, marca "Marcar como visto" y avanza a los juegos.'}
         </span>
         {onCompleteVideo && (
           <button type="button" className="aia-btn-primary" onClick={onCompleteVideo}>

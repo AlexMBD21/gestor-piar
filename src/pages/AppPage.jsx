@@ -13,11 +13,46 @@ import StudentModal from '../components/StudentModal';
 import TeacherList from '../components/admin/TeacherList';
 import ScrollToTop from '../components/ScrollToTop';
 
+const VALID_TABS = new Set([
+  'tab-dashboard',
+  'tab-anexo1',
+  'tab-anexo2',
+  'tab-anexo3',
+  'tab-preview',
+  'tab-aula-ia',
+  'tab-admin'
+]);
+
+const VALID_IA_SUBTABS = new Set(['ia-studio', 'ia-mirror', 'ia-analytics']);
+
+function loadSavedTab(isSuperAdmin) {
+  try {
+    const saved = window.sessionStorage.getItem('piar_active_tab');
+    if (saved && VALID_TABS.has(saved)) {
+      if (saved === 'tab-admin' && !isSuperAdmin) return 'tab-dashboard';
+      return saved;
+    }
+  } catch {
+    // Ignorar restricciones de almacenamiento
+  }
+  return 'tab-dashboard';
+}
+
+function loadSavedIaSubTab() {
+  try {
+    const saved = window.sessionStorage.getItem('piar_active_ia_subtab');
+    if (saved && VALID_IA_SUBTABS.has(saved)) return saved;
+  } catch {
+    // Ignorar restricciones de almacenamiento
+  }
+  return 'ia-studio';
+}
+
 export default function AppPage() {
   const { profile, isSuperAdmin, signOut } = useAuth();
   const { getActiveStudent, unsavedChanges, saveActivePiar, discardActiveStudentChanges } = usePiar();
-  const [activeTab, setActiveTab] = useState('tab-dashboard');
-  const [activeIaSubTab, setActiveIaSubTab] = useState('ia-studio');
+  const [activeTab, setActiveTab] = useState(() => loadSavedTab(isSuperAdmin));
+  const [activeIaSubTab, setActiveIaSubTab] = useState(loadSavedIaSubTab);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem('piar_sidebar_collapsed') === 'true'
   );
@@ -37,6 +72,22 @@ export default function AppPage() {
   useEffect(() => {
     localStorage.setItem('piar_sidebar_collapsed', sidebarCollapsed ? 'true' : '');
   }, [sidebarCollapsed]);
+
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem('piar_active_tab', activeTab);
+    } catch {
+      // Ignorar restricciones de almacenamiento
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    try {
+      window.sessionStorage.setItem('piar_active_ia_subtab', activeIaSubTab);
+    } catch {
+      // Ignorar restricciones de almacenamiento
+    }
+  }, [activeIaSubTab]);
 
   useEffect(() => {
     const handleBeforeUnload = (e) => {
