@@ -40,9 +40,13 @@ export function extractYoutubeVideoId(urlOrId = '') {
   return fallbackMatch ? fallbackMatch[1] : null;
 }
 
-const CANDIDATE_GEMINI_MODELS = ['gemini-3.5-flash-lite', 'gemini-4-hydrogen'];
+const CANDIDATE_GEMINI_MODELS = ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'];
 // Tiempo máximo por modelo antes de pasar al siguiente (evita esperas infinitas en el aula)
-const MODEL_TIMEOUT_MS = { 'gemini-3.5-flash-lite': 60000, 'gemini-4-hydrogen': 90000 };
+const MODEL_TIMEOUT_MS = {
+  'gemini-3.1-flash-lite': 30000,
+  'gemini-3.5-flash-lite': 25000,
+  'gemini-3.8-flash': 25000
+};
 // Si los endpoints de servidor no están disponibles en este entorno, no reintentarlos en cada clic
 let vercelApiUnavailable = false;
 let secureFunctionUnavailable = false;
@@ -666,47 +670,55 @@ async function invokeDirectGeminiFallback(promptText, evidenceImageBase64, onPro
   const apiKey = import.meta.env?.VITE_GEMINI_API_KEY?.trim();
   if (!apiKey) return null;
 
-  const input = [{ type: 'text', text: promptText }];
+  const parts = [{ text: promptText }];
   if (evidenceImageBase64 && evidenceImageBase64.includes('base64,')) {
     const [meta, base64Data] = evidenceImageBase64.split('base64,');
     const mimeMatch = meta.match(/data:(.*?);/);
     const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
     if (base64Data && mimeType.startsWith('image/')) {
-      input.push({ type: 'image', data: base64Data, mime_type: mimeType });
+      parts.push({ inline_data: { mime_type: mimeType, data: base64Data } });
     }
   }
 
   for (const [modelIdx, model] of CANDIDATE_GEMINI_MODELS.entries()) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), MODEL_TIMEOUT_MS[model] || 120000);
+    const timer = setTimeout(() => controller.abort(), MODEL_TIMEOUT_MS[model] || 25000);
     try {
       onProgress?.(
         modelIdx === 0
           ? 'El Agente IA está redactando diapositivas, juegos y examen alineados a la meta del PIAR...'
           : 'El primer modelo está saturado; reintentando con un modelo alterno de Gemini...'
       );
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
-        method: 'POST',
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey,
-          'Api-Revision': '2026-05-20'
-        },
-        body: JSON.stringify({
-          model,
-          input,
-          store: false,
-          response_format: { type: 'text', mime_type: 'application/json' }
-        })
-      });
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+        {
+          method: 'POST',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey
+          },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts }],
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0.4
+            }
+          })
+        }
+      );
       if (!response.ok) {
         const errBody = await response.text().catch(() => '');
         console.warn(`[piarAiEngine] Gemini REST (${model}) respondió ${response.status}:`, errBody.slice(0, 200));
         continue;
       }
       const payload = await response.json();
-      const rawText = extractInteractionText(payload);
+      const rawText =
+        payload?.candidates?.[0]?.content?.parts
+          ?.filter((p) => typeof p?.text === 'string' && !p.thought)
+          .map((p) => p.text)
+          .join('\n')
+          .trim() || extractInteractionText(payload);
       if (!rawText) continue;
       const parsed = extractJsonObjectFromText(rawText);
       if (isCompleteGeneratedPackage(parsed)) {

@@ -4,32 +4,22 @@
 import { createClient } from '@supabase/supabase-js';
 
 const ALLOWED_ROLES = new Set(['teacher', 'superadmin']);
-const CANDIDATE_MODELS = ['gemini-3.5-flash-lite', 'gemini-4-hydrogen'];
-const MODEL_TIMEOUT_MS = { 'gemini-3.5-flash-lite': 45000, 'gemini-4-hydrogen': 50000 };
+const CANDIDATE_MODELS = ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.8-flash'];
+const MODEL_TIMEOUT_MS = {
+  'gemini-3.1-flash-lite': 25000,
+  'gemini-3.5-flash-lite': 18000,
+  'gemini-3.8-flash': 15000
+};
 const MAX_PROMPT_CHARS = 60000;
 const MAX_IMAGE_BASE64_CHARS = 8_000_000;
 
-function extractInteractionText(result) {
+function extractGenerateContentText(result) {
   if (!result || typeof result !== 'object') return '';
-  if (typeof result.output_text === 'string' && result.output_text.trim()) {
-    return result.output_text.trim();
-  }
-  if (Array.isArray(result.steps)) {
-    const modelSteps = result.steps.filter(
-      (s) => s?.type === 'model_output' && Array.isArray(s.content)
-    );
-    const lastStep = modelSteps[modelSteps.length - 1];
-    if (lastStep) {
-      const texts = lastStep.content
-        .filter((part) => part?.type === 'text' && typeof part.text === 'string')
-        .map((part) => part.text);
-      if (texts.length > 0) return texts.join('\n').trim();
-    }
-  }
-  if (Array.isArray(result.outputs)) {
-    const texts = result.outputs
-      .filter((out) => out?.type === 'text' && typeof out.text === 'string')
-      .map((out) => out.text);
+  const parts = result.candidates?.[0]?.content?.parts;
+  if (Array.isArray(parts)) {
+    const texts = parts
+      .filter((p) => typeof p?.text === 'string' && !p.thought)
+      .map((p) => p.text);
     if (texts.length > 0) return texts.join('\n').trim();
   }
   return '';
@@ -116,35 +106,38 @@ export default async function handler(req, res) {
     return res.status(413).json({ error: 'El prompt excede el tamaño permitido.' });
   }
 
-  const input = [{ type: 'text', text: prompt }];
+  const parts = [{ text: prompt }];
   if (image && typeof image.data === 'string' && typeof image.mimeType === 'string') {
     if (image.data.length > MAX_IMAGE_BASE64_CHARS || !image.mimeType.startsWith('image/')) {
       return res.status(400).json({ error: 'Imagen de evidencia no válida.' });
     }
-    input.push({ type: 'image', data: image.data, mime_type: image.mimeType });
+    parts.push({ inline_data: { mime_type: image.mimeType, data: image.data } });
   }
 
-  // 3. Llamar a Gemini Interactions API desde el servidor
+  // 3. Llamar a Gemini generateContent API desde el servidor con rotación automática ante picos de demanda
   let lastError = 'Sin respuesta del modelo.';
   for (const model of CANDIDATE_MODELS) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), MODEL_TIMEOUT_MS[model] || 45000);
+    const timer = setTimeout(() => controller.abort(), MODEL_TIMEOUT_MS[model] || 22000);
     try {
-      const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
-        method: 'POST',
-        signal: controller.signal,
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': geminiKey,
-          'Api-Revision': '2026-05-20'
-        },
-        body: JSON.stringify({
-          model,
-          input,
-          store: false,
-          response_format: { type: 'text', mime_type: 'application/json' }
-        })
-      });
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+        {
+          method: 'POST',
+          signal: controller.signal,
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': geminiKey
+          },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts }],
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0.4
+            }
+          })
+        }
+      );
 
       if (!response.ok) {
         const errText = await response.text().catch(() => '');
@@ -153,7 +146,7 @@ export default async function handler(req, res) {
       }
 
       const payload = await response.json();
-      const rawText = extractInteractionText(payload);
+      const rawText = extractGenerateContentText(payload);
       if (!rawText) {
         lastError = `${model} devolvió respuesta vacía.`;
         continue;
