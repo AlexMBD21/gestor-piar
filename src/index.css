@@ -9056,12 +9056,62 @@ body.dark-mode .nav-link-preview.active {
 .aia-student-page-shell {
   min-height: 100vh;
   background: var(--bg-app);
-  padding: 20px 24px 48px 24px;
+  padding: 0 0 36px 0;
+}
+
+.aia-student-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+}
+
+.aia-student-topbar-inner {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 10px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.aia-student-page-shell.is-page-fullscreen,
+.aia-student-page-shell:fullscreen {
+  height: 100vh;
+  padding: 0 0 24px 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-app);
+}
+
+.aia-student-page-shell.is-page-fullscreen .aia-student-page-inner,
+.aia-student-page-shell:fullscreen .aia-student-page-inner {
+  width: 100%;
+  max-width: 1360px;
+  padding: 14px 24px 0 24px;
+}
+
+.aia-student-page-shell.is-page-fullscreen .aia-student-workspace-wrap,
+.aia-student-page-shell:fullscreen .aia-student-workspace-wrap {
+  margin-top: 0;
+}
+
+.aia-topbar-btn-active {
+  border-color: var(--primary);
+  background: rgba(43, 87, 154, 0.12);
+  color: var(--primary);
 }
 
 .aia-student-page-inner {
-  max-width: 1120px;
+  max-width: 1240px;
   margin: 0 auto;
+  padding: 16px 24px 0 24px;
 }
 
 .aia-student-theme-floating {
@@ -9106,6 +9156,36 @@ body.dark-mode .nav-link-preview.active {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.aia-student-brand-btn {
+  background: transparent;
+  border: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.aia-back-subjects-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 9px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  color: var(--text-main);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.16s ease, color 0.16s ease, background 0.16s ease;
+}
+
+.aia-back-subjects-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(43, 87, 154, 0.08);
 }
 
 .aia-student-brand-badge {
@@ -9163,6 +9243,171 @@ body.dark-mode .nav-link-preview.active {
   line-height: 1.72;
 }
 
+/* Flujo natural sin scroll interno + Barra inferior fija (sticky bottom bar) siempre visible */
+.aia-student-portal-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aia-student-portal-wrap.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--bg-app);
+  padding: 14px 24px 24px 24px;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.aia-student-portal-wrap:fullscreen {
+  background: var(--bg-app);
+  padding: 14px 24px 24px 24px;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.aia-student-portal-wrap .aia-student-stage-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.aia-student-portal-wrap .aia-media-surface {
+  height: auto;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 0;
+}
+
+.aia-stage-scroll-body {
+  overflow: visible;
+  padding-right: 0;
+}
+
+/* Barra inferior fija (estilo bottombar) que nunca se oculta al bajar */
+.aia-student-portal-wrap .aia-slide-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 30;
+  margin: 4px -20px 0 -20px;
+  padding: 12px 20px;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border-color);
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.aia-student-portal-wrap .aia-ppt-workspace.aia-stage-scroll-body {
+  align-items: start;
+  overflow: visible;
+  padding-right: 0;
+}
+
+.aia-student-portal-wrap .aia-ppt-stage {
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  padding-right: 0;
+}
+
+.aia-student-portal-wrap .aia-ppt-canvas {
+  height: auto;
+  overflow: visible;
+  padding: 18px 22px 16px 22px;
+  gap: 13px;
+}
+
+.aia-student-portal-wrap .aia-ppt-canvas-accent {
+  border-radius: 16px 16px 0 0;
+}
+
+.aia-student-portal-wrap .aia-ppt-text-col {
+  gap: 11px;
+}
+
+.aia-student-portal-wrap .aia-ppt-slide-title {
+  font-size: 1.26rem;
+}
+
+.aia-student-portal-wrap .aia-ppt-slide-lead {
+  font-size: 0.91rem;
+  line-height: 1.52;
+}
+
+.aia-student-portal-wrap .aia-calm-points-list,
+.aia-student-portal-wrap .aia-calm-steps-list {
+  gap: 7px;
+}
+
+.aia-student-portal-wrap .aia-calm-point-item,
+.aia-student-portal-wrap .aia-calm-step-card {
+  padding: 8px 12px;
+}
+
+.aia-student-portal-wrap .aia-calm-check-box {
+  padding: 10px 14px;
+  gap: 8px;
+}
+
+.aia-student-portal-wrap .aia-ppt-sidebar {
+  max-height: none;
+  overflow: visible;
+}
+
+/* Video YouTube en 2 columnas equilibradas (sin scroll) */
+.aia-yt-split-layout {
+  display: grid;
+  grid-template-columns: 1.55fr 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.aia-yt-player-col {
+  min-width: 0;
+}
+
+.aia-yt-side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.aia-yt-side-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.aia-yt-side-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Juegos: grilla de 2 columnas en escritorio para evitar scroll largo */
+.aia-classify-stack,
+.aia-fill-stack {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.aia-quiz-fixed-shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aia-quiz-scroll-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 /* Banner de Diagnóstico Amigable Compacto + Controles DUA */
 .aia-friendly-diag-card {
   padding: 11px 16px;
@@ -9194,29 +9439,29 @@ body.dark-mode .nav-link-preview.active {
   flex: 1;
 }
 
-.aia-focus-topic-inline {
-  display: inline-flex;
+.aia-focus-topic-row {
+  display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
-  gap: 6px;
-  min-width: 0;
-  max-width: 100%;
+  gap: 5px 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
 }
 
 .aia-focus-topic-kicker {
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--text-muted);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .aia-focus-topic-text {
-  font-size: 0.88rem;
+  font-size: 0.92rem;
   font-weight: 700;
   color: var(--text-main);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 440px;
+  line-height: 1.4;
 }
 
 .aia-subject-tag {
@@ -9404,6 +9649,53 @@ body.dark-mode .nav-link-preview.active {
 }
 
 /* Navegación compacta de los 4 Módulos Didácticos */
+/* Botón de Pantalla Completa integrado al extremo derecho del Stepper de 4 pasos */
+.aia-stepper-with-fs {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.aia-stepper-with-fs .aia-student-module-grid {
+  flex: 1;
+  min-width: 0;
+}
+
+.aia-stepper-fs-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 72px;
+  padding: 6px 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--primary);
+  font-size: 0.68rem;
+  font-weight: 800;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+}
+
+.aia-stepper-fs-btn .material-symbols-outlined {
+  font-size: 20px;
+}
+
+.aia-stepper-fs-btn:hover {
+  border-color: var(--primary);
+  background: rgba(43, 87, 154, 0.08);
+  transform: translateY(-1px);
+}
+
+.aia-stepper-fs-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
 .aia-student-module-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -10926,6 +11218,21 @@ body.dark-mode .nav-link-preview.active {
   gap: 6px;
 }
 
+.aia-game-tab.practiced:not(.active) {
+  border-color: rgba(217, 119, 6, 0.45);
+  background: rgba(217, 119, 6, 0.08);
+  color: #b45309;
+}
+
+.aia-game-practiced-icon {
+  font-size: 16px;
+  color: #d97706;
+}
+
+.aia-game-tab.active .aia-game-practiced-icon {
+  color: #fde68a;
+}
+
 .aia-game-win-banner {
   display: flex;
   align-items: center;
@@ -10937,6 +11244,170 @@ body.dark-mode .nav-link-preview.active {
   color: #16a34a;
   font-size: 0.82rem;
   font-weight: 700;
+}
+
+.aia-game-win-spread {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.aia-game-win-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aia-game-mode-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Modo Guiado (2 columnas claras para reducir carga cognitiva) */
+.aia-guided-match-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aia-guided-match-tip {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.aia-guided-match-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.aia-guided-col {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.aia-guided-col-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0 2px;
+}
+
+.aia-guided-col-head.term {
+  color: #2563eb;
+}
+
+.aia-guided-col-head.match {
+  color: #059669;
+}
+
+.aia-guided-card {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.aia-guided-card:hover:not(:disabled) {
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.aia-guided-card:disabled:not(.matched) {
+  opacity: 0.72;
+  cursor: default;
+}
+
+.aia-guided-card.selected {
+  border-color: #2563eb;
+  background: rgba(37, 99, 235, 0.1);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.16);
+}
+
+.aia-guided-card.matched {
+  border-color: rgba(22, 163, 74, 0.5);
+  background: rgba(22, 163, 74, 0.1);
+  cursor: default;
+}
+
+.aia-guided-card.wrong {
+  border-color: #d97706;
+  background: rgba(217, 119, 6, 0.12);
+}
+
+.aia-guided-card.hinted {
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.22);
+}
+
+.aia-guided-badge {
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.aia-guided-card.selected .aia-guided-badge {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.aia-guided-card.matched .aia-guided-badge {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #ffffff;
+}
+
+.aia-guided-text {
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.42;
+}
+
+.aia-memory-card.role-term:not(.flipped):not(.matched) {
+  border-color: rgba(37, 99, 235, 0.28);
+  background: rgba(37, 99, 235, 0.05);
+}
+
+.aia-memory-card.role-match:not(.flipped):not(.matched) {
+  border-color: rgba(5, 150, 105, 0.28);
+  background: rgba(5, 150, 105, 0.05);
+}
+
+.aia-memory-card-back.role-match,
+.aia-memory-kind.role-match {
+  color: #059669;
+}
+
+.aia-memory-card.hinted {
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.22);
 }
 
 .aia-game-hint-banner {
@@ -11384,6 +11855,47 @@ body.dark-mode .nav-link-preview.active {
   background: var(--primary);
   border-color: var(--primary);
   color: #ffffff;
+}
+
+.aia-auto-next-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 16px;
+  border-radius: 12px;
+  background: rgba(43, 87, 154, 0.09);
+  border: 1px solid rgba(43, 87, 154, 0.3);
+  animation: fadeIn 0.2s ease;
+}
+
+.aia-auto-next-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.86rem;
+  color: var(--text-main);
+}
+
+.aia-auto-next-badge {
+  min-width: 34px;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.aia-auto-next-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .aia-ppt-external-shell {
@@ -12196,6 +12708,1327 @@ body.dark-mode .nav-link-preview.active {
   margin-top: 8px;
 }
 
+/* Modal de Acceso Estudiantil (Documento + PIN) */
+.aia-credential-chip.is-active {
+  border-color: rgba(22, 163, 74, 0.45);
+  background: rgba(22, 163, 74, 0.1);
+  color: #15803d;
+}
+
+.aia-access-modal {
+  max-width: 500px;
+}
+
+.aia-access-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.aia-access-modal-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.aia-access-modal-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(43, 87, 154, 0.12);
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.aia-access-modal-sub {
+  margin: 2px 0 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.aia-access-loading {
+  padding: 20px 0;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.aia-access-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.aia-access-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.aia-access-field label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.aia-access-field small {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.aia-access-pin-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aia-access-pin-input {
+  letter-spacing: 0.2em;
+  font-weight: 800;
+  font-size: 1rem;
+  max-width: 170px;
+}
+
+.aia-access-toggle-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 13px;
+  border-radius: 11px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+}
+
+.aia-access-toggle-row input {
+  margin-top: 3px;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--primary);
+}
+
+.aia-access-toggle-row strong {
+  display: block;
+  font-size: 0.84rem;
+  color: var(--text-main);
+}
+
+.aia-access-toggle-row small {
+  display: block;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.aia-access-meta-note {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.aia-access-feedback {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.aia-access-feedback.ok {
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+  border: 1px solid rgba(22, 163, 74, 0.3);
+}
+
+.aia-access-feedback.warning {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+  border: 1px solid rgba(217, 119, 6, 0.35);
+}
+
+.aia-access-feedback.error {
+  background: rgba(220, 38, 38, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+}
+
+.aia-access-modal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+}
+
+.aia-access-modal-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aia-student-login-helper {
+  margin: -4px 0 4px 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+/* Portada "Mi Aula" del Estudiante */
+.aia-student-bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.aia-student-home {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 14px;
+}
+
+.aia-student-hero-card {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 20px;
+  align-items: center;
+  padding: 22px 24px;
+  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+}
+
+.aia-student-hero-text h1 {
+  margin: 10px 0 6px 0;
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.aia-student-hero-text p {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.aia-student-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.aia-student-stat-box {
+  padding: 14px 12px;
+  border-radius: 12px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.aia-student-stat-box small {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+
+.aia-student-stat-box strong {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.aia-student-stat-box.ok strong {
+  color: #16a34a;
+}
+
+.aia-student-review-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border-radius: 12px;
+  background: rgba(217, 119, 6, 0.1);
+  border: 1px solid rgba(217, 119, 6, 0.32);
+  color: var(--text-main);
+  font-size: 0.86rem;
+}
+
+.aia-student-review-notice .material-symbols-outlined {
+  color: #d97706;
+  font-size: 20px;
+}
+
+.aia-student-empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.aia-student-empty-icon {
+  font-size: 46px;
+  color: var(--primary);
+}
+
+.aia-student-empty-state h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--text-main);
+}
+
+.aia-student-empty-state p {
+  margin: 0 0 8px 0;
+  max-width: 480px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.aia-student-subjects-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.aia-student-subject-card {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.aia-student-subject-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
+}
+
+.aia-student-subject-card.mastered {
+  border-top: 3px solid #16a34a;
+}
+
+.aia-student-subject-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.aia-student-status-pill {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.aia-student-status-pill.pending {
+  background: rgba(140, 144, 159, 0.16);
+  color: var(--text-muted);
+}
+
+.aia-student-status-pill.progress {
+  background: rgba(43, 87, 154, 0.12);
+  color: var(--primary);
+}
+
+.aia-student-status-pill.mastered {
+  background: rgba(22, 163, 74, 0.14);
+  color: #15803d;
+}
+
+.aia-student-subject-title {
+  margin: 0;
+  font-size: 1.04rem;
+  font-weight: 800;
+  line-height: 1.35;
+  color: var(--text-main);
+}
+
+.aia-student-subject-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.aia-student-subject-progress-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.aia-student-subject-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.aia-student-subject-chips span {
+  padding: 4px 8px;
+  border-radius: 7px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.aia-student-subject-chips span.done {
+  background: rgba(22, 163, 74, 0.1);
+  border-color: rgba(22, 163, 74, 0.3);
+  color: #15803d;
+}
+
+.aia-student-card-bookmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #b45309;
+}
+
+.aia-student-subject-cta {
+  margin-top: auto;
+  width: 100%;
+  justify-content: center;
+}
+
+.aia-student-workspace-wrap {
+  margin-top: 12px;
+}
+
+/* Examen 1 pregunta a la vez (DUA) */
+.aia-quiz-stepper-top {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 13px 16px;
+  border-radius: 12px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+}
+
+.aia-quiz-stepper-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.84rem;
+  color: var(--text-main);
+}
+
+.aia-quiz-q-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.aia-quiz-q-pill {
+  padding: 5px 11px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.aia-quiz-q-pill.answered {
+  border-color: rgba(22, 163, 74, 0.4);
+  background: rgba(22, 163, 74, 0.1);
+  color: #15803d;
+}
+
+.aia-quiz-q-pill.current {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.aia-question-card-focus {
+  padding: 20px 22px;
+}
+
+.aia-question-text-lg {
+  font-size: 1.04rem;
+  line-height: 1.6;
+}
+
+/* Tarjeta unificada de resultados del examen (sin redundancia) */
+.aia-result-hero-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 22px;
+  border-radius: 16px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--primary);
+}
+
+.aia-result-hero-card.tier-mastered {
+  border-left-color: #16a34a;
+}
+
+.aia-result-hero-card.tier-grow {
+  border-left-color: #d97706;
+}
+
+.aia-result-hero-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+}
+
+.aia-result-score-box {
+  min-width: 102px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--primary);
+  color: #ffffff;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.aia-result-hero-card.tier-mastered .aia-result-score-box {
+  background: #16a34a;
+}
+
+.aia-result-hero-card.tier-grow .aia-result-score-box {
+  background: #d97706;
+}
+
+.aia-result-score-box strong {
+  font-size: 1.65rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.aia-result-score-box span {
+  font-size: 0.72rem;
+  opacity: 0.92;
+}
+
+.aia-result-hero-copy {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.aia-result-hero-kicker {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+.aia-result-hero-copy h4 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.aia-result-hero-copy p {
+  margin: 0;
+  font-size: 0.87rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.aia-result-stat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.aia-result-stat-chips span {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.aia-result-stat-chips span.ok {
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+}
+
+.aia-result-stat-chips span.warn {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+}
+
+.aia-result-hero-cta {
+  flex-shrink: 0;
+}
+
+.aia-result-history-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-color);
+}
+
+/* Selector de Asignatura y Sincronización en Vivo (Estadísticas Docente) */
+.aia-telemetry-subject-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.aia-telemetry-picker-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.aia-telemetry-live-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.aia-live-sync-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: rgba(22, 163, 74, 0.11);
+  border: 1px solid rgba(22, 163, 74, 0.3);
+  color: #15803d;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.aia-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.22);
+}
+
+.aia-telemetry-subject-tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.aia-telemetry-subject-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 11px 14px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-color);
+  background: var(--bg-app);
+  color: var(--text-main);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease;
+}
+
+.aia-telemetry-subject-tab:hover {
+  border-color: var(--primary);
+}
+
+.aia-telemetry-subject-tab.active {
+  border-color: var(--primary);
+  background: rgba(43, 87, 154, 0.08);
+  box-shadow: 0 3px 10px rgba(43, 87, 154, 0.12);
+}
+
+.aia-telemetry-subject-tab-top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.85rem;
+}
+
+.aia-telemetry-subject-tab-meta {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.aia-telemetry-context-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aia-telemetry-context-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.aia-telemetry-context-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.aia-telemetry-last-seen {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.aia-telemetry-context-topic {
+  margin: 0;
+  font-size: 1.06rem;
+  font-weight: 800;
+  color: var(--text-main);
+  line-height: 1.38;
+}
+
+.aia-telemetry-games-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.aia-telemetry-games-label {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.aia-telemetry-games-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.aia-telemetry-game-chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+  color: var(--text-muted);
+}
+
+.aia-telemetry-game-chip.high {
+  background: rgba(22, 163, 74, 0.11);
+  border-color: rgba(22, 163, 74, 0.32);
+  color: #15803d;
+}
+
+.aia-telemetry-game-chip.warn {
+  background: rgba(217, 119, 6, 0.11);
+  border-color: rgba(217, 119, 6, 0.32);
+  color: #b45309;
+}
+
+/* Inspector de Intentos Rediseñado (Tactile Segmented Control + Bento + Desglose por Pregunta) */
+.aia-attempt-segmented-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.aia-attempt-segmented-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.aia-attempt-segmented-label {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.aia-attempt-segmented-hint {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.aia-attempt-segmented-track {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 13px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+}
+
+.aia-attempt-segment {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 120ms ease;
+}
+
+.aia-attempt-segment:hover {
+  color: var(--text-main);
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.aia-attempt-segment:active {
+  transform: scale(0.98);
+}
+
+.aia-attempt-segment.is-active {
+  background: var(--bg-card);
+  color: var(--text-main);
+  border-color: var(--border-color);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+body.dark-mode .aia-attempt-segment.is-active {
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.aia-attempt-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.aia-attempt-dot.high {
+  background: #16a34a;
+}
+
+.aia-attempt-dot.mid {
+  background: #d97706;
+}
+
+.aia-attempt-dot.low {
+  background: #dc2626;
+}
+
+.aia-attempt-seg-title {
+  font-weight: 700;
+}
+
+.aia-attempt-seg-score {
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.aia-attempt-seg-score.high {
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+}
+
+.aia-attempt-seg-score.mid {
+  background: rgba(217, 119, 6, 0.12);
+  color: #b45309;
+}
+
+.aia-attempt-seg-score.low {
+  background: rgba(220, 38, 38, 0.11);
+  color: #b91c1c;
+}
+
+.aia-attempt-detail-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation: aiaAttemptReveal 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes aiaAttemptReveal {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aia-attempt-detail-panel {
+    animation: none;
+  }
+}
+
+.aia-attempt-bento-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.aia-attempt-kpi-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 15px 16px;
+  border-radius: 14px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+}
+
+.aia-attempt-kpi-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.aia-attempt-kpi-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.aia-attempt-delta-pill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.aia-attempt-delta-pill.up {
+  background: rgba(22, 163, 74, 0.13);
+  color: #15803d;
+}
+
+.aia-attempt-delta-pill.down {
+  background: rgba(220, 38, 38, 0.12);
+  color: #b91c1c;
+}
+
+.aia-attempt-delta-pill.flat {
+  background: rgba(148, 163, 184, 0.16);
+  color: var(--text-muted);
+}
+
+.aia-attempt-score-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.aia-attempt-score-big {
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text-main);
+}
+
+.aia-attempt-kpi-card.tone-high .aia-attempt-score-big {
+  color: #15803d;
+}
+
+.aia-attempt-kpi-card.tone-mid .aia-attempt-score-big {
+  color: #b45309;
+}
+
+.aia-attempt-kpi-card.tone-low .aia-attempt-score-big {
+  color: #b91c1c;
+}
+
+.aia-progress-fill.tone-high {
+  background: #16a34a;
+}
+
+.aia-progress-fill.tone-mid {
+  background: #d97706;
+}
+
+.aia-progress-fill.tone-low {
+  background: #dc2626;
+}
+
+.aia-attempt-score-frac {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.aia-attempt-kpi-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.aia-attempt-kpi-foot > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.aia-attempt-prep-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.aia-attempt-prep-row {
+  display: grid;
+  grid-template-columns: 112px 1fr 36px;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.76rem;
+}
+
+.aia-attempt-prep-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.aia-attempt-prep-bar {
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.22);
+  overflow: hidden;
+}
+
+.aia-attempt-prep-bar > div {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--primary);
+  transition: width 240ms ease;
+}
+
+.aia-attempt-prep-row strong {
+  text-align: right;
+  font-size: 0.74rem;
+  color: var(--text-main);
+}
+
+.aia-attempt-prep-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: auto;
+  font-size: 0.73rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.aia-attempt-balance-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.aia-balance-chip {
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 0.73rem;
+  font-weight: 700;
+}
+
+.aia-balance-chip.pass {
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+}
+
+.aia-balance-chip.fail {
+  background: rgba(220, 38, 38, 0.1);
+  color: #b91c1c;
+}
+
+.aia-attempt-mastered-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(22, 163, 74, 0.1);
+  color: #15803d;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.aia-attempt-skills-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.aia-attempt-skill-pill {
+  padding: 3px 8px;
+  border-radius: 7px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: rgba(217, 119, 6, 0.11);
+  border: 1px solid rgba(217, 119, 6, 0.25);
+  color: #b45309;
+}
+
+/* Desglose pregunta por pregunta del intento activo */
+.aia-attempt-q-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aia-attempt-q-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.aia-attempt-q-counter {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.aia-attempt-q-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.aia-attempt-q-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 13px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid var(--border-color);
+}
+
+.aia-attempt-q-card.is-pass {
+  border-left-color: #16a34a;
+}
+
+.aia-attempt-q-card.is-fail {
+  border-left-color: #dc2626;
+}
+
+.aia-attempt-q-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.aia-attempt-q-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.aia-attempt-q-num {
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.aia-attempt-q-skill {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.aia-attempt-q-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.aia-attempt-recovered-pill {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(22, 163, 74, 0.12);
+  color: #15803d;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.aia-attempt-q-prompt {
+  margin: 0;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: var(--text-main);
+}
+
+.aia-attempt-answer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+
+.aia-attempt-answer-box {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
+}
+
+.aia-attempt-answer-box.chosen-pass,
+.aia-attempt-answer-box.expected-pass {
+  background: rgba(22, 163, 74, 0.07);
+  border-color: rgba(22, 163, 74, 0.28);
+}
+
+.aia-attempt-answer-box.chosen-fail {
+  background: rgba(220, 38, 38, 0.06);
+  border-color: rgba(220, 38, 38, 0.26);
+}
+
+.aia-attempt-answer-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+.aia-attempt-answer-value {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--text-main);
+}
+
+.aia-attempt-opt-letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 21px;
+  height: 21px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+}
+
+.aia-attempt-q-remediation {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.aia-matrix-table th.is-selected-col,
+.aia-matrix-table td.is-selected-col {
+  background: rgba(43, 87, 154, 0.07);
+}
+
+body.dark-mode .aia-attempt-seg-score.high,
+body.dark-mode .aia-attempt-delta-pill.up,
+body.dark-mode .aia-balance-chip.pass,
+body.dark-mode .aia-attempt-recovered-pill,
+body.dark-mode .aia-attempt-mastered-box,
+body.dark-mode .aia-attempt-kpi-card.tone-high .aia-attempt-score-big {
+  color: #4ade80;
+}
+
+body.dark-mode .aia-attempt-seg-score.mid,
+body.dark-mode .aia-attempt-skill-pill,
+body.dark-mode .aia-attempt-kpi-card.tone-mid .aia-attempt-score-big {
+  color: #fbbf24;
+}
+
+body.dark-mode .aia-attempt-seg-score.low,
+body.dark-mode .aia-attempt-delta-pill.down,
+body.dark-mode .aia-balance-chip.fail,
+body.dark-mode .aia-attempt-kpi-card.tone-low .aia-attempt-score-big {
+  color: #f87171;
+}
+
 @media screen and (max-width: 1180px) {
   .aia-student-module-grid {
     grid-template-columns: repeat(3, 1fr);
@@ -12211,6 +14044,7 @@ body.dark-mode .nav-link-preview.active {
 @media screen and (max-width: 960px) {
   .aia-studio-grid,
   .aia-telemetry-bento-grid,
+  .aia-attempt-bento-grid,
   .aia-attempt-inspector,
   .aia-student-module-grid,
   .aia-scene-grid,
@@ -12221,8 +14055,25 @@ body.dark-mode .nav-link-preview.active {
   .aia-options-grid,
   .aia-ppt-workspace,
   .aia-ppt-canvas-body,
-  .aia-calm-compare-grid {
+  .aia-calm-compare-grid,
+  .aia-student-hero-card,
+  .aia-guided-match-grid,
+  .aia-yt-split-layout,
+  .aia-classify-stack,
+  .aia-fill-stack {
     grid-template-columns: 1fr;
+  }
+
+  .aia-student-portal-wrap .aia-media-surface,
+  .aia-student-portal-wrap.is-fullscreen,
+  .aia-student-portal-wrap:fullscreen {
+    height: auto;
+    overflow: visible;
+  }
+
+  .aia-stage-scroll-body {
+    overflow-y: visible;
+    padding-right: 0;
   }
 
   .aia-ppt-sidebar {
@@ -12234,9 +14085,5 @@ body.dark-mode .nav-link-preview.active {
   .aia-ppt-chapter {
     min-width: 175px;
     flex-shrink: 0;
-  }
-
-  .aia-focus-topic-text {
-    max-width: 240px;
   }
 }

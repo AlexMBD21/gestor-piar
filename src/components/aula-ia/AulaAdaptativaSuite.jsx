@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { usePiar } from '../../context/PiarContext';
 import { useAulaIa } from '../../context/AulaIaContext';
+import { supabase } from '../../lib/supabaseClient';
 import { extractStudentPedagogicalProfile } from '../../lib/piarAiEngine';
 import StudentAdaptivePortal from './StudentAdaptivePortal';
 import TeacherTelemetryAnalytics from './TeacherTelemetryAnalytics';
+import StudentAccessModal from './StudentAccessModal';
+import { getStudentCredential } from '../../lib/studentAccessService';
 
 export default function AulaAdaptativaSuite({
   activeSubTab = 'ia-studio',
@@ -16,6 +19,7 @@ export default function AulaAdaptativaSuite({
     packagesByStudent,
     activityByPackage,
     hydrateFromPiarRecord,
+    refreshActivityFromCloud,
     createAdaptivePackage,
     togglePackagePublishStatus,
     deleteAdaptivePackage
@@ -37,6 +41,10 @@ export default function AulaAdaptativaSuite({
   // Controla qué tarjeta de materia generada está desplegada (acordeón contraíble para no alargar la pantalla)
   const [expandedPkgId, setExpandedPkgId] = useState(null);
   const [pendingDeletePkg, setPendingDeletePkg] = useState(null);
+  const [showAccessModal, setShowAccessModal] = useState(false);
+  const [studentAccessMeta, setStudentAccessMeta] = useState(null);
+  const [lastTelemetrySyncAt, setLastTelemetrySyncAt] = useState(null);
+  const [isSyncingTelemetry, setIsSyncingTelemetry] = useState(false);
 
   const currentPkg =
     studentPackages.find((p) => p.id === selectedPkgId) || studentPackages[0] || null;
@@ -80,16 +88,72 @@ export default function AulaAdaptativaSuite({
 
   const [selectedAreaIndex, setSelectedAreaIndex] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationStep, setGenerationStep] = useState('');
   const resultsSectionRef = useRef(null);
 
   useEffect(() => {
     setSelectedAreaIndex(0);
     setExpandedPkgId(null);
     setPendingDeletePkg(null);
+    setShowAccessModal(false);
+    let mounted = true;
     if (activeStudent) {
       hydrateFromPiarRecord(activeStudent);
+      getStudentCredential(activeStudent.id).then((cred) => {
+        if (mounted) setStudentAccessMeta(cred);
+      });
+    } else {
+      setStudentAccessMeta(null);
     }
+    return () => {
+      mounted = false;
+    };
   }, [activeStudent, hydrateFromPiarRecord]);
+
+  // Sincronización en tiempo real de Telemetría e Intentos cuando el docente observa "Intentos y Telemetría"
+  useEffect(() => {
+    if (activeSubTab !== 'ia-analytics' || !activeStudent?.id) return undefined;
+    let active = true;
+
+    const runSync = async () => {
+      const ok = await refreshActivityFromCloud(activeStudent.id);
+      if (active && ok) setLastTelemetrySyncAt(new Date().toISOString());
+    };
+
+    runSync();
+
+    // Sondeo ligero cada 8s + suscripción Realtime de Supabase para ver intentos sin recargar
+    const intervalId = setInterval(runSync, 8000);
+    const channel = supabase
+      .channel(`piar-telemetry-${activeStudent.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'piars',
+          filter: `id=eq.${activeStudent.id}`
+        },
+        () => {
+          runSync();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      active = false;
+      clearInterval(intervalId);
+      supabase.removeChannel(channel);
+    };
+  }, [activeSubTab, activeStudent?.id, refreshActivityFromCloud]);
+
+  const handleManualTelemetrySync = async () => {
+    if (!activeStudent?.id || isSyncingTelemetry) return;
+    setIsSyncingTelemetry(true);
+    const ok = await refreshActivityFromCloud(activeStudent.id);
+    if (ok) setLastTelemetrySyncAt(new Date().toISOString());
+    setIsSyncingTelemetry(false);
+  };
 
   useEffect(() => {
     if (!pendingDeletePkg) return undefined;
@@ -140,6 +204,7 @@ export default function AulaAdaptativaSuite({
   const handleAutoGenerateFromPiar = async (areaToProcess = activeArea) => {
     if (!areaToProcess) return;
     setIsGenerating(true);
+    setGenerationStep(`Leyendo el PIAR para ${areaToProcess.displayArea || areaToProcess.area}...`);
     try {
       const areaTitle = areaToProcess.displayArea || areaToProcess.area;
       const created = await createAdaptivePackage({
@@ -149,30 +214,28 @@ export default function AulaAdaptativaSuite({
         carenciaObservada: areaToProcess.carenciaDetectadaPorIa,
         teacherNotes: `Barrera detectada automáticamente en el PIAR: "${areaToProcess.barreras}". Ajuste Razonable del PIAR: "${areaToProcess.ajustes}". Evaluación PIAR: "${areaToProcess.evaluacion}".`,
         maxAttempts: 3,
-        publishImmediately: false // Queda en supervisión para que el docente lo revise primero
+        publishImmediately: false, // Queda en supervisión para que el docente lo revise primero
+        onProgress: (msg) => setGenerationStep(msg)
       });
       setSelectedPkgId(created.id);
       setExpandedPkgId(created.id); // Abre la nueva área generada y contrae automáticamente las anteriores
       if (showToast) {
-        showToast(
-          `El Agente IA generó el paquete de ${areaTitle} para ${profile.primerNombre}. Los demás paquetes se contrajeron automáticamente.`
-        );
+        if (created.engineMode === 'gemini') {
+          showToast(
+            `Gemini IA generó diapositivas, juegos y examen de ${areaTitle} alineados al PIAR de ${profile.primerNombre}.`
+          );
+        } else {
+          showToast(
+            `Gemini no respondió a tiempo; se creó un paquete de respaldo local para ${areaTitle}. Puedes volver a generar cuando desees.`
+          );
+        }
       }
       setTimeout(() => {
         resultsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 120);
     } finally {
       setIsGenerating(false);
-    }
-  };
-
-  const handleCopyStudentAccess = () => {
-    const info = `Acceso Aula Adaptativa PIAR — Estudiante: ${profile.nombreCompleto} | Documento: ${profile.numeroIdentificacion} | Código PIN: 1421`;
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(info);
-    }
-    if (showToast) {
-      showToast(`Credenciales de ${profile.primerNombre} copiadas (Doc: ${profile.numeroIdentificacion})`);
+      setGenerationStep('');
     }
   };
 
@@ -210,14 +273,20 @@ export default function AulaAdaptativaSuite({
 
               <button
                 type="button"
-                className="aia-credential-chip"
-                onClick={handleCopyStudentAccess}
-                title="Copiar documento de acceso para que el estudiante entre desde el Login"
+                className={`aia-credential-chip ${studentAccessMeta?.isActive ? 'is-active' : ''}`}
+                onClick={() => setShowAccessModal(true)}
+                title="Asignar o gestionar el documento y PIN de acceso del estudiante"
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
                   key
                 </span>
-                <span className="aia-tabular">Doc. Acceso Alumno: {profile.numeroIdentificacion}</span>
+                <span className="aia-tabular">
+                  {studentAccessMeta?.isActive
+                    ? `Acceso Activo · Doc: ${studentAccessMeta.studentDoc}`
+                    : studentAccessMeta
+                      ? `Acceso Pausado · Doc: ${studentAccessMeta.studentDoc}`
+                      : `Asignar Acceso Alumno (${profile.numeroIdentificacion})`}
+                </span>
               </button>
             </div>
           </div>
@@ -348,7 +417,7 @@ export default function AulaAdaptativaSuite({
               </span>
               <span>
                 {isGenerating
-                  ? `Generando material de ${activeArea.displayArea}...`
+                  ? generationStep || `Generando material de ${activeArea.displayArea}...`
                   : `Generar Material IA · ${activeArea.displayArea}`}
               </span>
             </button>
@@ -411,7 +480,12 @@ export default function AulaAdaptativaSuite({
                           <div className="aia-collapsible-pkg-title-wrap">
                             <strong className="aia-collapsible-pkg-subject">{pkg.subject}</strong>
                             <span className="aia-collapsible-pkg-summary-pills">
-                              {pkg.slides?.length || 5} Diapositivas (.pptx) · Video YouTube · Juegos IA · Examen
+                              {pkg.slides?.length || 5} Diapositivas (.pptx) · Video YouTube · {pkg.games?.length || 4} Juegos · Examen
+                              {pkg.engineMode === 'local'
+                                ? ' · Respaldo local'
+                                : pkg.engineMode === 'gemini' || String(pkg.engineSource || '').startsWith('Gemini')
+                                  ? ' · Gemini IA'
+                                  : ''}
                             </span>
                             <span className="aia-collapsible-pkg-topic">{pkg.topic}</span>
                           </div>
@@ -898,37 +972,121 @@ export default function AulaAdaptativaSuite({
         </div>
       )}
 
-      {/* SUB-VISTA 3: ANALÍTICA DE INTENTOS Y VERIFICACIÓN AUDIOVISUAL MULTI-ÁREA */}
+      {/* SUB-VISTA 3: ANALÍTICA DE INTENTOS Y VERIFICACIÓN EN TIEMPO REAL POR MATERIA */}
       {activeSubTab === 'ia-analytics' && (
         <div className="aia-studio-vertical-flow">
-          {studentPackages.length > 1 && currentPkg && (
-            <div className="aia-package-bar">
-              <div className="aia-package-bar-left">
-                <span className="aia-package-bar-label">
-                  Seleccionar Área para ver Intentos y Telemetría:
-                </span>
-                <div className="aia-package-pills">
-                  {studentPackages.map((p) => (
+          {studentPackages.length > 0 && currentPkg ? (
+            <>
+              <div className="aia-bento-card aia-telemetry-subject-picker">
+                <div className="aia-telemetry-picker-head">
+                  <div>
+                    <span className="aia-eyebrow">SELECCIONA LA ASIGNATURA PARA VER SUS RESULTADOS</span>
+                    <h3 className="aia-bento-title">
+                      Materias de {profile.primerNombre} ({studentPackages.length})
+                    </h3>
+                  </div>
+
+                  <div className="aia-telemetry-live-controls">
+                    <span className="aia-live-sync-pill">
+                      <span className="aia-live-dot" aria-hidden="true" />
+                      <span>
+                        En vivo
+                        {lastTelemetrySyncAt
+                          ? ` · ${new Date(lastTelemetrySyncAt).toLocaleTimeString('es-CO', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit'
+                            })}`
+                          : ''}
+                      </span>
+                    </span>
                     <button
-                      key={p.id}
                       type="button"
-                      onClick={() => setSelectedPkgId(p.id)}
-                      className={`aia-pkg-pill ${currentPkg?.id === p.id ? 'active' : ''}`}
+                      className="aia-btn-secondary aia-btn-sm"
+                      onClick={handleManualTelemetrySync}
+                      disabled={isSyncingTelemetry}
                     >
-                      <span>{p.subject}</span>
-                      <span
-                        className={`aia-pkg-dot ${p.status === 'published' ? 'pub' : 'draft'}`}
-                      />
+                      <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                        {isSyncingTelemetry ? 'hourglass_top' : 'sync'}
+                      </span>
+                      <span>{isSyncingTelemetry ? 'Actualizando...' : 'Actualizar'}</span>
                     </button>
-                  ))}
+                  </div>
+                </div>
+
+                <div className="aia-telemetry-subject-tabs" role="tablist" aria-label="Materias con estadísticas">
+                  {studentPackages.map((p) => {
+                    const pAct = activityByPackage[p.id];
+                    const pAttempts = pAct?.attempts || [];
+                    const pBest =
+                      pAttempts.length > 0
+                        ? Math.max(...pAttempts.map((a) => a.percentage || 0))
+                        : null;
+                    const isSelected = currentPkg?.id === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={isSelected}
+                        onClick={() => setSelectedPkgId(p.id)}
+                        className={`aia-telemetry-subject-tab ${isSelected ? 'active' : ''}`}
+                      >
+                        <div className="aia-telemetry-subject-tab-top">
+                          <span
+                            className={`aia-pkg-dot ${p.status === 'published' ? 'pub' : 'draft'}`}
+                            title={p.status === 'published' ? 'Publicado' : 'Borrador'}
+                          />
+                          <strong>{p.subject}</strong>
+                        </div>
+                        <span className="aia-telemetry-subject-tab-meta aia-tabular">
+                          {pBest !== null
+                            ? `Mejor nota: ${pBest}% (${pAttempts.length} int.)`
+                            : 'Sin intentos aún'}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
+
+              <TeacherTelemetryAnalytics
+                pkg={currentPkg}
+                activity={currentActivity}
+                studentPiar={activeStudent}
+              />
+            </>
+          ) : (
+            <div className="aia-bento-card" style={{ textAlign: 'center', padding: '40px 24px' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '40px', color: 'var(--primary)' }}>
+                bar_chart
+              </span>
+              <h3 style={{ marginTop: '10px' }}>Aún no hay materias generadas para {profile.primerNombre}</h3>
+              <p style={{ color: 'var(--text-muted)', maxWidth: '460px', margin: '8px auto 0' }}>
+                Genera al menos un material en <strong>Estudio Docente IA</strong> y publícalo para comenzar a registrar estadísticas en tiempo real.
+              </p>
             </div>
           )}
-
-          <TeacherTelemetryAnalytics pkg={currentPkg} activity={currentActivity} />
         </div>
       )}
+
+      {/* Modal de gestión de cuenta estudiantil (Documento + PIN) */}
+      <StudentAccessModal
+        isOpen={showAccessModal}
+        onClose={() => setShowAccessModal(false)}
+        studentPiar={activeStudent}
+        profile={profile}
+        onSaved={(cred) => {
+          setStudentAccessMeta(cred);
+          if (showToast) {
+            showToast(
+              cred.isActive
+                ? `Acceso activado para ${profile.primerNombre} (Doc: ${cred.studentDoc} · PIN: ${cred.accessPin}).`
+                : `Acceso pausado para ${profile.primerNombre}.`
+            );
+          }
+        }}
+      />
 
       {/* Modal de confirmación antes de eliminar un material */}
       {pendingDeletePkg && (

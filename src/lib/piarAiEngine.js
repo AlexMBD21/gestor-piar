@@ -40,7 +40,53 @@ export function extractYoutubeVideoId(urlOrId = '') {
   return fallbackMatch ? fallbackMatch[1] : null;
 }
 
-const CANDIDATE_GEMINI_MODELS = ['gemini-4-hydrogen', 'gemini-3.5-flash-lite'];
+const CANDIDATE_GEMINI_MODELS = ['gemini-3.5-flash-lite', 'gemini-4-hydrogen'];
+// Tiempo máximo por modelo antes de pasar al siguiente (evita esperas infinitas en el aula)
+const MODEL_TIMEOUT_MS = { 'gemini-3.5-flash-lite': 60000, 'gemini-4-hydrogen': 90000 };
+// Si los endpoints de servidor no están disponibles en este entorno, no reintentarlos en cada clic
+let vercelApiUnavailable = false;
+let secureFunctionUnavailable = false;
+
+/**
+ * Sanea las preguntas del examen generadas por la IA: descarta las que no tengan
+ * enunciado, al menos 2 opciones o un índice correcto válido.
+ */
+export function sanitizeQuizQuestions(rawQuestions) {
+  return (Array.isArray(rawQuestions) ? rawQuestions : [])
+    .map((q, i) => {
+      const options = (Array.isArray(q?.options) ? q.options : [])
+        .map((o) => String(o ?? '').trim())
+        .filter(Boolean)
+        .slice(0, 4);
+      const correctIndex = Number(q?.correctIndex);
+      const question = String(q?.question ?? '').trim();
+      if (
+        !question ||
+        options.length < 2 ||
+        !Number.isInteger(correctIndex) ||
+        correctIndex < 0 ||
+        correctIndex >= options.length
+      ) {
+        return null;
+      }
+      return {
+        ...q,
+        id: q.id || `q${i + 1}`,
+        skillTag: String(q.skillTag || `Habilidad ${i + 1}`).trim(),
+        question,
+        options,
+        correctIndex
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 6);
+}
+
+/** Verifica que la respuesta de la IA tenga los materiales mínimos completos. */
+function isCompleteGeneratedPackage(parsed) {
+  const slides = Array.isArray(parsed?.slides) ? parsed.slides.filter((s) => s?.title) : [];
+  return slides.length >= 3 && sanitizeQuizQuestions(parsed?.quizQuestions).length >= 3;
+}
 
 /**
  * Clasifica la asignatura en un dominio pedagógico sin colisiones (ej. "Educación Física" vs "Física").
@@ -169,6 +215,7 @@ export function buildDefaultYoutubeVideo(subject = '', topic = '') {
   if (domain === 'ciencias' && (norm.includes('químic') || norm.includes('quimic') || norm.includes('materia') || norm.includes('físic') || norm.includes('fisic'))) {
     return {
       videoId: 'swcjamDFsn0',
+      fallbackVideoIds: ['3y0dPYDLXPY'],
       title: `La Materia y sus Propiedades (${cleanSubject})`,
       channelTitle: 'Happy Learning Español',
       searchQuery,
@@ -182,7 +229,8 @@ export function buildDefaultYoutubeVideo(subject = '', topic = '') {
 
   if (domain === 'ciencias') {
     return {
-      videoId: 'R9OHX5HYwvk',
+      videoId: '3y0dPYDLXPY',
+      fallbackVideoIds: ['vrZIYVjR0js', 'ru6rZNQg3eM', 'swcjamDFsn0'],
       title: `Ecosistemas y Procesos Naturales (${cleanSubject})`,
       channelTitle: 'Happy Learning Español',
       searchQuery,
@@ -444,6 +492,14 @@ ${hogarSummary || '  * Refuerzo cotidiano acompañado'}
 REGLA DE COHERENCIA DISCIPLINAR ESTRICTA:
 Todo el contenido (las 5 diapositivas, los 4 bloques de audio, las 4 escenas del video-guía, los juegos didácticos y las 5 preguntas del examen) debe pertenecer 100% al dominio real de "${subject}" y al tema "${topic}". Por ejemplo, si el área es Educación Física o Artes, usa ejemplos motrices, deportivos o expresivos reales — nunca metas problemas matemáticos ni fórmulas fuera de contexto.
 
+REGLA DE ALINEACIÓN CON LA META DE APRENDIZAJE (OBLIGATORIA):
+1. La meta de aprendizaje es: "${topic}". Las diapositivas ENSEÑAN esa meta, los juegos la PRACTICAN y el examen la EVALÚA. Nada puede salirse de ella.
+2. Genera EXACTAMENTE 5 diapositivas, EXACTAMENTE 5 preguntas de examen (4 opciones cada una, "correctIndex" entre 0 y 3) y EXACTAMENTE 4 juegos en este orden: memory, order, classify, fill.
+3. Cada pregunta del examen evalúa un concepto que se explicó explícitamente en una diapositiva; su "remediationRef" debe decir "Repasar Diapositiva N" con el número real de esa lámina.
+4. Los juegos usan el MISMO vocabulario y conceptos de las diapositivas: memory = términos clave del tema con su significado; order = el proceso o secuencia real del tema; classify = dos categorías reales del tema; fill = frases clave de las diapositivas con la palabra técnica omitida ("___").
+5. Las preguntas deben ser situaciones concretas y cercanas a un estudiante de ${profile.edad} años, aplicando el ajuste razonable del PIAR (enunciados cortos, una idea por pregunta, sin dobles negaciones).
+6. No repitas la misma respuesta correcta en la misma posición en todas las preguntas.
+
 Responde ÚNICAMENTE con un objeto JSON válido con la siguiente estructura exacta:
 {
   "teacherDiagnosis": {
@@ -606,7 +662,7 @@ function extractJsonObjectFromText(rawText) {
  * Respaldo directo hacia Gemini Interactions API usando `VITE_GEMINI_API_KEY`
  * cuando la Edge Function segura de Supabase no ha sido desplegada aún.
  */
-async function invokeDirectGeminiFallback(promptText, evidenceImageBase64) {
+async function invokeDirectGeminiFallback(promptText, evidenceImageBase64, onProgress) {
   const apiKey = import.meta.env?.VITE_GEMINI_API_KEY?.trim();
   if (!apiKey) return null;
 
@@ -620,10 +676,18 @@ async function invokeDirectGeminiFallback(promptText, evidenceImageBase64) {
     }
   }
 
-  for (const model of CANDIDATE_GEMINI_MODELS) {
+  for (const [modelIdx, model] of CANDIDATE_GEMINI_MODELS.entries()) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), MODEL_TIMEOUT_MS[model] || 120000);
     try {
+      onProgress?.(
+        modelIdx === 0
+          ? 'El Agente IA está redactando diapositivas, juegos y examen alineados a la meta del PIAR...'
+          : 'El primer modelo está saturado; reintentando con un modelo alterno de Gemini...'
+      );
       const response = await fetch('https://generativelanguage.googleapis.com/v1beta/interactions', {
         method: 'POST',
+        signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
           'x-goog-api-key': apiKey,
@@ -645,14 +709,78 @@ async function invokeDirectGeminiFallback(promptText, evidenceImageBase64) {
       const rawText = extractInteractionText(payload);
       if (!rawText) continue;
       const parsed = extractJsonObjectFromText(rawText);
-      if (Array.isArray(parsed?.slides) && parsed.slides.length > 0 && Array.isArray(parsed?.quizQuestions)) {
+      if (isCompleteGeneratedPackage(parsed)) {
         return { data: parsed, model };
       }
+      console.warn(`[piarAiEngine] Gemini (${model}) devolvió materiales incompletos; probando siguiente modelo.`);
     } catch (err) {
-      console.warn(`[piarAiEngine] Error en respaldo directo Gemini (${model}):`, err);
+      console.warn(`[piarAiEngine] Error en respaldo directo Gemini (${model}):`, err?.name === 'AbortError' ? 'tiempo agotado' : err);
+    } finally {
+      clearTimeout(timer);
     }
   }
   return null;
+}
+
+/**
+ * Invoca la ruta serverless segura de Vercel `/api/aula-ia-generate`
+ * (la clave GEMINI_API_KEY vive solo en Vercel, nunca en el navegador).
+ */
+async function invokeVercelGeminiApi(promptText, evidenceImageBase64, onProgress) {
+  if (vercelApiUnavailable || typeof fetch !== 'function') return null;
+  try {
+    onProgress?.('Conectando con el Agente IA en servidor seguro (Vercel)...');
+    let image = null;
+    if (evidenceImageBase64 && evidenceImageBase64.includes('base64,')) {
+      const [meta, base64Data] = evidenceImageBase64.split('base64,');
+      const mimeMatch = meta.match(/data:(.*?);/);
+      image = { data: base64Data, mimeType: mimeMatch ? mimeMatch[1] : 'image/jpeg' };
+    }
+
+    const headers = { 'Content-Type': 'application/json' };
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (token) headers.Authorization = `Bearer ${token}`;
+    } catch {
+      // Continuar sin token si no hay sesión Supabase activa
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 65000);
+    let response;
+    try {
+      response = await fetch('/api/aula-ia-generate', {
+        method: 'POST',
+        signal: controller.signal,
+        headers,
+        body: JSON.stringify({ prompt: promptText, image })
+      });
+    } finally {
+      clearTimeout(timer);
+    }
+
+    if (response.status === 404 || response.status === 405) {
+      vercelApiUnavailable = true;
+      return null;
+    }
+
+    const contentType = response.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      vercelApiUnavailable = true;
+      return null;
+    }
+
+    const payload = await response.json();
+    if (!response.ok || !payload?.data || !isCompleteGeneratedPackage(payload.data)) {
+      console.warn('[piarAiEngine] /api/aula-ia-generate no devolvió paquete válido:', payload?.error || response.status);
+      return null;
+    }
+    return payload;
+  } catch (err) {
+    console.warn('[piarAiEngine] /api/aula-ia-generate no disponible:', err?.name === 'AbortError' ? 'tiempo agotado' : err);
+    return null;
+  }
 }
 
 /**
@@ -660,6 +788,7 @@ async function invokeDirectGeminiFallback(promptText, evidenceImageBase64) {
  * Devuelve `{ data, model }` o `null` si el servicio no está disponible.
  */
 async function invokeSecureGeminiFunction(promptText, evidenceImageBase64) {
+  if (secureFunctionUnavailable) return null;
   try {
     if (!supabase?.functions) return null;
 
@@ -674,12 +803,18 @@ async function invokeSecureGeminiFunction(promptText, evidenceImageBase64) {
       body: { prompt: promptText, image }
     });
 
-    if (error || !data?.data) {
+    if (error || !data?.data || !isCompleteGeneratedPackage(data.data)) {
+      // No desplegada (404) o sin permisos: no reintentar en cada generación
+      const status = error?.context?.status;
+      if (status === 404 || status === 401 || status === 403 || status === 503) {
+        secureFunctionUnavailable = true;
+      }
       console.warn('[piarAiEngine] Edge Function aula-ia-generate no disponible:', error || data?.error);
       return null;
     }
     return data;
   } catch (err) {
+    secureFunctionUnavailable = true;
     console.warn('[piarAiEngine] Error invocando aula-ia-generate:', err);
     return null;
   }
@@ -696,7 +831,8 @@ export async function generateAdaptivePackageWithGemini({
   carenciaObservada = '',
   teacherNotes = '',
   evidenceImageBase64 = null,
-  maxAttempts = 3
+  maxAttempts = 3,
+  onProgress = null
 }) {
   const profile = extractStudentPedagogicalProfile(piar);
 
@@ -741,10 +877,13 @@ export async function generateAdaptivePackageWithGemini({
       teacherNotes: finalNotes
     });
 
+    onProgress?.('Leyendo el PIAR y preparando la meta de aprendizaje para el Agente IA...');
     const remote =
+      (await invokeVercelGeminiApi(promptText, evidenceImageBase64, onProgress)) ||
       (await invokeSecureGeminiFunction(promptText, evidenceImageBase64)) ||
-      (await invokeDirectGeminiFallback(promptText, evidenceImageBase64));
+      (await invokeDirectGeminiFallback(promptText, evidenceImageBase64, onProgress));
     if (remote?.data) {
+      onProgress?.('Validando coherencia entre diapositivas, juegos y examen...');
       return buildCompletePackageObject({
         profile,
         subject: finalSubject,
@@ -755,11 +894,13 @@ export async function generateAdaptivePackageWithGemini({
         maxAttempts,
         areaMatch,
         generated: remote.data,
-        engineSource: `Gemini API (${remote.model})`
+        engineSource: `Gemini API (${remote.model})`,
+        engineMode: 'gemini'
       });
     }
   }
 
+  onProgress?.('La IA no respondió a tiempo; armando materiales de respaldo con el PIAR...');
   // Motor Psicopedagógico Adaptativo Local (nutrido directamente por los datos del PIAR del estudiante)
   const fallbackGenerated = buildContextualPedagogicalContent({
     profile,
@@ -780,7 +921,8 @@ export async function generateAdaptivePackageWithGemini({
     maxAttempts,
     areaMatch,
     generated: fallbackGenerated,
-    engineSource: 'Motor Psicopedagógico PIAR (Gemini Ready)'
+    engineSource: 'Plantilla local de respaldo (Gemini no respondió)',
+    engineMode: 'local'
   });
 }
 
@@ -794,9 +936,21 @@ function buildCompletePackageObject({
   maxAttempts,
   areaMatch,
   generated,
-  engineSource
+  engineSource,
+  engineMode = 'local'
 }) {
-  const normalizedGames = normalizeGames(generated.games);
+  const sanitizedQuiz = sanitizeQuizQuestions(generated.quizQuestions);
+  const quizQuestions = sanitizedQuiz.length >= 3 ? sanitizedQuiz : generated.quizQuestions;
+
+  // Completar los 4 juegos: los válidos de la IA + los derivados del mismo contenido para los tipos faltantes
+  const aiGames = normalizeGames(generated.games);
+  const presentTypes = new Set(aiGames.map((g) => g.type));
+  const derivedGames =
+    aiGames.length >= 4 ? [] : deriveGamesFromPackage({ ...generated, quizQuestions });
+  const games = [...aiGames, ...derivedGames.filter((g) => !presentTypes.has(g.type))]
+    .slice(0, 4)
+    .map((g, idx) => ({ ...g, id: `game-${idx + 1}-${g.type}` }));
+
   const defaultYoutube = buildDefaultYoutubeVideo(subject, topic);
   // Nunca confiar en un videoId inventado por el LLM; conservar solo búsqueda, título y momentos clave de la IA + videoId verificado por defecto
   const youtubeVideo = {
@@ -824,6 +978,7 @@ function buildCompletePackageObject({
     status: 'draft', // Se genera en borrador para supervisión previa del docente antes de publicar
     maxAttempts: Number(maxAttempts) || 3,
     engineSource,
+    engineMode,
     createdAt: new Date().toISOString(),
     publishedAt: null,
     piarContextSnapshot: {
@@ -839,8 +994,8 @@ function buildCompletePackageObject({
     slides: generated.slides,
     audioCapsule: generated.audioCapsule,
     videoGuide: generated.videoGuide,
-    quizQuestions: generated.quizQuestions,
-    games: normalizedGames.length > 0 ? normalizedGames : deriveGamesFromPackage(generated),
+    quizQuestions,
+    games,
     youtubeVideo
   };
 }

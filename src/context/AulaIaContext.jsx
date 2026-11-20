@@ -2,11 +2,28 @@ import { createContext, useContext, useState, useEffect, useCallback, useRef } f
 import localforage from 'localforage';
 import { supabase } from '../lib/supabaseClient';
 import { generateAdaptivePackageWithGemini, extractYoutubeVideoId } from '../lib/piarAiEngine';
+import { syncStudentActivityToCloud } from '../lib/studentAccessService';
+import { ensureVerifiedPackageYoutube } from '../lib/youtubeVerifier';
 
 const AulaIaContext = createContext(null);
 
 const STORAGE_PACKAGES_KEY = 'piar_aula_ia_packages_v3';
 const STORAGE_ACTIVITY_KEY = 'piar_aula_ia_activity_v3';
+const STUDENT_SESSION_KEY = 'piar_student_session_v1';
+
+function readActiveStudentCredentials() {
+  try {
+    const raw = window.localStorage.getItem(STUDENT_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (parsed?.role === 'student' && parsed?.studentDoc && parsed?.accessPin) {
+      return { studentDoc: parsed.studentDoc, accessPin: parsed.accessPin };
+    }
+  } catch {
+    // Ignorar
+  }
+  return null;
+}
 
 function createInitialActivityState() {
   return {
@@ -83,6 +100,17 @@ export function AulaIaProvider({ children }) {
     }
   }, []);
 
+  const syncActivityIfStudent = useCallback((packageId, updatedActivity) => {
+    const creds = readActiveStudentCredentials();
+    if (!creds || !packageId || !updatedActivity) return;
+    syncStudentActivityToCloud({
+      studentDoc: creds.studentDoc,
+      accessPin: creds.accessPin,
+      packageId,
+      activity: updatedActivity
+    });
+  }, []);
+
   // Sincroniza los paquetes del estudiante en la base de datos Supabase dentro del registro del PIAR (sin tocar anexo1, anexo2 ni anexo3)
   const syncStudentPackagesToDatabase = useCallback(async (piar, studentPackagesList) => {
     if (!piar?.id || piar.id === 'blanco-temp' || String(piar.id).startsWith('demo-') || String(piar.id).startsWith('student-')) {
@@ -102,24 +130,128 @@ export function AulaIaProvider({ children }) {
     }
   }, []);
 
-  // Hidrata automáticamente los paquetes que ya estén guardados en la base de datos para ese estudiante al seleccionarlo
+  // Hidrata automáticamente los paquetes y la telemetría que estén guardados en la base de datos para ese estudiante
   const hydrateFromPiarRecord = useCallback(
     (piar) => {
       if (!piar?.id) return;
       const dbPackages = piar?.data?.aula_ia_packages;
       if (Array.isArray(dbPackages) && dbPackages.length > 0) {
         const filteredDb = dbPackages.filter((p) => !deletedPackageIdsRef.current.has(p?.id));
-        if (filteredDb.length === 0) return;
+        if (filteredDb.length > 0) {
+          setPackagesByStudent((prev) => {
+            const localList = prev[piar.id] || [];
+            if (localList.length >= filteredDb.length) return prev;
+            const next = { ...prev, [piar.id]: filteredDb };
+            persistPackages(next);
+            return next;
+          });
+        }
+      }
+
+      const dbActivity = piar?.data?.aula_ia_activity;
+      if (dbActivity && typeof dbActivity === 'object') {
+        setActivityByPackage((prev) => {
+          let changed = false;
+          const next = { ...prev };
+          Object.entries(dbActivity).forEach(([pkgId, remoteAct]) => {
+            if (!remoteAct || typeof remoteAct !== 'object') return;
+            const localAct = prev[pkgId];
+            const remoteAttempts = remoteAct.attempts?.length || 0;
+            const localAttempts = localAct?.attempts?.length || 0;
+            const remoteTs = Date.parse(remoteAct.lastInteractionAt || '') || 0;
+            const localTs = Date.parse(localAct?.lastInteractionAt || '') || 0;
+            if (!localAct || remoteAttempts > localAttempts || remoteTs > localTs) {
+              next[pkgId] = remoteAct;
+              changed = true;
+            }
+          });
+          if (changed) persistActivity(next);
+          return changed ? next : prev;
+        });
+      }
+    },
+    [persistPackages, persistActivity]
+  );
+
+  // Consulta fresca directa desde Supabase para ver actividad e intentos en tiempo real sin recargar la página
+  const refreshActivityFromCloud = useCallback(
+    async (piarId) => {
+      if (
+        !piarId ||
+        piarId === 'blanco-temp' ||
+        String(piarId).startsWith('demo-') ||
+        String(piarId).startsWith('student-')
+      ) {
+        return false;
+      }
+      try {
+        const { data, error } = await supabase
+          .from('piars')
+          .select('data')
+          .eq('id', piarId)
+          .single();
+
+        if (error || !data?.data) return false;
+
+        const dbActivity = data.data.aula_ia_activity;
+        if (dbActivity && typeof dbActivity === 'object') {
+          setActivityByPackage((prev) => {
+            const next = { ...prev };
+            let changed = false;
+            Object.entries(dbActivity).forEach(([pkgId, remoteAct]) => {
+              if (!remoteAct || typeof remoteAct !== 'object') return;
+              const prevJson = JSON.stringify(prev[pkgId] || null);
+              const nextJson = JSON.stringify(remoteAct);
+              if (prevJson !== nextJson) {
+                next[pkgId] = remoteAct;
+                changed = true;
+              }
+            });
+            if (changed) persistActivity(next);
+            return changed ? next : prev;
+          });
+        }
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [persistActivity]
+  );
+
+  // Hidrata paquetes publicados y actividad directamente desde el inicio de sesión del estudiante
+  const hydrateFromStudentLogin = useCallback(
+    ({ piarId, publishedPackages = [], activityMap = {} }) => {
+      if (!piarId) return;
+      if (Array.isArray(publishedPackages)) {
         setPackagesByStudent((prev) => {
-          const localList = prev[piar.id] || [];
-          if (localList.length >= filteredDb.length) return prev;
-          const next = { ...prev, [piar.id]: filteredDb };
+          const next = { ...prev, [piarId]: publishedPackages };
           persistPackages(next);
           return next;
         });
       }
+      if (activityMap && typeof activityMap === 'object') {
+        setActivityByPackage((prev) => {
+          const next = { ...prev };
+          let changed = false;
+          Object.entries(activityMap).forEach(([pkgId, remoteAct]) => {
+            if (!remoteAct || typeof remoteAct !== 'object') return;
+            const localAct = prev[pkgId];
+            const remoteAttempts = remoteAct.attempts?.length || 0;
+            const localAttempts = localAct?.attempts?.length || 0;
+            const remoteTs = Date.parse(remoteAct.lastInteractionAt || '') || 0;
+            const localTs = Date.parse(localAct?.lastInteractionAt || '') || 0;
+            if (!localAct || remoteAttempts >= localAttempts || remoteTs >= localTs) {
+              next[pkgId] = remoteAct;
+              changed = true;
+            }
+          });
+          if (changed) persistActivity(next);
+          return changed ? next : prev;
+        });
+      }
     },
-    [persistPackages]
+    [persistPackages, persistActivity]
   );
 
   // Purgar cualquier paquete semilla antiguo que haya quedado en memoria antes de este flujo
@@ -144,7 +276,17 @@ export function AulaIaProvider({ children }) {
 
   // Crear un nuevo paquete adaptativo con Gemini API para un estudiante (en borrador hasta que el docente lo supervise y publique)
   const createAdaptivePackage = useCallback(
-    async ({ piar, subject, topic, carenciaObservada, teacherNotes, evidenceImageBase64, maxAttempts, publishImmediately = false }) => {
+    async ({
+      piar,
+      subject,
+      topic,
+      carenciaObservada,
+      teacherNotes,
+      evidenceImageBase64,
+      maxAttempts,
+      publishImmediately = false,
+      onProgress = null
+    }) => {
       const newPkg = await generateAdaptivePackageWithGemini({
         piar,
         subject,
@@ -152,9 +294,17 @@ export function AulaIaProvider({ children }) {
         carenciaObservada,
         teacherNotes,
         evidenceImageBase64,
-        maxAttempts
+        maxAttempts,
+        onProgress
       });
       newPkg.status = publishImmediately ? 'published' : 'draft';
+      // Verificar en YouTube que el video asignado realmente funcione antes de entregarlo
+      onProgress?.('Verificando disponibilidad del video de apoyo en YouTube...');
+      newPkg.youtubeVideo = await ensureVerifiedPackageYoutube(
+        newPkg.youtubeVideo,
+        newPkg.subject || subject,
+        newPkg.topic || topic
+      );
 
       const initialAct = createInitialActivityState();
 
@@ -299,10 +449,11 @@ export function AulaIaProvider({ children }) {
         };
         const next = { ...prev, [packageId]: updated };
         persistActivity(next);
+        syncActivityIfStudent(packageId, updated);
         return next;
       });
     },
-    [persistActivity]
+    [persistActivity, syncActivityIfStudent]
   );
 
   // Telemetría 2: Cápsula de Audio
@@ -322,10 +473,11 @@ export function AulaIaProvider({ children }) {
         };
         const next = { ...prev, [packageId]: updated };
         persistActivity(next);
+        syncActivityIfStudent(packageId, updated);
         return next;
       });
     },
-    [persistActivity]
+    [persistActivity, syncActivityIfStudent]
   );
 
   // Telemetría 3: Video / Guía Paso a Paso
@@ -351,15 +503,27 @@ export function AulaIaProvider({ children }) {
         };
         const next = { ...prev, [packageId]: updated };
         persistActivity(next);
+        syncActivityIfStudent(packageId, updated);
         return next;
       });
     },
-    [persistActivity]
+    [persistActivity, syncActivityIfStudent]
   );
 
-  // Telemetría 4: Juegos Didácticos Interactivos
+  // Telemetría 4: Juegos Didácticos Interactivos (realización + calificación por juego para el docente)
   const recordGameTelemetry = useCallback(
-    (packageId, { gameId = null, totalGames = 4, addedSeconds = 5, completed = false } = {}) => {
+    (
+      packageId,
+      {
+        gameId = null,
+        gameLabel = '',
+        totalGames = 4,
+        addedSeconds = 5,
+        completed = false,
+        score = null,
+        total = null
+      } = {}
+    ) => {
       if (!packageId) return;
       setActivityByPackage((prev) => {
         const current = prev[packageId] || createInitialActivityState();
@@ -372,9 +536,21 @@ export function AulaIaProvider({ children }) {
         );
         const maxPct = Math.max(current.gamesMaxPercent || 0, calculatedPct);
 
+        const nextScores = { ...(current.gamesScores || {}) };
+        if (gameId && typeof score === 'number' && typeof total === 'number' && total > 0) {
+          nextScores[gameId] = {
+            label: gameLabel || nextScores[gameId]?.label || gameId,
+            score,
+            total,
+            percentage: Math.min(100, Math.max(0, Math.round((score / total) * 100))),
+            updatedAt: new Date().toISOString()
+          };
+        }
+
         const updated = {
           ...current,
           gamesCompleted: completedArr,
+          gamesScores: nextScores,
           gamesPlayCount: (current.gamesPlayCount || 0) + 1,
           gamesMaxPercent: maxPct,
           gamesTimeSec: (current.gamesTimeSec || 0) + addedSeconds,
@@ -382,10 +558,11 @@ export function AulaIaProvider({ children }) {
         };
         const next = { ...prev, [packageId]: updated };
         persistActivity(next);
+        syncActivityIfStudent(packageId, updated);
         return next;
       });
     },
-    [persistActivity]
+    [persistActivity, syncActivityIfStudent]
   );
 
   // Evaluación Multi-Intento: Registrar un nuevo intento del estudiante
@@ -445,29 +622,79 @@ export function AulaIaProvider({ children }) {
         };
         const next = { ...prev, [pkg.id]: updated };
         persistActivity(next);
+        syncActivityIfStudent(pkg.id, updated);
         return next;
       });
 
       return newAttempt;
     },
-    [activityByPackage, persistActivity]
+    [activityByPackage, persistActivity, syncActivityIfStudent]
+  );
+
+  const grantExtraAttemptForPackage = useCallback(
+    async (piarId, packageId, piarObj = null) => {
+      if (!piarId || !packageId) return;
+      let updatedList = null;
+
+      setPackagesByStudent((prev) => {
+        const list = prev[piarId] || [];
+        updatedList = list.map((pkg) => {
+          if (pkg.id !== packageId) return pkg;
+          return {
+            ...pkg,
+            maxAttempts: (Number(pkg.maxAttempts) || 3) + 1
+          };
+        });
+        const next = { ...prev, [piarId]: updatedList };
+        persistPackages(next);
+        return next;
+      });
+
+      if (piarObj && Array.isArray(updatedList)) {
+        await syncStudentPackagesToDatabase(piarObj, updatedList);
+      }
+    },
+    [persistPackages, syncStudentPackagesToDatabase]
   );
 
   const resetAttemptsForPackage = useCallback(
-    (packageId) => {
+    async (packageId, piarObj = null) => {
       if (!packageId) return;
+      const existing = activityByPackage[packageId] || createInitialActivityState();
+      const updated = {
+        ...existing,
+        attempts: [],
+        lastInteractionAt: new Date().toISOString()
+      };
+
       setActivityByPackage((prev) => {
-        const curr = prev[packageId] || createInitialActivityState();
-        const updated = {
-          ...curr,
-          attempts: []
-        };
         const next = { ...prev, [packageId]: updated };
         persistActivity(next);
         return next;
       });
+
+      if (
+        piarObj?.id &&
+        piarObj.id !== 'blanco-temp' &&
+        !String(piarObj.id).startsWith('demo-')
+      ) {
+        try {
+          await supabase.rpc('merge_piar_data', {
+            p_piar_id: piarObj.id,
+            p_data: {
+              aula_ia_activity: {
+                [packageId]: updated
+              }
+            },
+            p_nombre: piarObj.nombre || piarObj.data?.estudianteNombre || 'Estudiante',
+            p_grado: piarObj.grado || piarObj.data?.grado || ''
+          });
+        } catch (err) {
+          console.warn('[AulaIaContext] Error sincronizando reinicio de intentos:', err);
+        }
+      }
     },
-    [persistActivity]
+    [activityByPackage, persistActivity]
   );
 
   return (
@@ -477,6 +704,8 @@ export function AulaIaProvider({ children }) {
         packagesByStudent,
         activityByPackage,
         hydrateFromPiarRecord,
+        hydrateFromStudentLogin,
+        refreshActivityFromCloud,
         createAdaptivePackage,
         togglePackagePublishStatus,
         deleteAdaptivePackage,
@@ -486,6 +715,7 @@ export function AulaIaProvider({ children }) {
         recordVideoTelemetry,
         recordGameTelemetry,
         submitQuizAttempt,
+        grantExtraAttemptForPackage,
         resetAttemptsForPackage
       }}
     >

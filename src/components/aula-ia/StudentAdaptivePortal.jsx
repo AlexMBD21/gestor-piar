@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { getPackageGames } from '../../lib/aulaGames';
 import { hydrateCoherentPackage } from '../../lib/piarAiEngine';
 import AdaptiveSlidesViewer from './AdaptiveSlidesViewer';
@@ -18,35 +18,49 @@ function loadSavedStudentModule() {
   return 'slides';
 }
 
-const FONT_SCALES = [
-  { id: 'normal', label: 'A', title: 'Tamaño de letra estándar' },
-  { id: 'large', label: 'A+', title: 'Letra grande para lectura cómoda' },
-  { id: 'xlarge', label: 'A++', title: 'Letra extra grande (máxima legibilidad)' }
-];
-
-function loadSavedFontScale() {
-  try {
-    const saved = window.localStorage.getItem('piar_student_font_scale');
-    if (FONT_SCALES.some((f) => f.id === saved)) return saved;
-  } catch {
-    // Ignorar restricciones de almacenamiento
-  }
-  return 'normal';
-}
-
 export default function StudentAdaptivePortal({
   pkg: rawPkg,
   activity,
   isMirrorPreview = false,
+  hideStandaloneBar = false,
+  externalFullscreen = false,
+  onToggleExternalFullscreen,
   studentProfile,
+  onBackToSubjects,
   onSignOutStudent
 }) {
   const pkg = useMemo(() => hydrateCoherentPackage(rawPkg), [rawPkg]);
   const [activeModule, setActiveModule] = useState(loadSavedStudentModule); // 'slides' | 'video' | 'games' | 'quiz'
   const [isWelcomeExpanded, setIsWelcomeExpanded] = useState(false);
-  const [focusMode, setFocusMode] = useState(false);
-  const [fontScale, setFontScale] = useState(loadSavedFontScale);
   const [remediationFocus, setRemediationFocus] = useState(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const portalContainerRef = useRef(null);
+
+  useEffect(() => {
+    const onFsChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
+    return () => document.removeEventListener('fullscreenchange', onFsChange);
+  }, []);
+
+  const handleToggleFullscreen = async () => {
+    const el = portalContainerRef.current;
+    if (!el) return;
+    try {
+      if (!document.fullscreenElement && el.requestFullscreen) {
+        await el.requestFullscreen();
+        return;
+      }
+      if (document.fullscreenElement && document.exitFullscreen) {
+        await document.exitFullscreen();
+        return;
+      }
+    } catch {
+      // Fallback CSS fullscreen si el entorno restringe requestFullscreen
+    }
+    setIsFullscreen((prev) => !prev);
+  };
 
   useEffect(() => {
     try {
@@ -84,19 +98,7 @@ export default function StudentAdaptivePortal({
   ).length;
   const gamesPct = activity?.gamesMaxPercent || 0;
   const attempts = activity?.attempts || [];
-  const bestQuizPct =
-    attempts.length > 0 ? Math.max(...attempts.map((a) => a.percentage || 0)) : null;
-
-  const handleCycleFontScale = () => {
-    const idx = FONT_SCALES.findIndex((f) => f.id === fontScale);
-    const next = FONT_SCALES[(idx + 1) % FONT_SCALES.length].id;
-    setFontScale(next);
-    try {
-      window.localStorage.setItem('piar_student_font_scale', next);
-    } catch {
-      // Ignorar restricciones de almacenamiento
-    }
-  };
+  const quizCompleted = attempts.length > 0;
 
   const handleNavigateFromQuiz = (targetModule, context = null) => {
     const safeTarget = targetModule === 'audio' ? 'slides' : targetModule;
@@ -107,8 +109,6 @@ export default function StudentAdaptivePortal({
     }
     setActiveModule(safeTarget);
   };
-
-  const currentScaleMeta = FONT_SCALES.find((f) => f.id === fontScale) || FONT_SCALES[0];
 
   const modules = [
     {
@@ -143,19 +143,21 @@ export default function StudentAdaptivePortal({
       step: '04',
       icon: 'quiz',
       label: 'Mi Examen',
-      metric: bestQuizPct !== null ? `${bestQuizPct}%` : `${pkg.maxAttempts || 3} int.`,
-      progress: bestQuizPct !== null ? bestQuizPct : 0,
-      done: bestQuizPct === 100
+      metric: quizCompleted ? 'Realizado' : `${pkg.maxAttempts || 3} int.`,
+      progress: quizCompleted ? 100 : 0,
+      done: quizCompleted
     }
   ];
 
+  const isAnyFullscreen = isFullscreen || externalFullscreen;
+
   return (
     <div
-      className={`aia-student-portal-wrap ${focusMode ? 'is-focus-mode' : ''}`}
-      data-font-scale={fontScale}
+      ref={portalContainerRef}
+      className={`aia-student-portal-wrap ${isFullscreen ? 'is-fullscreen' : ''}`}
     >
-      {/* Barra superior estudiantil (solo en el portal directo del estudiante) */}
-      {!isMirrorPreview && !focusMode && (
+      {/* Barra superior estudiantil (solo si no la provee la página contenedora) */}
+      {!isMirrorPreview && !hideStandaloneBar && !isAnyFullscreen && (
         <header className="aia-student-standalone-bar">
           <div className="aia-student-brand">
             <div className="aia-student-brand-badge">
@@ -181,21 +183,31 @@ export default function StudentAdaptivePortal({
         </header>
       )}
 
-      {/* Franja compacta de Foco de Estudio + Controles de Accesibilidad (DUA) */}
-      <section className={`aia-friendly-diag-card ${isWelcomeExpanded ? 'expanded' : 'collapsed'}`}>
+      {/* Franja compacta de Foco de Estudio (se oculta en pantalla completa) */}
+      {!isAnyFullscreen && (
+        <section className={`aia-friendly-diag-card ${isWelcomeExpanded ? 'expanded' : 'collapsed'}`}>
         <div className="aia-friendly-diag-top">
           <div className="aia-friendly-diag-badges">
+            {onBackToSubjects && (
+              <button
+                type="button"
+                className="aia-back-subjects-btn"
+                onClick={onBackToSubjects}
+                title="Volver a la lista de tus materias"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                  arrow_back
+                </span>
+                <span>Mis Materias</span>
+              </button>
+            )}
+
             <span className="aia-subject-tag">
               <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
                 auto_awesome
               </span>
               <span>{pkg.subject}</span>
             </span>
-
-            <div className="aia-focus-topic-inline" title={pkg.topic}>
-              <span className="aia-focus-topic-kicker">Hoy fortaleces:</span>
-              <strong className="aia-focus-topic-text">{pkg.topic}</strong>
-            </div>
 
             {isMirrorPreview && (
               <span className="aia-mirror-indicator">
@@ -210,53 +222,25 @@ export default function StudentAdaptivePortal({
           <div className="aia-friendly-diag-actions">
             <button
               type="button"
-              className={`aia-dua-chip-btn ${fontScale !== 'normal' ? 'active' : ''}`}
-              onClick={handleCycleFontScale}
-              title={`${currentScaleMeta.title} (clic para cambiar)`}
-              aria-label={`Cambiar tamaño de letra. Actual: ${currentScaleMeta.title}`}
+              className="aia-dua-chip-btn"
+              onClick={() => setIsWelcomeExpanded((v) => !v)}
+              aria-expanded={isWelcomeExpanded}
+              title={isWelcomeExpanded ? 'Ocultar guía de bienvenida' : 'Ver tu meta y consejo de hoy'}
             >
               <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                text_fields
+                {isWelcomeExpanded ? 'expand_less' : 'tips_and_updates'}
               </span>
-              <span className="aia-tabular">{currentScaleMeta.label}</span>
+              <span>{isWelcomeExpanded ? 'Ocultar guía' : 'Meta y consejo'}</span>
             </button>
-
-            <button
-              type="button"
-              className={`aia-dua-chip-btn ${focusMode ? 'active' : ''}`}
-              onClick={() => {
-                setFocusMode((prev) => {
-                  const next = !prev;
-                  if (next) setIsWelcomeExpanded(false);
-                  return next;
-                });
-              }}
-              title={focusMode ? 'Salir de modo enfoque' : 'Activar modo enfoque sin distracciones'}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                {focusMode ? 'visibility' : 'center_focus_strong'}
-              </span>
-              <span>{focusMode ? 'Salir Enfoque' : 'Enfoque'}</span>
-            </button>
-
-            {!focusMode && (
-              <button
-                type="button"
-                className="aia-dua-chip-btn"
-                onClick={() => setIsWelcomeExpanded((v) => !v)}
-                aria-expanded={isWelcomeExpanded}
-                title={isWelcomeExpanded ? 'Ocultar guía de bienvenida' : 'Ver tu meta y consejo de hoy'}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                  {isWelcomeExpanded ? 'expand_less' : 'tips_and_updates'}
-                </span>
-                <span>{isWelcomeExpanded ? 'Ocultar guía' : 'Meta y consejo'}</span>
-              </button>
-            )}
           </div>
         </div>
 
-        {isWelcomeExpanded && !focusMode && (
+        <div className="aia-focus-topic-row">
+          <span className="aia-focus-topic-kicker">Hoy fortaleces:</span>
+          <strong className="aia-focus-topic-text">{pkg.topic}</strong>
+        </div>
+
+        {isWelcomeExpanded && (
           <div className="aia-friendly-expanded-body">
             <div className="aia-friendly-header-line">
               <h3 className="aia-friendly-title">{studentDiag.greetingTitle}</h3>
@@ -285,47 +269,63 @@ export default function StudentAdaptivePortal({
             </div>
           </div>
         )}
-      </section>
+        </section>
+      )}
 
-      {/* Stepper compacto de los 4 pasos reales impulsados por el Agente IA */}
-      <nav className="aia-student-module-grid aia-stepper-compact" aria-label="Ruta de estudio y evaluación">
-        {modules.map((m) => {
-          const isActive = activeModule === m.id;
-          return (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => {
-                if (m.id !== 'slides') setRemediationFocus(null);
-                setActiveModule(m.id);
-              }}
-              aria-current={isActive ? 'step' : undefined}
-              className={`aia-module-nav-card ${isActive ? 'active' : ''} ${m.done ? 'completed' : ''}`}
-            >
-              <div className="aia-module-nav-inline">
-                <span className="aia-module-icon-wrap">
-                  <span className="material-symbols-outlined aia-module-icon">{m.icon}</span>
-                </span>
-                <div className="aia-module-text-stack">
-                  <div className="aia-module-nav-top">
-                    <span className="aia-module-step aia-tabular">PASO {m.step}</span>
-                    <span className={`aia-module-metric aia-tabular ${m.done ? 'done' : ''}`}>
-                      {m.done ? `✓ ${m.metric}` : m.metric}
-                    </span>
+      {/* Stepper compacto de los 4 pasos + botón de Pantalla Completa integrado al lado */}
+      <div className="aia-stepper-with-fs">
+        <nav className="aia-student-module-grid aia-stepper-compact" aria-label="Ruta de estudio y evaluación">
+          {modules.map((m) => {
+            const isActive = activeModule === m.id;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => {
+                  if (m.id !== 'slides') setRemediationFocus(null);
+                  setActiveModule(m.id);
+                }}
+                aria-current={isActive ? 'step' : undefined}
+                className={`aia-module-nav-card ${isActive ? 'active' : ''} ${m.done ? 'completed' : ''}`}
+              >
+                <div className="aia-module-nav-inline">
+                  <span className="aia-module-icon-wrap">
+                    <span className="material-symbols-outlined aia-module-icon">{m.icon}</span>
+                  </span>
+                  <div className="aia-module-text-stack">
+                    <div className="aia-module-nav-top">
+                      <span className="aia-module-step aia-tabular">PASO {m.step}</span>
+                      <span className={`aia-module-metric aia-tabular ${m.done ? 'done' : ''}`}>
+                        {m.done ? `✓ ${m.metric}` : m.metric}
+                      </span>
+                    </div>
+                    <span className="aia-module-label">{m.label}</span>
                   </div>
-                  <span className="aia-module-label">{m.label}</span>
                 </div>
-              </div>
-              <div className="aia-module-mini-bar" aria-hidden="true">
-                <div
-                  className="aia-module-mini-bar-fill"
-                  style={{ width: `${Math.max(isActive ? 14 : 0, m.progress)}%` }}
-                />
-              </div>
-            </button>
-          );
-        })}
-      </nav>
+                <div className="aia-module-mini-bar" aria-hidden="true">
+                  <div
+                    className="aia-module-mini-bar-fill"
+                    style={{ width: `${Math.max(isActive ? 14 : 0, m.progress)}%` }}
+                  />
+                </div>
+              </button>
+            );
+          })}
+        </nav>
+
+        <button
+          type="button"
+          className={`aia-stepper-fs-btn ${isAnyFullscreen ? 'active' : ''}`}
+          onClick={onToggleExternalFullscreen ? onToggleExternalFullscreen : handleToggleFullscreen}
+          title={isAnyFullscreen ? 'Salir de pantalla completa (Esc)' : 'Ver en pantalla completa'}
+          aria-label={isAnyFullscreen ? 'Salir de pantalla completa' : 'Ver en pantalla completa'}
+        >
+          <span className="material-symbols-outlined">
+            {isAnyFullscreen ? 'fullscreen_exit' : 'fullscreen'}
+          </span>
+          <span>{isAnyFullscreen ? 'Salir' : 'Ampliar'}</span>
+        </button>
+      </div>
 
       {/* Escenario Activo */}
       <div className="aia-student-stage-container">

@@ -7,7 +7,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [studentDoc, setStudentDoc] = useState('');
-  const [studentPin, setStudentPin] = useState('1421');
+  const [studentPin, setStudentPin] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -183,31 +183,35 @@ export default function LoginPage() {
                 <span className="material-symbols-outlined floating-field-icon">pin</span>
                 <input
                   id="login-student-pin"
-                  type="text"
-                  className="form-floating-input aia-tabular"
+                  type={showPassword ? 'text' : 'password'}
+                  inputMode="numeric"
+                  className="form-floating-input has-action-btn aia-tabular"
                   value={studentPin}
-                  onChange={(e) => setStudentPin(e.target.value)}
+                  onChange={(e) => setStudentPin(e.target.value.replace(/\D+/g, '').slice(0, 6))}
                   placeholder=" "
+                  minLength={4}
+                  maxLength={6}
                   required
                 />
                 <label htmlFor="login-student-pin" className="form-floating-label">
-                  Código de Aula (Por defecto: 1421)
+                  PIN de Acceso (asignado por tu profesor)
                 </label>
+                <button
+                  type="button"
+                  className="floating-action-btn"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Ocultar PIN' : 'Mostrar PIN'}
+                  tabIndex={-1}
+                >
+                  <span className="material-symbols-outlined">
+                    {showPassword ? 'visibility_off' : 'visibility'}
+                  </span>
+                </button>
               </div>
 
-              <button
-                type="button"
-                className="aia-student-demo-fill"
-                onClick={() => {
-                  setStudentDoc('1065892341');
-                  setStudentPin('1421');
-                }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                  bolt
-                </span>
-                <span>Autocompletar alumno de ejemplo (Doc: 1065892341)</span>
-              </button>
+              <p className="aia-student-login-helper">
+                ¿No tienes tu PIN? Pídele a tu profesor que active tu acceso desde el Aula Adaptativa IA.
+              </p>
             </>
           )}
 
@@ -257,9 +261,9 @@ export default function LoginPage() {
               </>
             ) : (
               <>
-                Portal Educativo exclusivo del Estudiante (Apartado 2).
+                Portal Educativo exclusivo del Estudiante (Mi Aula Adaptativa).
                 <br />
-                Ingresa con tu documento para ver tu diagnóstico, diapositivas, audio y evaluación.
+                Ingresa con tu documento y PIN para ver tus diapositivas, videos, juegos y evaluaciones.
               </>
             )}
           </p>

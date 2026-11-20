@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAulaIa } from '../../context/AulaIaContext';
 import { exportAdaptivePackageToPptx } from '../../lib/exportPiarPptx';
+import { speakTextSequence, stopSpeaking } from '../../lib/speechHelper';
 
 const VISUAL_THEMES = {
   concept: {
@@ -172,24 +173,105 @@ export default function AdaptiveSlidesViewer({
   const [activeStepIdx, setActiveStepIdx] = useState(0);
   const [showCheckGuide, setShowCheckGuide] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [autoNextCountdown, setAutoNextCountdown] = useState(null); // null | 5..1
+  const [speechError, setSpeechError] = useState(null);
   const [isExportingPptx, setIsExportingPptx] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const masteryStorageKey = pkg?.id ? `piar_slide_mastery_${pkg.id}` : null;
   const [masteryByStep, setMasteryByStep] = useState(() => loadMasteryMap(masteryStorageKey));
 
-  const deckContainerRef = useRef(null);
+  const countdownTimerRef = useRef(null);
+  const pendingAutoSpeakRef = useRef(false);
 
   const safeIndex = Math.min(Math.max(0, currentIndex), Math.max(0, slides.length - 1));
   const currentSlide = slides[safeIndex] || slides[0];
   const viewedSlides = activity?.slidesViewed || [1];
 
-  const stopSpeech = () => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
+  const clearAutoNextTimer = useCallback(() => {
+    if (countdownTimerRef.current) {
+      clearInterval(countdownTimerRef.current);
+      countdownTimerRef.current = null;
     }
+    setAutoNextCountdown(null);
+  }, []);
+
+  const stopSpeech = useCallback(() => {
+    pendingAutoSpeakRef.current = false;
+    clearAutoNextTimer();
+    stopSpeaking();
     setIsSpeaking(false);
-  };
+  }, [clearAutoNextTimer]);
+
+  const startSlideSpeech = useCallback(
+    (slideObj, slideIdx) => {
+      if (!slideObj) return;
+      const slideBullets = deriveBullets(slideObj);
+      const parts = [
+        cleanSlideShortTitle(slideObj.title),
+        slideObj.content,
+        slideBullets.length > 0 ? `Puntos clave: ${slideBullets.join('. ')}` : '',
+        slideObj.visualAnalogy ? `Imagínalo así: ${slideObj.visualAnalogy}` : '',
+        slideObj.keyTakeaway ? `Recuerda esto para tu examen: ${slideObj.keyTakeaway}` : ''
+      ].filter(Boolean);
+
+      if (pkg?.id) {
+        recordAudioTelemetry(pkg.id, {
+          incrementPlay: true,
+          progressPercent: Math.max(
+            activity?.audioMaxPercent || 0,
+            Math.round(((slideIdx + 1) / Math.max(1, slides.length)) * 100)
+          ),
+          addedSeconds: 3
+        });
+      }
+
+      speakTextSequence(parts, {
+        rate: 0.96,
+        onStart: () => setIsSpeaking(true),
+        onEnd: () => {
+          setIsSpeaking(false);
+          if (pkg?.id) {
+            recordAudioTelemetry(pkg.id, {
+              incrementPlay: false,
+              progressPercent: Math.min(
+                100,
+                Math.round(((slideIdx + 1) / Math.max(1, slides.length)) * 100)
+              ),
+              addedSeconds: 12,
+              completed: slideIdx === slides.length - 1
+            });
+          }
+
+          // Si hay siguiente lámina, iniciar cuenta regresiva de 5s para avanzar automáticamente
+          if (slideIdx < slides.length - 1) {
+            clearAutoNextTimer();
+            let remaining = 5;
+            setAutoNextCountdown(remaining);
+            countdownTimerRef.current = setInterval(() => {
+              remaining -= 1;
+              if (remaining <= 0) {
+                clearInterval(countdownTimerRef.current);
+                countdownTimerRef.current = null;
+                setAutoNextCountdown(null);
+                pendingAutoSpeakRef.current = true;
+                setShowCheckGuide(false);
+                setActiveStepIdx(0);
+                setCurrentIndex(slideIdx + 1);
+              } else {
+                setAutoNextCountdown(remaining);
+              }
+            }, 1000);
+          }
+        },
+        onError: (msg) => {
+          setIsSpeaking(false);
+          clearAutoNextTimer();
+          setSpeechError(msg || 'No se pudo activar la lectura en voz alta.');
+        }
+      });
+    },
+    [pkg?.id, activity?.audioMaxPercent, slides.length, recordAudioTelemetry, clearAutoNextTimer]
+  );
 
   useEffect(() => {
     setMasteryByStep(loadMasteryMap(masteryStorageKey));
@@ -206,7 +288,14 @@ export default function AdaptiveSlidesViewer({
     setActiveStepIdx(0);
     setShowCheckGuide(false);
     stopSpeech();
-  }, [remediationFocus, slides.length]);
+  }, [remediationFocus, slides.length, stopSpeech]);
+
+  // Si avanzó automáticamente al terminar el temporizador de audio, leer la nueva lámina
+  useEffect(() => {
+    if (!pendingAutoSpeakRef.current || !currentSlide) return;
+    pendingAutoSpeakRef.current = false;
+    startSlideSpeech(currentSlide, safeIndex);
+  }, [safeIndex, currentSlide, startSlideSpeech]);
 
   useEffect(() => {
     if (!pkg?.id || !currentSlide?.step) return;
@@ -214,15 +303,9 @@ export default function AdaptiveSlidesViewer({
   }, [pkg?.id, currentSlide?.step, slides.length, recordSlideTelemetry]);
 
   useEffect(() => {
-    const onFsChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
-    };
-    document.addEventListener('fullscreenchange', onFsChange);
     return () => {
-      document.removeEventListener('fullscreenchange', onFsChange);
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      if (countdownTimerRef.current) clearInterval(countdownTimerRef.current);
+      stopSpeaking();
     };
   }, []);
 
@@ -272,53 +355,22 @@ export default function AdaptiveSlidesViewer({
   };
 
   const handleToggleSpeech = () => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
-    if (isSpeaking) {
+    setSpeechError(null);
+    if (isSpeaking || autoNextCountdown !== null) {
       stopSpeech();
       return;
     }
+    startSlideSpeech(currentSlide, safeIndex);
+  };
 
-    try {
-      window.speechSynthesis.cancel();
-      const parts = [
-        cleanSlideShortTitle(currentSlide.title),
-        currentSlide.content,
-        bullets.length > 0 ? `Puntos clave: ${bullets.join('. ')}` : '',
-        currentSlide.visualAnalogy ? `Imagínalo así: ${currentSlide.visualAnalogy}` : '',
-        currentSlide.keyTakeaway ? `Recuerda esto para tu examen: ${currentSlide.keyTakeaway}` : ''
-      ].filter(Boolean);
-
-      const utterance = new SpeechSynthesisUtterance(parts.join('. '));
-      utterance.lang = 'es-CO';
-      utterance.rate = 0.94;
-      utterance.onend = () => {
-        setIsSpeaking(false);
-        if (pkg?.id) {
-          recordAudioTelemetry(pkg.id, {
-            incrementPlay: false,
-            progressPercent: Math.min(100, Math.round(((safeIndex + 1) / slides.length) * 100)),
-            addedSeconds: 12,
-            completed: safeIndex === slides.length - 1
-          });
-        }
-      };
-      utterance.onerror = () => setIsSpeaking(false);
-
-      if (pkg?.id) {
-        recordAudioTelemetry(pkg.id, {
-          incrementPlay: true,
-          progressPercent: Math.max(
-            activity?.audioMaxPercent || 0,
-            Math.round(((safeIndex + 1) / slides.length) * 100)
-          ),
-          addedSeconds: 3
-        });
-      }
-
-      setIsSpeaking(true);
-      window.speechSynthesis.speak(utterance);
-    } catch {
-      setIsSpeaking(false);
+  const handleAdvanceNowWithSpeech = () => {
+    clearAutoNextTimer();
+    if (safeIndex < slides.length - 1) {
+      const nextIdx = safeIndex + 1;
+      setShowCheckGuide(false);
+      setActiveStepIdx(0);
+      setCurrentIndex(nextIdx);
+      startSlideSpeech(slides[nextIdx], nextIdx);
     }
   };
 
@@ -347,24 +399,6 @@ export default function AdaptiveSlidesViewer({
     if (firstIdx >= 0) selectSlide(firstIdx);
   };
 
-  const handleToggleFullscreen = async () => {
-    const el = deckContainerRef.current;
-    if (!el) return;
-    try {
-      if (!document.fullscreenElement && el.requestFullscreen) {
-        await el.requestFullscreen();
-        return;
-      }
-      if (document.fullscreenElement && document.exitFullscreen) {
-        await document.exitFullscreen();
-        return;
-      }
-    } catch {
-      // Fallback CSS fullscreen si el entorno restringe requestFullscreen
-    }
-    setIsFullscreen((prev) => !prev);
-  };
-
   const handleKeyDown = (e) => {
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
     if (e.key === 'ArrowRight') {
@@ -378,10 +412,9 @@ export default function AdaptiveSlidesViewer({
 
   return (
     <div
-      ref={deckContainerRef}
       tabIndex={0}
       onKeyDown={handleKeyDown}
-      className={`aia-media-surface aia-ppt-shell ${isFullscreen ? 'is-fullscreen' : ''}`}
+      className="aia-media-surface aia-ppt-shell"
     >
       {/* Banner de Foco de Refuerzo cuando llega desde un error en el examen */}
       {remediationFocus && (
@@ -461,14 +494,24 @@ export default function AdaptiveSlidesViewer({
         <div className="aia-ppt-toolbar-actions">
           <button
             type="button"
-            className={`aia-tts-btn ${isSpeaking ? 'speaking' : ''}`}
+            className={`aia-tts-btn ${isSpeaking || autoNextCountdown !== null ? 'speaking' : ''}`}
             onClick={handleToggleSpeech}
-            title={isSpeaking ? 'Detener lectura en voz alta' : 'Escuchar esta lámina en voz alta'}
+            title={
+              isSpeaking || autoNextCountdown !== null
+                ? 'Detener lectura en voz alta'
+                : 'Escuchar esta lámina en voz alta'
+            }
           >
             <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>
-              {isSpeaking ? 'stop_circle' : 'volume_up'}
+              {isSpeaking || autoNextCountdown !== null ? 'stop_circle' : 'volume_up'}
             </span>
-            <span>{isSpeaking ? 'Detener voz' : 'Escuchar lámina'}</span>
+            <span>
+              {isSpeaking
+                ? 'Detener voz'
+                : autoNextCountdown !== null
+                  ? `Siguiente en ${autoNextCountdown}s`
+                  : 'Escuchar lámina'}
+            </span>
           </button>
 
           <button
@@ -483,23 +526,53 @@ export default function AdaptiveSlidesViewer({
             </span>
             <span>{isExportingPptx ? 'Generando .pptx...' : 'Descargar PowerPoint'}</span>
           </button>
-
-          <button
-            type="button"
-            className="aia-btn-secondary aia-btn-sm"
-            onClick={handleToggleFullscreen}
-            title={isFullscreen ? 'Salir de pantalla completa' : 'Ver en pantalla completa'}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-              {isFullscreen ? 'fullscreen_exit' : 'present_to_all'}
-            </span>
-            <span>{isFullscreen ? 'Salir' : 'Pantalla completa'}</span>
-          </button>
         </div>
       </div>
 
+      {/* Temporizador suave de paso automático al finalizar la lectura en voz alta */}
+      {autoNextCountdown !== null && safeIndex < slides.length - 1 && (
+        <div className="aia-auto-next-banner" role="status" aria-live="polite">
+          <div className="aia-auto-next-info">
+            <span className="aia-auto-next-badge aia-tabular">{autoNextCountdown}s</span>
+            <span>
+              Dictado completado · Pasando a la{' '}
+              <strong>Lámina {safeIndex + 2}</strong> en{' '}
+              <strong className="aia-tabular">{autoNextCountdown}</strong>{' '}
+              {autoNextCountdown === 1 ? 'segundo' : 'segundos'}...
+            </span>
+          </div>
+
+          <div className="aia-auto-next-actions">
+            <button
+              type="button"
+              className="aia-btn-secondary aia-btn-sm"
+              onClick={clearAutoNextTimer}
+            >
+              Quedarme aquí
+            </button>
+            <button
+              type="button"
+              className="aia-btn-primary aia-btn-sm"
+              onClick={handleAdvanceNowWithSpeech}
+            >
+              <span>Pasar ahora</span>
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                arrow_forward
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Aviso si el navegador/sistema bloquea la síntesis de voz */}
+      {speechError && (
+        <div className="aia-access-feedback warning" role="alert">
+          {speechError}
+        </div>
+      )}
+
       {/* Lienzo Educativo Limpio */}
-      <div className="aia-ppt-workspace">
+      <div className="aia-ppt-workspace aia-stage-scroll-body">
         {/* Índice lateral limpio de capítulos */}
         <aside className="aia-ppt-sidebar" aria-label="Índice de láminas">
           {slides.map((s, idx) => {

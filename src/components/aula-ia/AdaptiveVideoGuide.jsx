@@ -1,8 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAulaIa } from '../../context/AulaIaContext';
 import { buildDefaultYoutubeVideo, extractYoutubeVideoId } from '../../lib/piarAiEngine';
-
-const DEAD_LEGACY_VIDEO_IDS = new Set(['aG3j675kZbc']);
+import {
+  DEAD_YOUTUBE_VIDEO_IDS,
+  buildYoutubeCandidates,
+  checkYoutubeVideo,
+  resolveWorkingYoutubeVideo
+} from '../../lib/youtubeVerifier';
 
 export default function AdaptiveVideoGuide({
   pkg,
@@ -14,69 +18,95 @@ export default function AdaptiveVideoGuide({
 
   const defaultYt = buildDefaultYoutubeVideo(pkg?.subject, pkg?.topic);
   const rawPkgVideoId = extractYoutubeVideoId(pkg?.youtubeVideo?.videoId);
-  const isDeadLegacyId = rawPkgVideoId && DEAD_LEGACY_VIDEO_IDS.has(rawPkgVideoId);
-  const resolvedVideoId = isDeadLegacyId ? defaultYt.videoId : rawPkgVideoId || defaultYt.videoId;
-
-  const ytResource = {
-    ...defaultYt,
-    ...(pkg?.youtubeVideo || {}),
-    videoId: resolvedVideoId
-  };
+  const candidates = buildYoutubeCandidates(
+    rawPkgVideoId && !DEAD_YOUTUBE_VIDEO_IDS.has(rawPkgVideoId) ? rawPkgVideoId : null,
+    pkg?.subject,
+    pkg?.topic
+  );
+  const candidatesKey = candidates.join('|');
 
   const [youtubeInput, setYoutubeInput] = useState('');
   const [youtubeTitleInput, setYoutubeTitleInput] = useState('');
   const [urlFeedback, setUrlFeedback] = useState(null);
-  // 'idle' | 'checking' | 'available' | 'unavailable'
+  // 'checking' | 'available' | 'unavailable'
   const [videoAvailability, setVideoAvailability] = useState(() =>
-    resolvedVideoId ? 'checking' : 'unavailable'
+    candidates.length > 0 ? 'checking' : 'unavailable'
   );
   const [verifiedMeta, setVerifiedMeta] = useState(null);
+  const [workingVideoId, setWorkingVideoId] = useState(null);
+  const [autoReplaced, setAutoReplaced] = useState(false);
+  const persistedFixRef = useRef(null);
 
-  // Verificación real contra YouTube oEmbed para nunca mostrar la pantalla negra de "Video no disponible"
+  const ytResource = {
+    ...defaultYt,
+    ...(pkg?.youtubeVideo || {}),
+    videoId: workingVideoId
+  };
+
+  // Verificación real contra YouTube oEmbed: prueba el video del paquete y, si falla,
+  // recorre automáticamente los respaldos verificados de la misma asignatura.
   useEffect(() => {
-    if (!resolvedVideoId) {
+    const list = candidatesKey ? candidatesKey.split('|') : [];
+    if (list.length === 0) {
       setVideoAvailability('unavailable');
       setVerifiedMeta(null);
+      setWorkingVideoId(null);
       return undefined;
     }
 
-    let cancelled = false;
     const controller = new AbortController();
     setVideoAvailability('checking');
     setVerifiedMeta(null);
+    setAutoReplaced(false);
 
-    const oembedUrl = `https://www.youtube.com/oembed?url=${encodeURIComponent(
-      `https://www.youtube.com/watch?v=${resolvedVideoId}`
-    )}&format=json`;
-
-    fetch(oembedUrl, { signal: controller.signal })
-      .then((res) => {
-        if (!res.ok) throw new Error('unavailable');
-        return res.json();
-      })
-      .then((data) => {
-        if (cancelled) return;
-        setVerifiedMeta({
-          title: data?.title || null,
-          authorName: data?.author_name || null
-        });
-        setVideoAvailability('available');
-      })
-      .catch((err) => {
-        if (cancelled || err?.name === 'AbortError') return;
-        // Si no hay conexión (offline), no bloquear: intentar cargar el iframe normalmente
-        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-          setVideoAvailability('available');
+    resolveWorkingYoutubeVideo(list, controller.signal)
+      .then((resolved) => {
+        if (controller.signal.aborted) return;
+        if (resolved.status === 'none' || !resolved.videoId) {
+          setWorkingVideoId(null);
+          setVideoAvailability('unavailable');
           return;
         }
-        setVideoAvailability('unavailable');
+        setWorkingVideoId(resolved.videoId);
+        setVerifiedMeta(
+          resolved.status === 'ok'
+            ? { title: resolved.title, authorName: resolved.authorName }
+            : null
+        );
+        setVideoAvailability('available');
+
+        setAutoReplaced(resolved.status === 'ok' && resolved.videoId !== rawPkgVideoId);
+      })
+      .catch(() => {
+        // Abortado al desmontar o cambiar de paquete
       });
 
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [resolvedVideoId]);
+    return () => controller.abort();
+  }, [candidatesKey, rawPkgVideoId]);
+
+  // Si el video original estaba caído, el docente guarda automáticamente el respaldo verificado
+  // para que el estudiante reciba directamente un video que funciona.
+  useEffect(() => {
+    if (!isMirrorPreview || !autoReplaced || !workingVideoId || !pkg?.id) return;
+    const fixKey = `${pkg.id}:${workingVideoId}`;
+    if (persistedFixRef.current === fixKey || rawPkgVideoId === workingVideoId) return;
+    persistedFixRef.current = fixKey;
+    updatePackageYoutubeVideo(
+      pkg.piarId,
+      pkg.id,
+      `https://www.youtube.com/watch?v=${workingVideoId}`,
+      verifiedMeta?.title || ''
+    );
+  }, [
+    isMirrorPreview,
+    autoReplaced,
+    workingVideoId,
+    rawPkgVideoId,
+    verifiedMeta,
+    pkg?.id,
+    pkg?.piarId,
+    updatePackageYoutubeVideo
+  ]);
 
   const handleSaveYoutubeLink = async (e) => {
     e.preventDefault();
@@ -90,21 +120,14 @@ export default function AdaptiveVideoGuide({
     }
 
     // Verificar antes de guardar que el video existe y permite incrustación
-    try {
-      const checkRes = await fetch(
-        `https://www.youtube.com/oembed?url=${encodeURIComponent(
-          `https://www.youtube.com/watch?v=${id}`
-        )}&format=json`
-      );
-      if (!checkRes.ok) {
-        setUrlFeedback({
-          type: 'error',
-          text: 'Ese video no está disponible o tiene bloqueada la reproducción incrustada en YouTube. Prueba con otro enlace.'
-        });
-        return;
-      }
-    } catch {
-      // Si falla la red, permitir guardar el enlace igualmente
+    setUrlFeedback({ type: 'ok', text: 'Verificando el video en YouTube...' });
+    const check = await checkYoutubeVideo(id);
+    if (check.status === 'unavailable') {
+      setUrlFeedback({
+        type: 'error',
+        text: 'Ese video no está disponible o tiene bloqueada la reproducción incrustada en YouTube. Prueba con otro enlace.'
+      });
+      return;
     }
 
     const ok = updatePackageYoutubeVideo(pkg.piarId, pkg.id, youtubeInput, youtubeTitleInput);
@@ -212,81 +235,82 @@ export default function AdaptiveVideoGuide({
         </form>
       )}
 
-      {/* Reproductor Real de YouTube 16:9 (verificado) */}
-      <div className="aia-yt-wrap">
-        <div className="aia-yt-meta-row">
-          <div>
+      {/* Reproductor Real de YouTube + Puntos Clave en 2 columnas (sin scroll) */}
+      <div className="aia-yt-split-layout aia-stage-scroll-body">
+        <div className="aia-yt-player-col">
+          {videoAvailability === 'checking' ? (
+            <div className="aia-yt-empty-theater">
+              <span className="material-symbols-outlined aia-yt-empty-icon">
+                hourglass_top
+              </span>
+              <h4>Verificando disponibilidad del video en YouTube...</h4>
+              <p>Comprobando que el enlace esté activo y listo para reproducirse aquí.</p>
+            </div>
+          ) : canRenderIframe ? (
+            <div className="aia-yt-player-shell">
+              <iframe
+                className="aia-yt-iframe"
+                src={`https://www.youtube-nocookie.com/embed/${ytResource.videoId}?rel=0`}
+                title={displayTitle || 'Video educativo de apoyo'}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+          ) : (
+            <div className="aia-yt-empty-theater">
+              <span className="material-symbols-outlined aia-yt-empty-icon">
+                ondemand_video
+              </span>
+              <h4>
+                {ytResource.videoId
+                  ? `El video sugerido no está disponible en YouTube para ${pkg?.subject}`
+                  : `Video de YouTube pendiente de enlace para ${pkg?.subject}`}
+              </h4>
+              <p>
+                {isMirrorPreview
+                  ? 'Haz clic en "Buscar en YouTube" para elegir un video activo de este tema, copia su URL y pégala en la barra superior para incrustarlo verificado al instante.'
+                  : 'Puedes abrir la búsqueda recomendada en YouTube para ver explicaciones de este tema o continuar a los Juegos Didácticos.'}
+              </p>
+              <div className="aia-yt-empty-actions">
+                <a
+                  href={youtubeSearchUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="aia-btn-primary aia-btn-sm"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                    search
+                  </span>
+                  <span>Buscar en YouTube</span>
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Columna derecha: Título, Puntos clave IA y Confirmación */}
+        <aside className="aia-yt-side-col">
+          <div className="aia-yt-side-header">
             <h3 className="aia-video-scene-title">{displayTitle}</h3>
             <span className="aia-yt-channel">
               Canal: <strong>{displayChannel}</strong>
             </span>
           </div>
-          <a
-            href={youtubeSearchUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="aia-btn-secondary aia-btn-sm"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-              open_in_new
-            </span>
-            <span>Ver más en YouTube</span>
-          </a>
-        </div>
 
-        {videoAvailability === 'checking' ? (
-          <div className="aia-yt-empty-theater">
-            <span className="material-symbols-outlined aia-yt-empty-icon">
-              hourglass_top
-            </span>
-            <h4>Verificando disponibilidad del video en YouTube...</h4>
-            <p>Comprobando que el enlace esté activo y listo para reproducirse aquí.</p>
-          </div>
-        ) : canRenderIframe ? (
-          <div className="aia-yt-player-shell">
-            <iframe
-              className="aia-yt-iframe"
-              src={`https://www.youtube-nocookie.com/embed/${ytResource.videoId}?rel=0`}
-              title={displayTitle || 'Video educativo de apoyo'}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-          </div>
-        ) : (
-          <div className="aia-yt-empty-theater">
-            <span className="material-symbols-outlined aia-yt-empty-icon">
-              ondemand_video
-            </span>
-            <h4>
-              {ytResource.videoId
-                ? `El video sugerido no está disponible en YouTube para ${pkg?.subject}`
-                : `Video de YouTube pendiente de enlace para ${pkg?.subject}`}
-            </h4>
-            <p>
-              {isMirrorPreview
-                ? 'Haz clic en "Buscar en YouTube" para elegir un video activo de este tema, copia su URL y pégala en la barra superior para incrustarlo verificado al instante.'
-                : 'Puedes abrir la búsqueda recomendada en YouTube para ver explicaciones de este tema o continuar a los Juegos Didácticos.'}
-            </p>
-            <div className="aia-yt-empty-actions">
-              <a
-                href={youtubeSearchUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="aia-btn-primary aia-btn-sm"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                  search
-                </span>
-                <span>Buscar en YouTube</span>
-              </a>
+          <div className="aia-yt-moments-box">
+            <div className="aia-yt-moments-head">
+              <strong>Puntos clave para prestar atención</strong>
             </div>
+            {Array.isArray(ytResource.keyMoments) && ytResource.keyMoments.length > 0 && (
+              <ul className="aia-yt-moments-list">
+                {ytResource.keyMoments.map((m, idx) => (
+                  <li key={idx}>{m}</li>
+                ))}
+              </ul>
+            )}
           </div>
-        )}
 
-        {/* Guía de atención generada por el Agente IA */}
-        <div className="aia-yt-moments-box">
-          <div className="aia-yt-moments-head">
-            <strong>Puntos clave para prestar atención en el video</strong>
+          <div className="aia-yt-side-actions">
             <button
               type="button"
               className={`aia-btn-sm ${activity?.videoCompleted ? 'aia-btn-primary' : 'aia-btn-secondary'}`}
@@ -299,15 +323,20 @@ export default function AdaptiveVideoGuide({
                 {activity?.videoCompleted ? '✓ Video visto y registrado' : 'Marcar como visto'}
               </span>
             </button>
+
+            <a
+              href={youtubeSearchUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="aia-btn-secondary aia-btn-sm"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                open_in_new
+              </span>
+              <span>Ver más en YouTube</span>
+            </a>
           </div>
-          {Array.isArray(ytResource.keyMoments) && ytResource.keyMoments.length > 0 && (
-            <ul className="aia-yt-moments-list">
-              {ytResource.keyMoments.map((m, idx) => (
-                <li key={idx}>{m}</li>
-              ))}
-            </ul>
-          )}
-        </div>
+        </aside>
       </div>
 
       <div className="aia-slide-footer">
