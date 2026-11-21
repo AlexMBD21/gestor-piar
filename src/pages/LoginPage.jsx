@@ -25,18 +25,15 @@ export default function LoginPage() {
     }
   });
   const [loading, setLoading] = useState(false);
-  const [darkMode, setDarkMode] = useState(
-    () => localStorage.getItem('piar_dark_mode') === 'enabled'
-  );
 
   useEffect(() => {
-    if (darkMode) {
+    const isDark = localStorage.getItem('piar_dark_mode') === 'enabled';
+    if (isDark) {
       document.body.classList.add('dark-mode');
     } else {
       document.body.classList.remove('dark-mode');
     }
-    localStorage.setItem('piar_dark_mode', darkMode ? 'enabled' : 'disabled');
-  }, [darkMode]);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -62,19 +59,6 @@ export default function LoginPage() {
       {/* Decorative ambient background glows */}
       <div className="login-ambient-glow glow-1" aria-hidden="true" />
       <div className="login-ambient-glow glow-2" aria-hidden="true" />
-
-      {/* Theme toggle switch button */}
-      <button
-        type="button"
-        className="login-theme-toggle"
-        onClick={() => setDarkMode(!darkMode)}
-        title={darkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-        aria-label="Cambiar tema"
-      >
-        <span className="material-symbols-outlined">
-          {darkMode ? 'light_mode' : 'dark_mode'}
-        </span>
-      </button>
 
       <div className="login-card">
         {/* Header and Branding */}
@@ -263,25 +247,6 @@ export default function LoginPage() {
             )}
           </button>
         </form>
-
-        {/* Security / System Footer Note */}
-        <footer className="login-card-footer">
-          <p>
-            {loginMode === 'teacher' ? (
-              <>
-                Suite de Gestión de Planes Individuales de Ajustes Razonables y Estudio IA.
-                <br />
-                Acceso exclusivo para docentes y directivos.
-              </>
-            ) : (
-              <>
-                Portal Educativo exclusivo del Estudiante (Mi Aula Adaptativa).
-                <br />
-                Ingresa con tu documento y PIN para ver tus diapositivas, videos, juegos y evaluaciones.
-              </>
-            )}
-          </p>
-        </footer>
       </div>
     </div>
   );
