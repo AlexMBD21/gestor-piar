@@ -172,7 +172,6 @@ export default function AdaptiveSlidesViewer({
   const slides = Array.isArray(pkg?.slides) ? pkg.slides : [];
   const [currentIndex, setCurrentIndex] = useState(0);
   const [activeStepIdx, setActiveStepIdx] = useState(0);
-  const [showCheckGuide, setShowCheckGuide] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [autoNextCountdown, setAutoNextCountdown] = useState(null); // null | 5..1
   const [speechError, setSpeechError] = useState(null);
@@ -255,7 +254,6 @@ export default function AdaptiveSlidesViewer({
                 countdownTimerRef.current = null;
                 setAutoNextCountdown(null);
                 pendingAutoSpeakRef.current = true;
-                setShowCheckGuide(false);
                 setActiveStepIdx(0);
                 setCurrentIndex(slideIdx + 1);
               } else {
@@ -294,7 +292,6 @@ export default function AdaptiveSlidesViewer({
     );
     setCurrentIndex(targetIdx);
     setActiveStepIdx(0);
-    setShowCheckGuide(false);
     stopSpeech();
   }, [remediationFocus, slides.length, stopSpeech]);
 
@@ -334,7 +331,6 @@ export default function AdaptiveSlidesViewer({
   const selectSlide = (idx) => {
     if (idx < 0 || idx >= slides.length) return;
     stopSpeech();
-    setShowCheckGuide(false);
     setActiveStepIdx(0);
     setCurrentIndex(idx);
   };
@@ -375,7 +371,6 @@ export default function AdaptiveSlidesViewer({
     clearAutoNextTimer();
     if (safeIndex < slides.length - 1) {
       const nextIdx = safeIndex + 1;
-      setShowCheckGuide(false);
       setActiveStepIdx(0);
       setCurrentIndex(nextIdx);
       startSlideSpeech(slides[nextIdx], nextIdx);
@@ -702,7 +697,7 @@ export default function AdaptiveSlidesViewer({
               </div>
             </div>
 
-            {/* Pie interactivo de Autoverificación real */}
+            {/* Pie interactivo de Autoverificación desplegado permanentemente */}
             {currentSlide.checkQuestion && (
               <div className="aia-calm-check-box">
                 <div className="aia-calm-check-row">
@@ -715,60 +710,45 @@ export default function AdaptiveSlidesViewer({
                     </span>
                     <p className="aia-calm-check-question">{currentSlide.checkQuestion}</p>
                   </div>
-
-                  {!showCheckGuide && (
-                    <button
-                      type="button"
-                      className="aia-calm-check-reveal-btn"
-                      onClick={() => setShowCheckGuide(true)}
-                    >
-                      <span>Ver idea guía</span>
-                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                        visibility
-                      </span>
-                    </button>
-                  )}
                 </div>
 
-                {showCheckGuide && (
-                  <div className="aia-calm-check-answer">
-                    <p className="aia-calm-check-guide-text">
-                      <strong>Idea guía:</strong>{' '}
-                      {currentSlide.keyTakeaway || bullets[0] || currentSlide.content}
-                    </p>
+                <div className="aia-calm-check-answer">
+                  <p className="aia-calm-check-guide-text">
+                    <strong>Idea guía:</strong>{' '}
+                    {currentSlide.keyTakeaway || bullets[0] || currentSlide.content}
+                  </p>
 
-                    <div className="aia-calm-mastery-actions">
-                      <span className="aia-calm-mastery-prompt">¿Cómo te sientes con esta lámina?</span>
-                      <div className="aia-calm-mastery-btns">
-                        <button
-                          type="button"
-                          className={`aia-mastery-btn ok ${
-                            currentMastery === 'understood' ? 'selected' : ''
-                          }`}
-                          onClick={() => handleSetMastery('understood')}
-                        >
-                          <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                            check_circle
-                          </span>
-                          <span>Ya lo entendí</span>
-                        </button>
+                  <div className="aia-calm-mastery-actions">
+                    <span className="aia-calm-mastery-prompt">¿Cómo te sientes con esta lámina?</span>
+                    <div className="aia-calm-mastery-btns">
+                      <button
+                        type="button"
+                        className={`aia-mastery-btn ok ${
+                          currentMastery === 'understood' ? 'selected' : ''
+                        }`}
+                        onClick={() => handleSetMastery('understood')}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                          check_circle
+                        </span>
+                        <span>Ya lo entendí</span>
+                      </button>
 
-                        <button
-                          type="button"
-                          className={`aia-mastery-btn review ${
-                            currentMastery === 'review' ? 'selected' : ''
-                          }`}
-                          onClick={() => handleSetMastery('review')}
-                        >
-                          <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                            bookmark_add
-                          </span>
-                          <span>Marcar para repasar</span>
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        className={`aia-mastery-btn review ${
+                          currentMastery === 'review' ? 'selected' : ''
+                        }`}
+                        onClick={() => handleSetMastery('review')}
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                          bookmark_add
+                        </span>
+                        <span>Marcar para repasar</span>
+                      </button>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
             )}
           </article>
