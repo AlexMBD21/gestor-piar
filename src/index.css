@@ -9522,7 +9522,6 @@ body.dark-mode .aia-student-topbar {
   overflow: visible;
   display: flex;
   flex-direction: column;
-  padding-bottom: 0;
 }
 
 .aia-stage-scroll-body {
@@ -9530,17 +9529,15 @@ body.dark-mode .aia-student-topbar {
   padding-right: 0;
 }
 
-/* Barra inferior fija (estilo bottombar) que nunca se oculta al bajar */
+/* Barra inferior de navegación al final natural de la sección de diapositivas */
 .aia-student-portal-wrap .aia-slide-footer {
-  position: sticky;
-  bottom: 0;
-  z-index: 30;
-  margin: 4px -20px 0 -20px;
-  padding: 12px 20px;
-  background: var(--bg-card);
-  border-top: 1px solid var(--border-color);
-  border-radius: 0 0 16px 16px;
-  box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.06);
+  position: static;
+  margin: 2px 0 0 0;
+  padding: 10px 14px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: none;
 }
 
 .aia-student-portal-wrap .aia-ppt-workspace.aia-stage-scroll-body {
