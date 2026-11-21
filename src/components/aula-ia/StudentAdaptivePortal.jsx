@@ -31,7 +31,6 @@ export default function StudentAdaptivePortal({
 }) {
   const pkg = useMemo(() => hydrateCoherentPackage(rawPkg), [rawPkg]);
   const [activeModule, setActiveModule] = useState(loadSavedStudentModule); // 'slides' | 'video' | 'games' | 'quiz'
-  const [isWelcomeExpanded, setIsWelcomeExpanded] = useState(false);
   const [remediationFocus, setRemediationFocus] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const portalContainerRef = useRef(null);
@@ -183,69 +182,55 @@ export default function StudentAdaptivePortal({
         </header>
       )}
 
-      {/* Franja compacta de Foco de Estudio (se oculta en pantalla completa) */}
+      {/* Franja de Foco de Estudio y Guía Pedagógica Adaptativa (permanente, se oculta en pantalla completa) */}
       {!isAnyFullscreen && (
-        <section className={`aia-friendly-diag-card ${isWelcomeExpanded ? 'expanded' : 'collapsed'}`}>
-        <div className="aia-friendly-diag-top">
-          <div className="aia-friendly-diag-badges">
-            {onBackToSubjects && (
-              <button
-                type="button"
-                className="aia-back-subjects-btn"
-                onClick={onBackToSubjects}
-                title="Volver a la lista de tus materias"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                  arrow_back
-                </span>
-                <span>Mis Materias</span>
-              </button>
-            )}
+        <section className="aia-friendly-diag-card">
+          <div className="aia-friendly-diag-top">
+            <div className="aia-friendly-diag-badges">
+              {onBackToSubjects && (
+                <button
+                  type="button"
+                  className="aia-back-subjects-btn"
+                  onClick={onBackToSubjects}
+                  title="Volver a la lista de tus materias"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                    arrow_back
+                  </span>
+                  <span>Mis Materias</span>
+                </button>
+              )}
 
-            <span className="aia-subject-tag">
-              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                auto_awesome
-              </span>
-              <span>{pkg.subject}</span>
-            </span>
-
-            {isMirrorPreview && (
-              <span className="aia-mirror-indicator">
-                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-                  visibility
+              <span className="aia-subject-tag">
+                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                  auto_awesome
                 </span>
-                <span>Vista Estudiante · {pkg.studentFirstName || 'Alumno'}</span>
+                <span>{pkg.subject}</span>
               </span>
-            )}
+
+              {isMirrorPreview && (
+                <span className="aia-mirror-indicator">
+                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
+                    visibility
+                  </span>
+                  <span>Vista Estudiante · {pkg.studentFirstName || 'Alumno'}</span>
+                </span>
+              )}
+            </div>
           </div>
 
-          <div className="aia-friendly-diag-actions">
-            <button
-              type="button"
-              className="aia-dua-chip-btn"
-              onClick={() => setIsWelcomeExpanded((v) => !v)}
-              aria-expanded={isWelcomeExpanded}
-              title={isWelcomeExpanded ? 'Ocultar guía de bienvenida' : 'Ver tu meta y consejo de hoy'}
-            >
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                {isWelcomeExpanded ? 'expand_less' : 'tips_and_updates'}
-              </span>
-              <span>{isWelcomeExpanded ? 'Ocultar guía' : 'Meta y consejo'}</span>
-            </button>
+          <div className="aia-focus-topic-row">
+            <span className="aia-focus-topic-kicker">Hoy fortaleces:</span>
+            <strong className="aia-focus-topic-text">{pkg.topic}</strong>
           </div>
-        </div>
 
-        <div className="aia-focus-topic-row">
-          <span className="aia-focus-topic-kicker">Hoy fortaleces:</span>
-          <strong className="aia-focus-topic-text">{pkg.topic}</strong>
-        </div>
-
-        {isWelcomeExpanded && (
           <div className="aia-friendly-expanded-body">
             <div className="aia-friendly-header-line">
               <h3 className="aia-friendly-title">{studentDiag.greetingTitle}</h3>
             </div>
-            <p className="aia-friendly-message">{studentDiag.encouragementMessage}</p>
+            {studentDiag.encouragementMessage && (
+              <p className="aia-friendly-message">{studentDiag.encouragementMessage}</p>
+            )}
 
             <div className="aia-friendly-highlights">
               <div className="aia-friendly-pill-box">
@@ -254,7 +239,7 @@ export default function StudentAdaptivePortal({
                 </div>
                 <div className="aia-friendly-pill-content">
                   <small>Tu Meta de Hoy</small>
-                  <strong>{studentDiag.learningGoal}</strong>
+                  <strong>{studentDiag.learningGoal || 'Completar tu ruta de refuerzo paso a paso.'}</strong>
                 </div>
               </div>
               <div className="aia-friendly-pill-box">
@@ -263,12 +248,11 @@ export default function StudentAdaptivePortal({
                 </div>
                 <div className="aia-friendly-pill-content">
                   <small>Consejo Personalizado</small>
-                  <strong>{studentDiag.superpowerTip}</strong>
+                  <strong>{studentDiag.superpowerTip || 'Aprende a tu propio ritmo con calma.'}</strong>
                 </div>
               </div>
             </div>
           </div>
-        )}
         </section>
       )}
 
@@ -333,6 +317,7 @@ export default function StudentAdaptivePortal({
           <AdaptiveSlidesViewer
             pkg={pkg}
             activity={activity}
+            isMirrorPreview={isMirrorPreview}
             remediationFocus={remediationFocus}
             onClearRemediation={() => setRemediationFocus(null)}
             onReturnToQuiz={() => {
@@ -357,6 +342,7 @@ export default function StudentAdaptivePortal({
           <AdaptiveGamesArena
             pkg={pkg}
             activity={activity}
+            isMirrorPreview={isMirrorPreview}
             onCompleteGames={() => setActiveModule('quiz')}
           />
         )}
@@ -364,6 +350,7 @@ export default function StudentAdaptivePortal({
           <AdaptiveQuizMultiAttempt
             pkg={pkg}
             activity={activity}
+            isMirrorPreview={isMirrorPreview}
             onNavigateToMedia={handleNavigateFromQuiz}
           />
         )}

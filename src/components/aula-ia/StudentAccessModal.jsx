@@ -23,14 +23,12 @@ export default function StudentAccessModal({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!isOpen || !studentPiar?.id) return undefined;
     let active = true;
     setLoading(true);
     setFeedback(null);
-    setCopied(false);
 
     getStudentCredential(studentPiar.id).then((cred) => {
       if (!active) return;
@@ -94,25 +92,6 @@ export default function StudentAccessModal({
     if (onSaved) onSaved(result.credential);
   };
 
-  const handleCopyShareCard = () => {
-    const cleanDoc = normalizeStudentDoc(studentDoc);
-    const cleanPin = normalizePin(accessPin);
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const msg = [
-      `Hola ${profile?.primerNombre || 'estudiante'}, aquí tienes tu acceso a Mi Aula Adaptativa (Gestor PIAR):`,
-      `• Enlace: ${origin}/login`,
-      `• Selecciona: "Soy Estudiante"`,
-      `• N° de Documento: ${cleanDoc}`,
-      `• PIN de acceso: ${cleanPin}`
-    ].join('\n');
-
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(msg);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2600);
-    }
-  };
-
   return (
     <div
       className="aia-confirm-modal-backdrop"
@@ -133,8 +112,10 @@ export default function StudentAccessModal({
             <div>
               <h3 id="aia-student-access-title">Acceso al Aula del Estudiante</h3>
               <p className="aia-access-modal-sub">
-                {profile?.nombreCompleto || studentPiar.nombre} · Grado{' '}
-                {profile?.grado || studentPiar.grado || '—'}
+                <span>{profile?.nombreCompleto || studentPiar.nombre}</span>
+                <span className="aia-access-grade-badge">
+                  Grado {profile?.grado || studentPiar.grado || '—'}
+                </span>
               </p>
             </div>
           </div>
@@ -157,42 +138,52 @@ export default function StudentAccessModal({
           <form onSubmit={handleSubmit} className="aia-access-form">
             <div className="aia-access-field">
               <label htmlFor="aia-access-doc">N° de Documento del Estudiante (TI / RC)</label>
-              <input
-                id="aia-access-doc"
-                type="text"
-                className="aia-input-compact aia-tabular"
-                value={studentDoc}
-                onChange={(e) => setStudentDoc(normalizeStudentDoc(e.target.value))}
-                placeholder="Ej. 1065987234"
-                required
-              />
+              <div className="aia-access-input-wrap">
+                <span className="material-symbols-outlined aia-access-input-icon" aria-hidden="true">
+                  badge
+                </span>
+                <input
+                  id="aia-access-doc"
+                  type="text"
+                  className="aia-access-input aia-tabular"
+                  value={studentDoc}
+                  onChange={(e) => setStudentDoc(normalizeStudentDoc(e.target.value))}
+                  placeholder="Ej. 1065987234"
+                  required
+                />
+              </div>
               <small>
-                El estudiante usará este documento para ver únicamente sus materias publicadas.
+                El estudiante ingresará con este documento para ver únicamente sus materias publicadas.
               </small>
             </div>
 
             <div className="aia-access-field">
               <label htmlFor="aia-access-pin">PIN Personal de Acceso (4 a 6 dígitos)</label>
               <div className="aia-access-pin-row">
-                <input
-                  id="aia-access-pin"
-                  type="text"
-                  inputMode="numeric"
-                  className="aia-input-compact aia-tabular aia-access-pin-input"
-                  value={accessPin}
-                  onChange={(e) => setAccessPin(normalizePin(e.target.value))}
-                  placeholder="4829"
-                  minLength={4}
-                  maxLength={6}
-                  required
-                />
+                <div className="aia-access-input-wrap aia-access-pin-wrap">
+                  <span className="material-symbols-outlined aia-access-input-icon" aria-hidden="true">
+                    pin
+                  </span>
+                  <input
+                    id="aia-access-pin"
+                    type="text"
+                    inputMode="numeric"
+                    className="aia-access-input aia-tabular aia-access-pin-input"
+                    value={accessPin}
+                    onChange={(e) => setAccessPin(normalizePin(e.target.value))}
+                    placeholder="4829"
+                    minLength={4}
+                    maxLength={6}
+                    required
+                  />
+                </div>
                 <button
                   type="button"
-                  className="aia-btn-secondary aia-btn-sm"
+                  className="aia-btn-secondary aia-access-gen-btn"
                   onClick={() => setAccessPin(generateRandomPin(4))}
                   title="Generar un nuevo PIN aleatorio de 4 dígitos"
                 >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>
                     casino
                   </span>
                   <span>Generar PIN</span>
@@ -200,19 +191,24 @@ export default function StudentAccessModal({
               </div>
             </div>
 
-            <label className="aia-access-toggle-row">
-              <input
-                type="checkbox"
-                checked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-              />
-              <span>
+            <label className={`aia-access-toggle-row ${isActive ? 'is-on' : ''}`}>
+              <span className="aia-access-toggle-copy">
                 <strong>Acceso activo al Portal del Estudiante</strong>
                 <small>
                   {isActive
-                    ? 'El estudiante puede iniciar sesión y ver las materias publicadas.'
+                    ? 'El estudiante puede iniciar sesión y ver sus materias publicadas.'
                     : 'El acceso está pausado; el estudiante no podrá ingresar.'}
                 </small>
+              </span>
+              <span className="aia-switch">
+                <input
+                  type="checkbox"
+                  checked={isActive}
+                  onChange={(e) => setIsActive(e.target.checked)}
+                />
+                <span className="aia-switch-track" aria-hidden="true">
+                  <span className="aia-switch-thumb" />
+                </span>
               </span>
             </label>
 
@@ -222,7 +218,7 @@ export default function StudentAccessModal({
                   schedule
                 </span>
                 <span>
-                  Último ingreso del estudiante:{' '}
+                  Último ingreso:{' '}
                   <strong>{new Date(lastLoginAt).toLocaleString('es-CO')}</strong>
                 </span>
               </div>
@@ -233,35 +229,18 @@ export default function StudentAccessModal({
             )}
 
             <div className="aia-access-modal-footer">
-              <button
-                type="button"
-                className="aia-btn-secondary aia-btn-sm"
-                onClick={handleCopyShareCard}
-                disabled={!studentDoc || accessPin.length < 4}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                  {copied ? 'check' : 'content_copy'}
+              <button type="submit" className="aia-btn-primary aia-btn-full" disabled={saving}>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                  {saving ? 'hourglass_top' : 'verified_user'}
                 </span>
-                <span>{copied ? '¡Credencial copiada!' : 'Copiar para enviar'}</span>
+                <span>
+                  {saving
+                    ? 'Guardando acceso...'
+                    : hasExisting
+                      ? 'Guardar cambios'
+                      : 'Activar acceso'}
+                </span>
               </button>
-
-              <div className="aia-access-modal-footer-right">
-                <button type="button" className="aia-btn-secondary" onClick={onClose}>
-                  Cerrar
-                </button>
-                <button type="submit" className="aia-btn-primary" disabled={saving}>
-                  <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>
-                    save
-                  </span>
-                  <span>
-                    {saving
-                      ? 'Guardando...'
-                      : hasExisting
-                        ? 'Guardar cambios'
-                        : 'Activar acceso'}
-                  </span>
-                </button>
-              </div>
             </div>
           </form>
         )}

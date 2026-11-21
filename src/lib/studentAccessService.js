@@ -234,6 +234,7 @@ export async function authenticateStudent({ documentNumber, accessPin }) {
     return {
       data: null,
       error: {
+        code: 'NOT_FOUND',
         message:
           'No encontramos una cuenta asignada a ese número de documento. Pídele a tu profesor que active tu acceso y te comparta tu PIN.'
       }
@@ -244,6 +245,7 @@ export async function authenticateStudent({ documentNumber, accessPin }) {
     return {
       data: null,
       error: {
+        code: 'INACTIVE',
         message:
           'Tu acceso al Aula Adaptativa está desactivado temporalmente. Consulta con tu profesor.'
       }
@@ -254,6 +256,7 @@ export async function authenticateStudent({ documentNumber, accessPin }) {
     return {
       data: null,
       error: {
+        code: 'INVALID_PIN',
         message: 'El PIN ingresado no es correcto. Verifica los dígitos con tu profesor.'
       }
     };

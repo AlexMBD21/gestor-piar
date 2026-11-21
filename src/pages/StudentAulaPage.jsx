@@ -4,6 +4,17 @@ import { useAulaIa } from '../context/AulaIaContext';
 import { getPackageGames } from '../lib/aulaGames';
 import StudentAdaptivePortal from '../components/aula-ia/StudentAdaptivePortal';
 
+function getSubjectIcon(subject = '') {
+  const s = String(subject || '').toLowerCase();
+  if (s.includes('cienc') || s.includes('químic') || s.includes('quimic') || s.includes('biolog') || s.includes('físic')) return 'science';
+  if (s.includes('matem') || s.includes('álgebr') || s.includes('geometr')) return 'calculate';
+  if (s.includes('español') || s.includes('lengua') || s.includes('lectur')) return 'menu_book';
+  if (s.includes('art') || s.includes('plástic') || s.includes('músic')) return 'palette';
+  if (s.includes('educación física') || s.includes('educacion fisica') || s.includes('deport')) return 'sports_soccer';
+  if (s.includes('social') || s.includes('histor') || s.includes('geograf') || s.includes('ética') || s.includes('ciudadan')) return 'public';
+  return 'auto_stories';
+}
+
 function computePackageProgress(pkg, activity) {
   const totalSlides = pkg?.slides?.length || 5;
   const slidesPct = Math.min(
@@ -11,6 +22,7 @@ function computePackageProgress(pkg, activity) {
     Math.round(((activity?.slidesViewed?.length || 0) / totalSlides) * 100)
   );
   const videoPct = activity?.videoMaxPercent || 0;
+  const videoDone = Boolean(activity?.videoCompleted || videoPct >= 90);
   const gamesList = getPackageGames(pkg);
   const totalGames = gamesList.length || 4;
   const gamesDone = (activity?.gamesCompleted || []).filter((id) =>
@@ -18,16 +30,16 @@ function computePackageProgress(pkg, activity) {
   ).length;
   const gamesPct = Math.min(100, Math.round((gamesDone / totalGames) * 100));
   const attempts = Array.isArray(activity?.attempts) ? activity.attempts : [];
-  const bestQuizPct =
-    attempts.length > 0 ? Math.max(...attempts.map((a) => a.percentage || 0)) : null;
+  const quizDone = attempts.length > 0;
 
   const overallPct = Math.round(
-    (slidesPct + videoPct + gamesPct + (bestQuizPct ?? 0)) / 4
+    (slidesPct + (videoDone ? 100 : videoPct) + gamesPct + (quizDone ? 100 : 0)) / 4
   );
 
   let status = 'pending'; // 'pending' | 'progress' | 'mastered'
-  if (bestQuizPct === 100) status = 'mastered';
-  else if (slidesPct > 0 || videoPct > 0 || gamesDone > 0 || attempts.length > 0) {
+  if (slidesPct >= 100 && videoDone && gamesDone >= totalGames && quizDone) {
+    status = 'mastered';
+  } else if (slidesPct > 0 || videoDone || videoPct > 0 || gamesDone > 0 || quizDone) {
     status = 'progress';
   }
 
@@ -47,12 +59,12 @@ function computePackageProgress(pkg, activity) {
   return {
     slidesPct,
     videoPct,
-    videoDone: Boolean(activity?.videoCompleted || videoPct >= 90),
+    videoDone,
     gamesDone,
     totalGames,
+    quizDone,
     attemptsCount: attempts.length,
     maxAttempts: pkg?.maxAttempts || 3,
-    bestQuizPct,
     overallPct,
     status,
     reviewSlidesCount
@@ -129,11 +141,35 @@ export default function StudentAulaPage() {
     hydrateFromStudentLogin
   ]);
 
-  // Refrescar una vez en segundo plano para traer materias recién publicadas por el docente
+  // Refrescar sesión al entrar, cada 15s y al volver a la pestaña:
+  // trae nuevas materias publicadas e interrumpe automáticamente la sesión si el docente cambió el PIN o pausó el acceso
   useEffect(() => {
-    if (didAutoRefreshRef.current || !studentSession?.studentDoc) return;
-    didAutoRefreshRef.current = true;
-    refreshStudentSession();
+    if (!studentSession?.studentDoc) return undefined;
+    if (!didAutoRefreshRef.current) {
+      didAutoRefreshRef.current = true;
+      refreshStudentSession();
+    }
+
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        refreshStudentSession();
+      }
+    }, 15000);
+
+    const handleFocusOrVisible = () => {
+      if (document.visibilityState === 'visible') {
+        refreshStudentSession();
+      }
+    };
+
+    window.addEventListener('focus', handleFocusOrVisible);
+    document.addEventListener('visibilitychange', handleFocusOrVisible);
+
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocusOrVisible);
+      document.removeEventListener('visibilitychange', handleFocusOrVisible);
+    };
   }, [studentSession?.studentDoc, refreshStudentSession]);
 
   const piarId = studentSession?.piarId || '';
@@ -166,16 +202,13 @@ export default function StudentAulaPage() {
       pkg,
       metrics: computePackageProgress(pkg, activityByPackage[pkg.id])
     }));
-    const masteredCount = cards.filter((c) => c.metrics.status === 'mastered').length;
-    const scoredCards = cards.filter((c) => c.metrics.bestQuizPct !== null);
-    const avgScore =
-      scoredCards.length > 0
-        ? Math.round(
-            scoredCards.reduce((acc, c) => acc + c.metrics.bestQuizPct, 0) / scoredCards.length
-          )
-        : null;
+    const completedCount = cards.filter((c) => c.metrics.status === 'mastered').length;
+    const avgProgress =
+      cards.length > 0
+        ? Math.round(cards.reduce((acc, c) => acc + c.metrics.overallPct, 0) / cards.length)
+        : 0;
     const totalReviews = cards.reduce((acc, c) => acc + c.metrics.reviewSlidesCount, 0);
-    return { cards, masteredCount, avgScore, totalReviews };
+    return { cards, completedCount, avgProgress, totalReviews };
   }, [publishedPackages, activityByPackage]);
 
   const handleManualRefresh = async () => {
@@ -257,7 +290,7 @@ export default function StudentAulaPage() {
         {/* VISTA A: Portada "Mi Aula" (Tablero de todas las materias asociadas a su documento) */}
         {!activePkg ? (
           <main className="aia-student-home">
-            <section className="aia-student-hero-card">
+            <section className="aia-student-hero-card aia-student-hero-refined">
               <div className="aia-student-hero-text">
                 <span className="aia-subject-tag">
                   <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
@@ -267,25 +300,38 @@ export default function StudentAulaPage() {
                 </span>
                 <h1>¡Hola, {studentProfile.primerNombre}!</h1>
                 <p>
-                  Elige una materia para explorar sus diapositivas, ver el video de apoyo,
-                  practicar con juegos y presentar tu evaluación con calma.
+                  Elige una materia para explorar sus láminas, ver el video, practicar con juegos y
+                  completar tu examen con calma.
                 </p>
               </div>
 
-              <div className="aia-student-hero-stats">
-                <div className="aia-student-stat-box">
-                  <small>Materias activas</small>
-                  <strong className="aia-tabular">{publishedPackages.length}</strong>
+              <div className="aia-student-hero-stats aia-student-hero-stats-compact">
+                <div className="aia-student-kpi-pill">
+                  <span className="aia-student-kpi-icon">
+                    <span className="material-symbols-outlined">menu_book</span>
+                  </span>
+                  <div>
+                    <strong className="aia-tabular">{publishedPackages.length}</strong>
+                    <small>{publishedPackages.length === 1 ? 'Materia' : 'Materias'}</small>
+                  </div>
                 </div>
-                <div className="aia-student-stat-box ok">
-                  <small>Dominadas (100%)</small>
-                  <strong className="aia-tabular">{dashboardStats.masteredCount}</strong>
+                <div className="aia-student-kpi-pill is-ok">
+                  <span className="aia-student-kpi-icon">
+                    <span className="material-symbols-outlined">task_alt</span>
+                  </span>
+                  <div>
+                    <strong className="aia-tabular">{dashboardStats.completedCount}</strong>
+                    <small>Completadas</small>
+                  </div>
                 </div>
-                <div className="aia-student-stat-box">
-                  <small>Mejor promedio</small>
-                  <strong className="aia-tabular">
-                    {dashboardStats.avgScore !== null ? `${dashboardStats.avgScore}%` : '—'}
-                  </strong>
+                <div className="aia-student-kpi-pill">
+                  <span className="aia-student-kpi-icon">
+                    <span className="material-symbols-outlined">trending_up</span>
+                  </span>
+                  <div>
+                    <strong className="aia-tabular">{dashboardStats.avgProgress}%</strong>
+                    <small>Avance total</small>
+                  </div>
                 </div>
               </div>
             </section>
@@ -328,89 +374,107 @@ export default function StudentAulaPage() {
                 </button>
               </div>
             ) : (
-              <section className="aia-student-subjects-grid" aria-label="Mis materias publicadas">
-                {dashboardStats.cards.map(({ pkg, metrics }) => {
-                  const statusLabel =
-                    metrics.status === 'mastered'
-                      ? '✓ Dominada'
-                      : metrics.status === 'progress'
-                        ? 'En progreso'
-                        : 'Nueva';
+              <div className="aia-student-subjects-section">
+                <div className="aia-student-subjects-head">
+                  <h2>Tus materias asignadas</h2>
+                  <span className="aia-mirror-count-pill aia-tabular">
+                    {dashboardStats.completedCount}/{publishedPackages.length} completadas
+                  </span>
+                </div>
 
-                  const ctaLabel =
-                    metrics.status === 'mastered'
-                      ? 'Repasar materia'
-                      : metrics.status === 'progress'
-                        ? 'Continuar estudiando'
-                        : 'Empezar a estudiar';
+                <section className="aia-student-subjects-grid" aria-label="Mis materias publicadas">
+                  {dashboardStats.cards.map(({ pkg, metrics }) => {
+                    const statusLabel =
+                      metrics.status === 'mastered'
+                        ? '✓ Completada'
+                        : metrics.status === 'progress'
+                          ? 'En progreso'
+                          : 'Nueva';
 
-                  return (
-                    <article
-                      key={pkg.id}
-                      className={`aia-student-subject-card ${metrics.status}`}
-                    >
-                      <div className="aia-student-subject-top">
-                        <span className="aia-subject-tag">{pkg.subject}</span>
-                        <span className={`aia-student-status-pill ${metrics.status}`}>
-                          {statusLabel}
-                        </span>
-                      </div>
+                    const ctaLabel =
+                      metrics.status === 'mastered'
+                        ? 'Repasar materia'
+                        : metrics.status === 'progress'
+                          ? 'Continuar estudiando'
+                          : 'Empezar a estudiar';
 
-                      <h3 className="aia-student-subject-title">{pkg.topic}</h3>
-
-                      <div className="aia-student-subject-progress">
-                        <div className="aia-student-subject-progress-head aia-tabular">
-                          <span>Avance general</span>
-                          <strong>{metrics.overallPct}%</strong>
-                        </div>
-                        <div className="aia-progress-track">
-                          <div
-                            className="aia-progress-fill"
-                            style={{ width: `${metrics.overallPct}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="aia-student-subject-chips aia-tabular">
-                        <span className={metrics.slidesPct >= 100 ? 'done' : ''}>
-                          Láminas {metrics.slidesPct}%
-                        </span>
-                        <span className={metrics.videoDone ? 'done' : ''}>
-                          {metrics.videoDone ? '✓ Video' : 'Video'}
-                        </span>
-                        <span className={metrics.gamesDone >= metrics.totalGames ? 'done' : ''}>
-                          Juegos {metrics.gamesDone}/{metrics.totalGames}
-                        </span>
-                        <span className={metrics.bestQuizPct === 100 ? 'done' : ''}>
-                          {metrics.bestQuizPct !== null
-                            ? `Examen ${metrics.bestQuizPct}%`
-                            : `Examen (${metrics.maxAttempts} int.)`}
-                        </span>
-                      </div>
-
-                      {metrics.reviewSlidesCount > 0 && (
-                        <div className="aia-student-card-bookmark">
-                          <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                            bookmark
-                          </span>
-                          <span>{metrics.reviewSlidesCount} por repasar</span>
-                        </div>
-                      )}
-
-                      <button
-                        type="button"
-                        className="aia-btn-primary aia-student-subject-cta"
-                        onClick={() => setSelectedPkgId(pkg.id)}
+                    return (
+                      <article
+                        key={pkg.id}
+                        className={`aia-student-subject-card aia-student-subject-card-pro ${metrics.status}`}
                       >
-                        <span>{ctaLabel}</span>
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                          arrow_forward
-                        </span>
-                      </button>
-                    </article>
-                  );
-                })}
-              </section>
+                        <div className="aia-student-subject-top">
+                          <span className="aia-subject-tag">
+                            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                              {getSubjectIcon(pkg.subject)}
+                            </span>
+                            <span>{pkg.subject}</span>
+                          </span>
+                          <span className={`aia-student-status-pill ${metrics.status}`}>
+                            {statusLabel}
+                          </span>
+                        </div>
+
+                        <h3 className="aia-student-subject-title">{pkg.topic}</h3>
+
+                        <div className="aia-student-subject-progress">
+                          <div className="aia-student-subject-progress-head aia-tabular">
+                            <span>Recorrido completado</span>
+                            <strong>{metrics.overallPct}%</strong>
+                          </div>
+                          <div className="aia-progress-track aia-slim-track">
+                            <div
+                              className={`aia-progress-fill ${
+                                metrics.status === 'mastered' ? 'tone-high' : ''
+                              }`}
+                              style={{ width: `${metrics.overallPct}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="aia-student-subject-chips aia-tabular">
+                          <span className={metrics.slidesPct >= 100 ? 'done' : ''}>
+                            {metrics.slidesPct >= 100 ? '✓ Láminas' : `Láminas ${metrics.slidesPct}%`}
+                          </span>
+                          <span className={metrics.videoDone ? 'done' : ''}>
+                            {metrics.videoDone ? '✓ Video' : 'Video'}
+                          </span>
+                          <span className={metrics.gamesDone >= metrics.totalGames ? 'done' : ''}>
+                            {metrics.gamesDone >= metrics.totalGames
+                              ? `✓ Juegos ${metrics.gamesDone}/${metrics.totalGames}`
+                              : `Juegos ${metrics.gamesDone}/${metrics.totalGames}`}
+                          </span>
+                          <span className={metrics.quizDone ? 'done' : ''}>
+                            {metrics.quizDone ? '✓ Examen' : 'Examen'}
+                          </span>
+                        </div>
+
+                        {metrics.reviewSlidesCount > 0 && (
+                          <div className="aia-student-card-bookmark">
+                            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                              bookmark
+                            </span>
+                            <span>{metrics.reviewSlidesCount} por repasar</span>
+                          </div>
+                        )}
+
+                        <button
+                          type="button"
+                          className={`aia-student-subject-cta ${
+                            metrics.status === 'mastered' ? 'aia-btn-secondary' : 'aia-btn-primary'
+                          }`}
+                          onClick={() => setSelectedPkgId(pkg.id)}
+                        >
+                          <span>{ctaLabel}</span>
+                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                            arrow_forward
+                          </span>
+                        </button>
+                      </article>
+                    );
+                  })}
+                </section>
+              </div>
             )}
           </main>
         ) : (

@@ -6,11 +6,34 @@ import { validatePiarData } from '../utils/schemaValidation';
 
 const PiarContext = createContext(null);
 
+const ACTIVE_STUDENT_STORAGE_KEY = 'piar_active_student_id';
+
 export function PiarProvider({ children }) {
   const { user, profile } = useAuth();
   const [piars, setPiars] = useState([]);
   const [editLogs, setEditLogs] = useState({}); // { [piarId]: [ { id, edited_at } ] }
-  const [activeStudentId, setActiveStudentId] = useState(null);
+  const [activeStudentId, setActiveStudentIdState] = useState(() => {
+    try {
+      return sessionStorage.getItem(ACTIVE_STUDENT_STORAGE_KEY) || null;
+    } catch {
+      return null;
+    }
+  });
+  const setActiveStudentId = useCallback((nextId) => {
+    setActiveStudentIdState((prev) => {
+      const resolved = typeof nextId === 'function' ? nextId(prev) : nextId;
+      try {
+        if (resolved && resolved !== 'blanco-temp') {
+          sessionStorage.setItem(ACTIVE_STUDENT_STORAGE_KEY, String(resolved));
+        } else if (!resolved) {
+          sessionStorage.removeItem(ACTIVE_STUDENT_STORAGE_KEY);
+        }
+      } catch {
+        // Ignorar si sessionStorage no está disponible
+      }
+      return resolved;
+    });
+  }, []);
   const [loading, setLoading] = useState(false);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
   const savedPiarsDataRef = useRef({});

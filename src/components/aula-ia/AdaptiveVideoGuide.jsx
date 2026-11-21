@@ -144,6 +144,7 @@ export default function AdaptiveVideoGuide({
   };
 
   const handleConfirmYoutubeWatched = () => {
+    if (isMirrorPreview) return;
     recordVideoTelemetry(pkg.id, {
       incrementPlay: true,
       sceneNumber: 4,

@@ -162,6 +162,7 @@ function SlideKeyPoints({ visualType, bullets, theme, activeStepIdx, onSelectSte
 export default function AdaptiveSlidesViewer({
   pkg,
   activity,
+  isMirrorPreview = false,
   remediationFocus = null,
   onClearRemediation,
   onReturnToQuiz,
@@ -177,7 +178,7 @@ export default function AdaptiveSlidesViewer({
   const [speechError, setSpeechError] = useState(null);
   const [isExportingPptx, setIsExportingPptx] = useState(false);
 
-  const masteryStorageKey = pkg?.id ? `piar_slide_mastery_${pkg.id}` : null;
+  const masteryStorageKey = !isMirrorPreview && pkg?.id ? `piar_slide_mastery_${pkg.id}` : null;
   const [masteryByStep, setMasteryByStep] = useState(() => loadMasteryMap(masteryStorageKey));
 
   const countdownTimerRef = useRef(null);
@@ -214,7 +215,7 @@ export default function AdaptiveSlidesViewer({
         slideObj.keyTakeaway ? `Recuerda esto para tu examen: ${slideObj.keyTakeaway}` : ''
       ].filter(Boolean);
 
-      if (pkg?.id) {
+      if (!isMirrorPreview && pkg?.id) {
         recordAudioTelemetry(pkg.id, {
           incrementPlay: true,
           progressPercent: Math.max(
@@ -230,7 +231,7 @@ export default function AdaptiveSlidesViewer({
         onStart: () => setIsSpeaking(true),
         onEnd: () => {
           setIsSpeaking(false);
-          if (pkg?.id) {
+          if (!isMirrorPreview && pkg?.id) {
             recordAudioTelemetry(pkg.id, {
               incrementPlay: false,
               progressPercent: Math.min(
@@ -270,7 +271,14 @@ export default function AdaptiveSlidesViewer({
         }
       });
     },
-    [pkg?.id, activity?.audioMaxPercent, slides.length, recordAudioTelemetry, clearAutoNextTimer]
+    [
+      isMirrorPreview,
+      pkg?.id,
+      activity?.audioMaxPercent,
+      slides.length,
+      recordAudioTelemetry,
+      clearAutoNextTimer
+    ]
   );
 
   useEffect(() => {
@@ -298,9 +306,9 @@ export default function AdaptiveSlidesViewer({
   }, [safeIndex, currentSlide, startSlideSpeech]);
 
   useEffect(() => {
-    if (!pkg?.id || !currentSlide?.step) return;
+    if (isMirrorPreview || !pkg?.id || !currentSlide?.step) return;
     recordSlideTelemetry(pkg.id, currentSlide.step, Math.max(1, slides.length));
-  }, [pkg?.id, currentSlide?.step, slides.length, recordSlideTelemetry]);
+  }, [isMirrorPreview, pkg?.id, currentSlide?.step, slides.length, recordSlideTelemetry]);
 
   useEffect(() => {
     return () => {

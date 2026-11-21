@@ -2,9 +2,34 @@ import { useState, useEffect } from 'react';
 import { getPackageGames, GAME_TYPES } from '../../lib/aulaGames';
 import { useAulaIa } from '../../context/AulaIaContext';
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const getScoreTone = (pct) => {
+  if (pct >= 80) return 'high';
+  if (pct >= 50) return 'mid';
+  return 'low';
+};
+
+const formatAttemptDate = (iso) => {
+  if (!iso) return 'Sin fecha';
+  try {
+    return new Date(iso).toLocaleString('es-CO', {
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  } catch {
+    return 'Sin fecha';
+  }
+};
+
 export default function TeacherTelemetryAnalytics({ pkg, activity, studentPiar }) {
   const { resetAttemptsForPackage } = useAulaIa();
   const attempts = Array.isArray(activity?.attempts) ? activity.attempts : [];
+  const archivedCount = Array.isArray(activity?.archivedAttempts)
+    ? activity.archivedAttempts.length
+    : 0;
   const questions = Array.isArray(pkg?.quizQuestions) ? pkg.quizQuestions : [];
   const totalSlides = pkg?.slides?.length || 5;
   const maxAttempts = pkg?.maxAttempts || 3;
@@ -13,11 +38,25 @@ export default function TeacherTelemetryAnalytics({ pkg, activity, studentPiar }
 
   const latestAttemptNumber = attempts[attempts.length - 1]?.attemptNumber || 1;
   const [selectedAttemptNum, setSelectedAttemptNum] = useState(latestAttemptNumber);
+  const [showAllQuestions, setShowAllQuestions] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [nowMs] = useState(() => Date.now());
 
   // Cuando cambia de materia o llega un nuevo intento en tiempo real, enfocar el más reciente
   useEffect(() => {
     setSelectedAttemptNum(latestAttemptNumber);
+    setShowAllQuestions(false);
   }, [pkg?.id, latestAttemptNumber]);
+
+  useEffect(() => {
+    if (!confirmReset) return undefined;
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setConfirmReset(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [confirmReset]);
 
   if (!pkg) return null;
 
@@ -30,26 +69,20 @@ export default function TeacherTelemetryAnalytics({ pkg, activity, studentPiar }
   ).length;
   const gamesPct = Math.min(100, Math.round((gamesCompletedCount / totalGames) * 100));
   const gamesScores = activity?.gamesScores || {};
-  const scoredGameEntries = gamesList
-    .map((g) => {
-      const entry = gamesScores[g.id];
-      const meta = GAME_TYPES[g.type] || GAME_TYPES.memory;
-      const label = g.type === 'memory' ? 'Une Parejas' : meta.label;
-      const done = (activity?.gamesCompleted || []).includes(g.id);
-      return {
-        id: g.id,
-        label,
-        done,
-        score: entry?.score ?? null,
-        total: entry?.total ?? null,
-        percentage: entry?.percentage ?? (done ? 100 : null)
-      };
-    });
-  const gamesWithPct = scoredGameEntries.filter((e) => e.percentage !== null);
-  const avgGamesScorePct =
-    gamesWithPct.length > 0
-      ? Math.round(gamesWithPct.reduce((acc, e) => acc + e.percentage, 0) / gamesWithPct.length)
-      : null;
+  const scoredGameEntries = gamesList.map((g) => {
+    const entry = gamesScores[g.id];
+    const meta = GAME_TYPES[g.type] || GAME_TYPES.memory;
+    const label = g.type === 'memory' ? 'Une Parejas' : meta.label;
+    const done = (activity?.gamesCompleted || []).includes(g.id);
+    return {
+      id: g.id,
+      label,
+      done,
+      score: entry?.score ?? null,
+      total: entry?.total ?? null,
+      percentage: entry?.percentage ?? (done ? 100 : null)
+    };
+  });
   const bestQuizPct =
     attempts.length > 0 ? Math.max(...attempts.map((a) => a.percentage || 0)) : null;
 
@@ -67,35 +100,12 @@ export default function TeacherTelemetryAnalytics({ pkg, activity, studentPiar }
       ? (activeAttempt.percentage || 0) - (previousAttempt.percentage || 0)
       : null;
 
-  const formatAttemptDate = (iso) => {
-    if (!iso) return 'Sin fecha';
-    try {
-      return new Date(iso).toLocaleString('es-CO', {
-        day: '2-digit',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch {
-      return 'Sin fecha';
-    }
-  };
-
-  const getScoreTone = (pct) => {
-    if (pct >= 80) return 'high';
-    if (pct >= 50) return 'mid';
-    return 'low';
-  };
-
-  const firstAttemptPct = attempts[0]?.percentage ?? null;
-  const latestAttemptPct = attempts[attempts.length - 1]?.percentage ?? null;
-  const netImprovement =
-    firstAttemptPct !== null && latestAttemptPct !== null && attempts.length > 1
-      ? latestAttemptPct - firstAttemptPct
-      : null;
-
-  const lastInteractionLabel = activity?.lastInteractionAt
-    ? new Date(activity.lastInteractionAt).toLocaleString('es-CO', {
+  const lastAttempt = attempts[attempts.length - 1] || null;
+  const lastInteractionMs = activity?.lastInteractionAt
+    ? Date.parse(activity.lastInteractionAt) || 0
+    : 0;
+  const lastInteractionLabel = lastInteractionMs
+    ? new Date(lastInteractionMs).toLocaleString('es-CO', {
         day: '2-digit',
         month: 'short',
         hour: '2-digit',
@@ -103,140 +113,271 @@ export default function TeacherTelemetryAnalytics({ pkg, activity, studentPiar }
       })
     : 'Sin actividad registrada aún';
 
-  return (
-    <div className="aia-analytics-layout">
-      {/* Banner de Contexto Claro: qué asignatura y tema se está analizando */}
-      <div className="aia-bento-card aia-telemetry-context-card">
-        <div className="aia-telemetry-context-top">
-          <div className="aia-telemetry-context-badges">
-            <span className="aia-subject-tag">
-              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                menu_book
-              </span>
-              <span>{pkg.subject}</span>
-            </span>
-            <span className={`aia-status-badge ${pkg.status === 'published' ? 'ok' : 'warn'}`}>
-              {pkg.status === 'published' ? 'Publicado al estudiante' : 'En borrador'}
-            </span>
+  // Habilidades por reforzar según el último intento, ordenadas por reincidencia
+  const reinforceList = lastAttempt
+    ? questions
+        .map((q, qIdx) => {
+          if (lastAttempt.answers?.[qIdx] === q.correctIndex) return null;
+          const failCount = attempts.filter((a) => a.answers?.[qIdx] !== q.correctIndex).length;
+          return {
+            key: q.id || qIdx,
+            num: qIdx + 1,
+            skill: q.skillTag || `Pregunta ${qIdx + 1}`,
+            failCount,
+            ref: q.remediationRef || q.remediationResource || ''
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => b.failCount - a.failCount)
+    : [];
+
+  // Alertas accionables para el docente
+  const alerts = [];
+  const daysInactive = lastInteractionMs ? Math.floor((nowMs - lastInteractionMs) / DAY_MS) : 0;
+  if (lastInteractionMs && daysInactive >= 3 && bestQuizPct !== 100) {
+    alerts.push({ tone: 'warn', icon: 'event_busy', text: `Sin actividad hace ${daysInactive} días` });
+  }
+  if (
+    lastAttempt &&
+    (lastAttempt.mediaSnapshot?.slidesPercent || 0) < 40 &&
+    (lastAttempt.mediaSnapshot?.videoPercent || 0) < 40
+  ) {
+    alerts.push({
+      tone: 'warn',
+      icon: 'visibility_off',
+      text: 'Presentó el examen sin explorar el material'
+    });
+  }
+  if (attempts.length > 1) {
+    const prevPct = attempts[attempts.length - 2]?.percentage || 0;
+    const lastPct = lastAttempt?.percentage || 0;
+    if (lastPct < prevPct) {
+      alerts.push({
+        tone: 'warn',
+        icon: 'trending_down',
+        text: `Bajó ${prevPct - lastPct}% frente al intento anterior`
+      });
+    }
+  }
+  if (attempts.length >= maxAttempts && (bestQuizPct ?? 0) < 80) {
+    alerts.push({
+      tone: 'danger',
+      icon: 'block',
+      text: 'Agotó los intentos sin dominar el tema'
+    });
+  }
+  if (bestQuizPct === 100) {
+    alerts.push({ tone: 'ok', icon: 'workspace_premium', text: 'Dominó el tema' });
+  }
+
+  const correctQuestionsCount = activeAttempt
+    ? questions.filter((q, qIdx) => activeAttempt.answers?.[qIdx] === q.correctIndex).length
+    : 0;
+
+  const handleConfirmReset = async () => {
+    if (isResetting) return;
+    setIsResetting(true);
+    await resetAttemptsForPackage(pkg.id, studentPiar);
+    setIsResetting(false);
+    setConfirmReset(false);
+  };
+
+  const renderQuestionFull = (q, qIdx) => {
+    const chosenIdx = activeAttempt.answers?.[qIdx];
+    const hasChosen = typeof chosenIdx === 'number' && chosenIdx >= 0;
+    const isCorrect = hasChosen && chosenIdx === q.correctIndex;
+    const prevFailed = previousAttempt && previousAttempt.answers?.[qIdx] !== q.correctIndex;
+    const recoveredNow = isCorrect && prevFailed;
+    const chosenLetter = hasChosen ? String.fromCharCode(65 + chosenIdx) : '—';
+    const chosenText = hasChosen
+      ? q.options?.[chosenIdx] || `Opción ${chosenLetter}`
+      : 'Sin respuesta registrada';
+    const correctLetter = String.fromCharCode(65 + (q.correctIndex ?? 0));
+    const correctText = q.options?.[q.correctIndex] || `Opción ${correctLetter}`;
+    const refText = q.remediationRef || q.remediationResource || '';
+
+    return (
+      <div
+        key={q.id || qIdx}
+        className={`aia-attempt-q-card ${isCorrect ? 'is-pass' : 'is-fail'}`}
+      >
+        <div className="aia-attempt-q-top">
+          <div className="aia-attempt-q-id">
+            <span className="aia-attempt-q-num aia-tabular">P{qIdx + 1}</span>
+            <span className="aia-attempt-q-skill">{q.skillTag}</span>
           </div>
 
-          <span className="aia-telemetry-last-seen aia-tabular">
+          <div className="aia-attempt-q-badges">
+            {recoveredNow && (
+              <span className="aia-attempt-recovered-pill">
+                ↑ Superada vs Intento #{previousAttempt.attemptNumber}
+              </span>
+            )}
+            <span className={`aia-matrix-cell-badge ${isCorrect ? 'pass' : 'fail'}`}>
+              {isCorrect ? '✓ Acertó' : '✕ Falló'}
+            </span>
+          </div>
+        </div>
+
+        <p className="aia-attempt-q-prompt">{q.question}</p>
+
+        <div className="aia-attempt-answer-grid">
+          <div
+            className={`aia-attempt-answer-box ${isCorrect ? 'chosen-pass' : 'chosen-fail'}`}
+          >
+            <span className="aia-attempt-answer-label">Respondió el estudiante</span>
+            <div className="aia-attempt-answer-value">
+              <span className="aia-attempt-opt-letter">{chosenLetter}</span>
+              <span>{chosenText}</span>
+            </div>
+          </div>
+
+          {!isCorrect && (
+            <div className="aia-attempt-answer-box expected-pass">
+              <span className="aia-attempt-answer-label">Respuesta correcta</span>
+              <div className="aia-attempt-answer-value">
+                <span className="aia-attempt-opt-letter">{correctLetter}</span>
+                <span>{correctText}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {!isCorrect && refText && (
+          <div className="aia-attempt-q-remediation">
             <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+              menu_book
+            </span>
+            <span>
+              Refuerzo sugerido: <strong>{refText}</strong>
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderQuestionSlim = (q, qIdx) => {
+    const chosenIdx = activeAttempt.answers?.[qIdx];
+    const chosenLetter = String.fromCharCode(65 + (typeof chosenIdx === 'number' ? chosenIdx : 0));
+    const chosenText = q.options?.[chosenIdx] || '';
+    const prevFailed = previousAttempt && previousAttempt.answers?.[qIdx] !== q.correctIndex;
+
+    return (
+      <div key={q.id || qIdx} className="aia-attempt-q-slim">
+        <span className="aia-attempt-q-num aia-tabular">P{qIdx + 1}</span>
+        <span className="aia-attempt-q-skill">{q.skillTag}</span>
+        <span className="aia-attempt-q-slim-answer">
+          {chosenLetter}. {chosenText}
+        </span>
+        {prevFailed && <span className="aia-attempt-recovered-pill">↑ Superada</span>}
+        <span className="aia-matrix-cell-badge pass">✓ Acertó</span>
+      </div>
+    );
+  };
+
+  return (
+    <div className="aia-analytics-layout">
+      {/* Banner Compacto: tema activo + 4 KPIs de avance + desglose de juegos + alertas */}
+      <div className="aia-bento-card aia-telemetry-context-card aia-telemetry-compact">
+        <div className="aia-telemetry-context-top">
+          <h3 className="aia-telemetry-context-topic">{pkg.topic}</h3>
+
+          <span className="aia-telemetry-last-seen aia-tabular">
+            <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
               schedule
             </span>
             <span>Última actividad: {lastInteractionLabel}</span>
           </span>
         </div>
 
-        <h3 className="aia-telemetry-context-topic">{pkg.topic}</h3>
-
-        {/* 4 Tarjetas alineadas 100% a los 4 pasos reales del estudiante */}
-        <div className="aia-telemetry-bento-grid">
+        <div className="aia-telemetry-bento-grid aia-telemetry-slim-grid">
           {/* Paso 01: Diapositivas */}
-          <div className="aia-telemetry-stat-card">
-            <div className="aia-telemetry-stat-top">
+          <div className="aia-telemetry-slim-card">
+            <div className="aia-telemetry-slim-row">
               <div className="aia-telemetry-icon-box slides">
                 <span className="material-symbols-outlined">slideshow</span>
               </div>
+              <div className="aia-telemetry-slim-copy">
+                <span className="aia-telemetry-slim-title">Diapositivas</span>
+                <span className="aia-telemetry-slim-meta aia-tabular">
+                  {slidesViewedCount}/{totalSlides} láminas · {activity?.slidesTimeSec || 0}s
+                  {(activity?.audioPlayCount || 0) > 0 ? ` · Voz ${activity.audioPlayCount}x` : ''}
+                </span>
+              </div>
               <span className={`aia-telemetry-pill aia-tabular ${slidesPct >= 80 ? 'high' : 'mid'}`}>
-                {slidesPct}% Visto
+                {slidesPct}%
               </span>
             </div>
-            <div className="aia-telemetry-stat-title">1. Diapositivas Interactivas</div>
-            <div className="aia-telemetry-stat-metrics aia-tabular">
-              <span>
-                Láminas abiertas: <strong>{slidesViewedCount}/{totalSlides}</strong>
-              </span>
-              <span>
-                Lectura: <strong>{activity?.slidesTimeSec || 0}s</strong>
-                {(activity?.audioPlayCount || 0) > 0
-                  ? ` · Voz: ${activity.audioPlayCount}x`
-                  : ''}
-              </span>
-            </div>
-            <div className="aia-progress-track">
+            <div className="aia-progress-track aia-slim-track">
               <div className="aia-progress-fill" style={{ width: `${slidesPct}%` }} />
             </div>
           </div>
 
           {/* Paso 02: Video YouTube */}
-          <div className="aia-telemetry-stat-card">
-            <div className="aia-telemetry-stat-top">
+          <div className="aia-telemetry-slim-card">
+            <div className="aia-telemetry-slim-row">
               <div className="aia-telemetry-icon-box video">
                 <span className="material-symbols-outlined">smart_display</span>
+              </div>
+              <div className="aia-telemetry-slim-copy">
+                <span className="aia-telemetry-slim-title">Video YouTube</span>
+                <span className="aia-telemetry-slim-meta aia-tabular">
+                  {videoDone ? 'Confirmado por el alumno' : 'Sin confirmar'}
+                </span>
               </div>
               <span className={`aia-telemetry-pill aia-tabular ${videoDone ? 'high' : 'mid'}`}>
                 {videoDone ? 'Confirmado ✓' : 'Pendiente'}
               </span>
             </div>
-            <div className="aia-telemetry-stat-title">2. Video YouTube de Apoyo</div>
-            <div className="aia-telemetry-stat-metrics aia-tabular">
-              <span>
-                Estado: <strong>{videoDone ? 'Visto por el alumno' : 'Sin confirmar'}</strong>
-              </span>
-              <span>
-                Interacciones: <strong>{activity?.videoPlayCount || 0}</strong>
-              </span>
-            </div>
-            <div className="aia-progress-track">
+            <div className="aia-progress-track aia-slim-track">
               <div className="aia-progress-fill" style={{ width: `${videoDone ? 100 : videoPct}%` }} />
             </div>
           </div>
 
           {/* Paso 03: Juegos Didácticos */}
-          <div className="aia-telemetry-stat-card">
-            <div className="aia-telemetry-stat-top">
+          <div className="aia-telemetry-slim-card">
+            <div className="aia-telemetry-slim-row">
               <div className="aia-telemetry-icon-box games">
                 <span className="material-symbols-outlined">sports_esports</span>
               </div>
+              <div className="aia-telemetry-slim-copy">
+                <span className="aia-telemetry-slim-title">Juegos IA</span>
+                <span className="aia-telemetry-slim-meta aia-tabular">
+                  {gamesCompletedCount}/{totalGames} hechos · {activity?.gamesTimeSec || 0}s
+                </span>
+              </div>
               <span className={`aia-telemetry-pill aia-tabular ${gamesPct >= 80 ? 'high' : 'mid'}`}>
-                {gamesPct}% Listo
+                {gamesPct}%
               </span>
             </div>
-            <div className="aia-telemetry-stat-title">3. Juegos Didácticos IA</div>
-            <div className="aia-telemetry-stat-metrics aia-tabular">
-              <span>
-                Realizados: <strong>{gamesCompletedCount}/{totalGames}</strong>
-              </span>
-              <span>
-                {avgGamesScorePct !== null
-                  ? `Calificación: ${avgGamesScorePct}%`
-                  : `Tiempo: ${activity?.gamesTimeSec || 0}s`}
-              </span>
-            </div>
-            <div className="aia-progress-track">
+            <div className="aia-progress-track aia-slim-track">
               <div className="aia-progress-fill" style={{ width: `${gamesPct}%` }} />
             </div>
           </div>
 
           {/* Paso 04: Examen de Refuerzo */}
-          <div className="aia-telemetry-stat-card">
-            <div className="aia-telemetry-stat-top">
+          <div className="aia-telemetry-slim-card">
+            <div className="aia-telemetry-slim-row">
               <div className="aia-telemetry-icon-box audio">
                 <span className="material-symbols-outlined">quiz</span>
+              </div>
+              <div className="aia-telemetry-slim-copy">
+                <span className="aia-telemetry-slim-title">Examen</span>
+                <span className="aia-telemetry-slim-meta aia-tabular">
+                  {attempts.length}/{maxAttempts} intentos
+                  {bestQuizPct === 100 ? ' · Dominado' : ''}
+                </span>
               </div>
               <span
                 className={`aia-telemetry-pill aia-tabular ${
                   bestQuizPct !== null && bestQuizPct >= 80 ? 'high' : 'mid'
                 }`}
               >
-                {bestQuizPct !== null ? `Mejor: ${bestQuizPct}%` : 'Sin intentos'}
+                {bestQuizPct !== null ? `Mejor ${bestQuizPct}%` : 'Sin intentos'}
               </span>
             </div>
-            <div className="aia-telemetry-stat-title">4. Examen de Refuerzo</div>
-            <div className="aia-telemetry-stat-metrics aia-tabular">
-              <span>
-                Intentos: <strong>{attempts.length}/{maxAttempts}</strong>
-              </span>
-              <span>
-                {netImprovement !== null
-                  ? `Mejora: ${netImprovement >= 0 ? `+${netImprovement}%` : `${netImprovement}%`}`
-                  : bestQuizPct === 100
-                    ? '¡Dominado!'
-                    : 'En seguimiento'}
-              </span>
-            </div>
-            <div className="aia-progress-track">
+            <div className="aia-progress-track aia-slim-track">
               <div className="aia-progress-fill" style={{ width: `${bestQuizPct ?? 0}%` }} />
             </div>
           </div>
@@ -244,19 +385,13 @@ export default function TeacherTelemetryAnalytics({ pkg, activity, studentPiar }
 
         {/* Desglose de calificación por cada Juego Didáctico (visible solo para el profesor) */}
         <div className="aia-telemetry-games-breakdown">
-          <span className="aia-telemetry-games-label">
-            Desempeño por Juego Didáctico:
-          </span>
+          <span className="aia-telemetry-games-label">Juegos:</span>
           <div className="aia-telemetry-games-pills aia-tabular">
             {scoredGameEntries.map((g) => (
               <span
                 key={g.id}
                 className={`aia-telemetry-game-chip ${
-                  g.percentage === null
-                    ? 'pending'
-                    : g.percentage >= 80
-                      ? 'high'
-                      : 'warn'
+                  g.percentage === null ? 'pending' : g.percentage >= 80 ? 'high' : 'warn'
                 }`}
               >
                 <strong>{g.label}:</strong>{' '}
@@ -269,30 +404,48 @@ export default function TeacherTelemetryAnalytics({ pkg, activity, studentPiar }
             ))}
           </div>
         </div>
+
+        {/* Alertas accionables */}
+        {alerts.length > 0 && (
+          <div className="aia-telemetry-alerts" role="status">
+            {alerts.map((al) => (
+              <span key={al.text} className={`aia-telemetry-alert ${al.tone}`}>
+                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                  {al.icon}
+                </span>
+                <span>{al.text}</span>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* BLOQUE 2: Análisis de Intentos y Debilidades por Micro-Habilidad */}
+      {/* BLOQUE 2: Resultados del examen */}
       <div className="aia-bento-card">
         <div className="aia-bento-header">
           <div>
-            <span className="aia-eyebrow">EVALUACIÓN DE {pkg.subject.toUpperCase()}</span>
-            <h3 className="aia-bento-title">
-              Análisis de Intentos, Debilidades por Micro-Habilidad y Evolución
-            </h3>
+            <span className="aia-eyebrow">EVALUACIÓN DE {String(pkg.subject || '').toUpperCase()}</span>
+            <h3 className="aia-bento-title">Resultados del examen</h3>
           </div>
 
           <div className="aia-header-inline-actions">
-            {netImprovement !== null && (
-              <span className="aia-improvement-banner-pill aia-tabular">
-                Evolución: {netImprovement >= 0 ? `+${netImprovement}%` : `${netImprovement}%`}
+            {archivedCount > 0 && (
+              <span
+                className="aia-telemetry-archive-pill aia-tabular"
+                title="Intentos de rondas anteriores guardados como historial"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
+                  history
+                </span>
+                <span>{archivedCount} archivados</span>
               </span>
             )}
             {attempts.length > 0 && (
               <button
                 type="button"
                 className="aia-btn-secondary aia-btn-sm"
-                onClick={() => resetAttemptsForPackage(pkg.id, studentPiar)}
-                title="Reiniciar contador de intentos a 0 para este estudiante"
+                onClick={() => setConfirmReset(true)}
+                title="Archivar los intentos actuales y devolver todos los intentos al estudiante"
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
                   restart_alt
@@ -315,14 +468,48 @@ export default function TeacherTelemetryAnalytics({ pkg, activity, studentPiar }
           </div>
         ) : (
           <>
-            {/* Selector táctil segmentado por intento (Intento #1, #2, #3...) */}
-            <div className="aia-attempt-segmented-bar" role="tablist" aria-label="Seleccionar intento del estudiante">
-              <div className="aia-attempt-segmented-meta">
-                <span className="aia-attempt-segmented-label">
-                  Inspeccionar intento
+            {/* Habilidades por reforzar según el último intento */}
+            {reinforceList.length > 0 ? (
+              <div className="aia-reinforce-strip">
+                <span className="aia-reinforce-label">
+                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                    flag
+                  </span>
+                  Por reforzar
                 </span>
+                <div className="aia-reinforce-chips">
+                  {reinforceList.map((r) => (
+                    <span key={r.key} className="aia-reinforce-chip">
+                      <strong>{r.skill}</strong>
+                      {r.failCount > 1 && (
+                        <span className="aia-reinforce-count aia-tabular">{r.failCount}×</span>
+                      )}
+                      {r.ref && <span className="aia-reinforce-ref">{r.ref}</span>}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="aia-reinforce-strip is-clear">
+                <span className="aia-reinforce-label">
+                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                    verified
+                  </span>
+                  Sin habilidades pendientes en el último intento
+                </span>
+              </div>
+            )}
+
+            {/* Selector táctil segmentado por intento */}
+            <div
+              className="aia-attempt-segmented-bar"
+              role="tablist"
+              aria-label="Seleccionar intento del estudiante"
+            >
+              <div className="aia-attempt-segmented-meta">
+                <span className="aia-attempt-segmented-label">Inspeccionar intento</span>
                 <span className="aia-attempt-segmented-hint">
-                  Haz clic en cada intento para ver sus respuestas exactas y contexto
+                  Haz clic en un intento para ver sus respuestas
                 </span>
               </div>
               <div className="aia-attempt-segmented-track">
@@ -349,17 +536,18 @@ export default function TeacherTelemetryAnalytics({ pkg, activity, studentPiar }
               </div>
             </div>
 
-            {/* Vista completa del intento seleccionado con micro-transición */}
+            {/* Vista del intento seleccionado */}
             {activeAttempt && (
               <div
                 key={`attempt-detail-${activeAttempt.attemptNumber}`}
                 className="aia-attempt-detail-panel"
                 role="tabpanel"
               >
-                {/* Bento de 3 tarjetas resumen del Intento #N */}
-                <div className="aia-attempt-bento-grid">
-                  {/* Card 1: Resultado y tiempo */}
-                  <div className={`aia-attempt-kpi-card tone-${getScoreTone(activeAttempt.percentage || 0)}`}>
+                <div className="aia-attempt-bento-grid aia-attempt-bento-duo">
+                  {/* Resultado del intento */}
+                  <div
+                    className={`aia-attempt-kpi-card tone-${getScoreTone(activeAttempt.percentage || 0)}`}
+                  >
                     <div className="aia-attempt-kpi-head">
                       <span className="aia-attempt-kpi-label">
                         Resultado · Intento #{activeAttempt.attemptNumber}
@@ -367,11 +555,7 @@ export default function TeacherTelemetryAnalytics({ pkg, activity, studentPiar }
                       {activeAttemptDelta !== null && (
                         <span
                           className={`aia-attempt-delta-pill aia-tabular ${
-                            activeAttemptDelta > 0
-                              ? 'up'
-                              : activeAttemptDelta < 0
-                                ? 'down'
-                                : 'flat'
+                            activeAttemptDelta > 0 ? 'up' : activeAttemptDelta < 0 ? 'down' : 'flat'
                           }`}
                         >
                           {activeAttemptDelta > 0
@@ -385,9 +569,7 @@ export default function TeacherTelemetryAnalytics({ pkg, activity, studentPiar }
                     </div>
 
                     <div className="aia-attempt-score-row aia-tabular">
-                      <strong className="aia-attempt-score-big">
-                        {activeAttempt.percentage}%
-                      </strong>
+                      <strong className="aia-attempt-score-big">{activeAttempt.percentage}%</strong>
                       <span className="aia-attempt-score-frac">
                         {activeAttempt.score} de {activeAttempt.totalQuestions} aciertos
                       </span>
@@ -407,297 +589,154 @@ export default function TeacherTelemetryAnalytics({ pkg, activity, studentPiar }
                         </span>
                         {formatAttemptDate(activeAttempt.timestamp)}
                       </span>
-                      <span>
+                      <span title="Tiempo aproximado: se registra con un mínimo de 15 s">
                         <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
                           timer
                         </span>
-                        {activeAttempt.durationSec || 60}s
+                        ≈ {activeAttempt.durationSec || 60}s
                       </span>
                     </div>
                   </div>
 
-                  {/* Card 2: Preparación previa al intento */}
+                  {/* Gráfica comparativa interactiva entre intentos */}
                   <div className="aia-attempt-kpi-card">
                     <div className="aia-attempt-kpi-head">
-                      <span className="aia-attempt-kpi-label">
-                        Preparación previa al Intento #{activeAttempt.attemptNumber}
-                      </span>
+                      <span className="aia-attempt-kpi-label">Comparativa entre intentos</span>
                     </div>
 
-                    <div className="aia-attempt-prep-list aia-tabular">
-                      {[
-                        {
-                          icon: 'slideshow',
-                          label: 'Diapositivas',
-                          pct: activeAttempt.mediaSnapshot?.slidesPercent ?? 0
-                        },
-                        {
-                          icon: 'smart_display',
-                          label: 'Video YouTube',
-                          pct: activeAttempt.mediaSnapshot?.videoPercent ?? 0
-                        },
-                        {
-                          icon: 'sports_esports',
-                          label: 'Juegos IA',
-                          pct: activeAttempt.mediaSnapshot?.gamesPercent ?? 0
+                    <div
+                      className="aia-attempt-bar-chart"
+                      role="group"
+                      aria-label="Gráfica comparativa de puntaje por intento"
+                    >
+                      {Array.from({ length: Math.max(maxAttempts, attempts.length) }).map(
+                        (_, idx) => {
+                          const num = idx + 1;
+                          const att = attempts.find((a) => a.attemptNumber === num) || null;
+                          const isCurrent = activeAttempt?.attemptNumber === num;
+                          const pct = att ? att.percentage || 0 : 0;
+                          const tone = att ? getScoreTone(pct) : 'empty';
+
+                          return (
+                            <button
+                              key={num}
+                              type="button"
+                              disabled={!att}
+                              onClick={() => att && setSelectedAttemptNum(num)}
+                              className={`aia-chart-col ${isCurrent ? 'is-active' : ''} ${
+                                !att ? 'is-empty' : ''
+                              }`}
+                              title={
+                                att
+                                  ? `Intento #${num}: ${pct}% (${att.score}/${att.totalQuestions}) — Clic para inspeccionar`
+                                  : `Intento #${num}: Pendiente`
+                              }
+                            >
+                              <span className="aia-chart-val aia-tabular">
+                                {att ? `${pct}%` : '—'}
+                              </span>
+                              <div className="aia-chart-track">
+                                <div
+                                  className={`aia-chart-bar tone-${tone}`}
+                                  style={{ height: att ? `${Math.max(8, pct)}%` : '0%' }}
+                                />
+                              </div>
+                              <span className="aia-chart-axis aia-tabular">#{num}</span>
+                            </button>
+                          );
                         }
-                      ].map((item) => (
-                        <div key={item.label} className="aia-attempt-prep-row">
-                          <span className="aia-attempt-prep-name">
-                            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                              {item.icon}
-                            </span>
-                            {item.label}
-                          </span>
-                          <div className="aia-attempt-prep-bar">
-                            <div style={{ width: `${Math.min(100, item.pct)}%` }} />
-                          </div>
-                          <strong>{item.pct}%</strong>
-                        </div>
-                      ))}
+                      )}
                     </div>
-
-                    <div className="aia-attempt-prep-note">
-                      <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                        {(activeAttempt.mediaSnapshot?.slidesPercent || 0) < 40 &&
-                        (activeAttempt.mediaSnapshot?.videoPercent || 0) < 40
-                          ? 'warning'
-                          : 'verified'}
-                      </span>
-                      <span>
-                        {(activeAttempt.mediaSnapshot?.slidesPercent || 0) < 40 &&
-                        (activeAttempt.mediaSnapshot?.videoPercent || 0) < 40
-                          ? 'Presentó este intento con poca exploración previa del material.'
-                          : 'Exploró el material de apoyo antes de responder este intento.'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Card 3: Balance y micro-habilidades a reforzar */}
-                  <div className="aia-attempt-kpi-card">
-                    <div className="aia-attempt-kpi-head">
-                      <span className="aia-attempt-kpi-label">
-                        Micro-habilidades · Intento #{activeAttempt.attemptNumber}
-                      </span>
-                    </div>
-
-                    <div className="aia-attempt-balance-chips aia-tabular">
-                      <span className="aia-balance-chip pass">
-                        ✓ {activeAttempt.score} acertadas
-                      </span>
-                      <span className="aia-balance-chip fail">
-                        ✕ {Math.max(0, activeAttempt.totalQuestions - activeAttempt.score)} falladas
-                      </span>
-                    </div>
-
-                    {activeAttempt.failedSkills?.length === 0 ? (
-                      <div className="aia-attempt-mastered-box">
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                          workspace_premium
-                        </span>
-                        <span>
-                          Dominó todas las habilidades evaluadas en este intento.
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="aia-attempt-skills-tags">
-                        {(activeAttempt.failedSkills || []).map((sk, i) => (
-                          <span key={i} className="aia-attempt-skill-pill">
-                            {sk}
-                          </span>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </div>
 
-                {/* Desglose completo pregunta por pregunta del Intento #N */}
+                {/* Respuestas del intento: las falladas en detalle, las acertadas en una línea */}
                 <div className="aia-attempt-q-section">
                   <div className="aia-attempt-q-section-head">
                     <h4 className="aia-matrix-title" style={{ margin: 0 }}>
-                      Respuestas del Estudiante en el Intento #{activeAttempt.attemptNumber}
+                      Respuestas del Intento #{activeAttempt.attemptNumber}
                     </h4>
-                    <span className="aia-attempt-q-counter aia-tabular">
-                      {activeAttempt.score}/{questions.length} correctas
-                    </span>
+                    <div className="aia-attempt-q-head-actions">
+                      <span className="aia-attempt-q-counter aia-tabular">
+                        {activeAttempt.score}/{questions.length} correctas
+                      </span>
+                      {correctQuestionsCount > 0 && (
+                        <button
+                          type="button"
+                          className="aia-attempt-q-toggle"
+                          onClick={() => setShowAllQuestions((v) => !v)}
+                          aria-expanded={showAllQuestions}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                            {showAllQuestions ? 'unfold_less' : 'unfold_more'}
+                          </span>
+                          <span>
+                            {showAllQuestions
+                              ? 'Contraer acertadas'
+                              : `Ver detalle de ${correctQuestionsCount} acertadas`}
+                          </span>
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   <div className="aia-attempt-q-list">
                     {questions.map((q, qIdx) => {
-                      const chosenIdx = activeAttempt.answers?.[qIdx];
-                      const hasChosen = typeof chosenIdx === 'number' && chosenIdx >= 0;
-                      const isCorrect = hasChosen && chosenIdx === q.correctIndex;
-                      const prevFailed =
-                        previousAttempt &&
-                        previousAttempt.answers?.[qIdx] !== q.correctIndex;
-                      const recoveredNow = isCorrect && prevFailed;
-                      const chosenLetter = hasChosen ? String.fromCharCode(65 + chosenIdx) : '—';
-                      const chosenText = hasChosen
-                        ? q.options?.[chosenIdx] || `Opción ${chosenLetter}`
-                        : 'Sin respuesta registrada';
-                      const correctLetter = String.fromCharCode(65 + (q.correctIndex ?? 0));
-                      const correctText =
-                        q.options?.[q.correctIndex] || `Opción ${correctLetter}`;
-
-                      return (
-                        <div
-                          key={q.id || qIdx}
-                          className={`aia-attempt-q-card ${isCorrect ? 'is-pass' : 'is-fail'}`}
-                        >
-                          <div className="aia-attempt-q-top">
-                            <div className="aia-attempt-q-id">
-                              <span className="aia-attempt-q-num aia-tabular">P{qIdx + 1}</span>
-                              <span className="aia-attempt-q-skill">{q.skillTag}</span>
-                            </div>
-
-                            <div className="aia-attempt-q-badges">
-                              {recoveredNow && (
-                                <span className="aia-attempt-recovered-pill">
-                                  ↑ Superada vs Intento #{previousAttempt.attemptNumber}
-                                </span>
-                              )}
-                              <span
-                                className={`aia-matrix-cell-badge ${isCorrect ? 'pass' : 'fail'}`}
-                              >
-                                {isCorrect ? '✓ Acertó' : '✕ Falló'}
-                              </span>
-                            </div>
-                          </div>
-
-                          <p className="aia-attempt-q-prompt">{q.question}</p>
-
-                          <div className="aia-attempt-answer-grid">
-                            <div
-                              className={`aia-attempt-answer-box ${
-                                isCorrect ? 'chosen-pass' : 'chosen-fail'
-                              }`}
-                            >
-                              <span className="aia-attempt-answer-label">
-                                Respondió el estudiante
-                              </span>
-                              <div className="aia-attempt-answer-value">
-                                <span className="aia-attempt-opt-letter">{chosenLetter}</span>
-                                <span>{chosenText}</span>
-                              </div>
-                            </div>
-
-                            {!isCorrect && (
-                              <div className="aia-attempt-answer-box expected-pass">
-                                <span className="aia-attempt-answer-label">
-                                  Respuesta correcta
-                                </span>
-                                <div className="aia-attempt-answer-value">
-                                  <span className="aia-attempt-opt-letter">{correctLetter}</span>
-                                  <span>{correctText}</span>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-
-                          {!isCorrect && q.remediationResource && (
-                            <div className="aia-attempt-q-remediation">
-                              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                                menu_book
-                              </span>
-                              <span>
-                                Refuerzo sugerido: <strong>{q.remediationResource}</strong>
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      );
+                      const isCorrect = activeAttempt.answers?.[qIdx] === q.correctIndex;
+                      return isCorrect && !showAllQuestions
+                        ? renderQuestionSlim(q, qIdx)
+                        : renderQuestionFull(q, qIdx);
                     })}
                   </div>
                 </div>
-              </div>
-            )}
-
-            {/* Matriz comparativa pregunta por pregunta (solo si hay 2+ intentos para comparar evolución) */}
-            {attempts.length > 1 && (
-              <div className="aia-matrix-wrapper">
-                <h4 className="aia-matrix-title">
-                  Evolución Comparativa entre Intentos · {pkg.subject}
-                </h4>
-                <table className="aia-matrix-table">
-                  <thead>
-                    <tr>
-                      <th>Pregunta / Micro-Habilidad Evaluada</th>
-                      {attempts.map((att) => (
-                        <th
-                          key={att.attemptNumber}
-                          className={`aia-tabular ${
-                            activeAttempt?.attemptNumber === att.attemptNumber
-                              ? 'is-selected-col'
-                              : ''
-                          }`}
-                        >
-                          Intento #{att.attemptNumber} ({att.percentage}%)
-                        </th>
-                      ))}
-                      <th className="aia-tabular">Fallos</th>
-                      <th>Estado Pedagógico</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {questions.map((q, qIdx) => {
-                      let failCount = 0;
-                      attempts.forEach((att) => {
-                        const passed = att.answers?.[qIdx] === q.correctIndex;
-                        if (!passed) failCount += 1;
-                      });
-                      const lastAttempt = attempts[attempts.length - 1];
-                      const masteredLatest = lastAttempt?.answers?.[qIdx] === q.correctIndex;
-
-                      return (
-                        <tr key={q.id || qIdx}>
-                          <td>
-                            <strong>P{qIdx + 1}:</strong> {q.skillTag}
-                          </td>
-                          {attempts.map((att) => {
-                            const passed = att.answers?.[qIdx] === q.correctIndex;
-                            return (
-                              <td
-                                key={att.attemptNumber}
-                                className={`aia-tabular ${
-                                  activeAttempt?.attemptNumber === att.attemptNumber
-                                    ? 'is-selected-col'
-                                    : ''
-                                }`}
-                              >
-                                <span
-                                  className={`aia-matrix-cell-badge ${passed ? 'pass' : 'fail'}`}
-                                >
-                                  {passed ? '✓ Acertó' : '✕ Falló'}
-                                </span>
-                              </td>
-                            );
-                          })}
-                          <td className="aia-tabular">
-                            <strong>{failCount}</strong> {failCount === 1 ? 'vez' : 'veces'}
-                          </td>
-                          <td>
-                            {masteredLatest ? (
-                              <span className="aia-mastery-tag ok">
-                                {failCount > 0
-                                  ? 'Superado tras refuerzo ↑'
-                                  : 'Dominado desde el 1° ✓'}
-                              </span>
-                            ) : (
-                              <span className="aia-mastery-tag pending">
-                                Requiere refuerzo adicional
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
               </div>
             )}
           </>
         )}
       </div>
+
+      {/* Confirmación antes de reiniciar intentos */}
+      {confirmReset && (
+        <div
+          className="aia-confirm-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="aia-reset-attempts-title"
+          onClick={() => setConfirmReset(false)}
+        >
+          <div className="aia-confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="aia-confirm-modal-icon">
+              <span className="material-symbols-outlined">restart_alt</span>
+            </div>
+            <h3 id="aia-reset-attempts-title">¿Reiniciar los intentos?</h3>
+            <p>
+              Los {attempts.length} {attempts.length === 1 ? 'intento actual' : 'intentos actuales'}{' '}
+              de <strong>{pkg.subject}</strong> se guardarán como historial archivado y el
+              estudiante volverá a tener sus {maxAttempts} intentos disponibles.
+            </p>
+            <div className="aia-confirm-modal-actions">
+              <button
+                type="button"
+                className="aia-btn-secondary"
+                onClick={() => setConfirmReset(false)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="aia-btn-primary"
+                onClick={handleConfirmReset}
+                disabled={isResetting}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>
+                  restart_alt
+                </span>
+                <span>{isResetting ? 'Reiniciando...' : 'Reiniciar intentos'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

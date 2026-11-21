@@ -185,15 +185,16 @@ export function AulaIaProvider({ children }) {
         return false;
       }
       try {
+        // Solo se descarga el nodo de actividad (no todo el expediente PIAR con diapositivas y paquetes)
         const { data, error } = await supabase
           .from('piars')
-          .select('data')
+          .select('aula_ia_activity:data->aula_ia_activity')
           .eq('id', piarId)
           .single();
 
-        if (error || !data?.data) return false;
+        if (error || !data) return false;
 
-        const dbActivity = data.data.aula_ia_activity;
+        const dbActivity = data.aula_ia_activity;
         if (dbActivity && typeof dbActivity === 'object') {
           setActivityByPackage((prev) => {
             const next = { ...prev };
@@ -662,10 +663,20 @@ export function AulaIaProvider({ children }) {
     async (packageId, piarObj = null) => {
       if (!packageId) return;
       const existing = activityByPackage[packageId] || createInitialActivityState();
+      const nowIso = new Date().toISOString();
+      // Archivar los intentos actuales como historial antes de devolver los intentos al estudiante
+      const archived = [
+        ...(Array.isArray(existing.archivedAttempts) ? existing.archivedAttempts : []),
+        ...(Array.isArray(existing.attempts) ? existing.attempts : []).map((a) => ({
+          ...a,
+          archivedAt: nowIso
+        }))
+      ].slice(-30);
       const updated = {
         ...existing,
+        archivedAttempts: archived,
         attempts: [],
-        lastInteractionAt: new Date().toISOString()
+        lastInteractionAt: nowIso
       };
 
       setActivityByPackage((prev) => {

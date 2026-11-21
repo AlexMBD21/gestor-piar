@@ -23,7 +23,7 @@ function saveGameState(storageKey, value) {
   }
 }
 
-function MemoryGameBoard({ storageKey, game, onWin, onNextGame }) {
+function MemoryGameBoard({ storageKey, game, onWin }) {
   const saved = useMemo(() => loadGameState(storageKey, {}), [storageKey]);
   const [resetCount, setResetCount] = useState(0);
 
@@ -163,14 +163,6 @@ function MemoryGameBoard({ storageKey, game, onWin, onNextGame }) {
             <span className="material-symbols-outlined">emoji_events</span>
             <span>¡Excelente trabajo! Uniste las {totalPairs} ideas clave con claridad.</span>
           </div>
-          {onNextGame && (
-            <button type="button" className="aia-btn-primary aia-btn-sm" onClick={onNextGame}>
-              <span>Siguiente juego</span>
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                arrow_forward
-              </span>
-            </button>
-          )}
         </div>
       )}
 
@@ -249,7 +241,7 @@ function MemoryGameBoard({ storageKey, game, onWin, onNextGame }) {
   );
 }
 
-function OrderStepsBoard({ storageKey, game, isRecorded, onWin, onNextGame }) {
+function OrderStepsBoard({ storageKey, game, isRecorded, onWin }) {
   const saved = useMemo(() => loadGameState(storageKey, {}), [storageKey]);
   const initialSteps = useMemo(() => {
     const source = game.steps || [];
@@ -339,14 +331,6 @@ function OrderStepsBoard({ storageKey, game, isRecorded, onWin, onNextGame }) {
                 : `Tienes ${correctCount} de ${ordered.length} pasos en su lugar exacto. Ajusta los resaltados en ámbar y vuelve a comprobar.`}
             </span>
           </div>
-          {allCorrect && onNextGame && (
-            <button type="button" className="aia-btn-primary aia-btn-sm" onClick={onNextGame}>
-              <span>Siguiente juego</span>
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                arrow_forward
-              </span>
-            </button>
-          )}
         </div>
       )}
 
@@ -391,7 +375,7 @@ function OrderStepsBoard({ storageKey, game, isRecorded, onWin, onNextGame }) {
   );
 }
 
-function ClassifyGameBoard({ storageKey, game, isRecorded, onWin, onNextGame }) {
+function ClassifyGameBoard({ storageKey, game, isRecorded, onWin }) {
   const saved = useMemo(() => loadGameState(storageKey, {}), [storageKey]);
   const items = useMemo(() => game.items || [], [game.items]);
   // Guardamos selecciones por texto de tarjeta para que nunca se pierdan al cambiar de pestaña
@@ -453,14 +437,6 @@ function ClassifyGameBoard({ storageKey, game, isRecorded, onWin, onNextGame }) 
             <span className="material-symbols-outlined">emoji_events</span>
             <span>¡Excelente criterio! Clasificaste las {items.length} tarjetas correctamente.</span>
           </div>
-          {onNextGame && (
-            <button type="button" className="aia-btn-primary aia-btn-sm" onClick={onNextGame}>
-              <span>Siguiente juego</span>
-              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                arrow_forward
-              </span>
-            </button>
-          )}
         </div>
       ) : (
         answeredCount === items.length &&
@@ -472,14 +448,6 @@ function ClassifyGameBoard({ storageKey, game, isRecorded, onWin, onNextGame }) 
                 ¡Actividad registrada! Puedes corregir {wrongCount === 1 ? 'la tarjeta en rojo' : `las ${wrongCount} tarjetas en rojo`} para mejorar, o avanzar al siguiente juego.
               </span>
             </div>
-            {onNextGame && (
-              <button type="button" className="aia-btn-secondary aia-btn-sm" onClick={onNextGame}>
-                <span>Siguiente juego</span>
-                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                  arrow_forward
-                </span>
-              </button>
-            )}
           </div>
         )
       )}
@@ -640,22 +608,31 @@ function FillSentenceBoard({ storageKey, game, isRecorded, onWin }) {
   );
 }
 
-export default function AdaptiveGamesArena({ pkg, activity, onCompleteGames }) {
+export default function AdaptiveGamesArena({
+  pkg,
+  activity,
+  isMirrorPreview = false,
+  onCompleteGames
+}) {
   const { recordGameTelemetry } = useAulaIa();
   const games = useMemo(() => getPackageGames(pkg), [pkg]);
   const [activeGameIdx, setActiveGameIdx] = useState(0);
 
   const safeIdx = Math.min(activeGameIdx, Math.max(0, games.length - 1));
   const activeGame = games[safeIdx];
-  const completedIds = activity?.gamesCompleted || [];
+  const completedIds = isMirrorPreview ? [] : activity?.gamesCompleted || [];
 
   if (!activeGame) return null;
 
   const meta = GAME_TYPES[activeGame.type] || GAME_TYPES.memory;
   const completedCount = completedIds.filter((id) => games.some((g) => g.id === id)).length;
-  const gameStorageKey = pkg?.id && activeGame?.id ? `piar_game_state_${pkg.id}_${activeGame.id}` : null;
+  const gameStorageKey =
+    !isMirrorPreview && pkg?.id && activeGame?.id
+      ? `piar_game_state_${pkg.id}_${activeGame.id}`
+      : null;
 
   const handleGameWon = (addedSeconds = 10, scoreData = null) => {
+    if (isMirrorPreview) return;
     const gameLabel = activeGame.type === 'memory' ? 'Une Parejas' : meta.label;
     recordGameTelemetry(pkg.id, {
       gameId: activeGame.id,
@@ -753,7 +730,6 @@ export default function AdaptiveGamesArena({ pkg, activity, onCompleteGames }) {
             storageKey={gameStorageKey}
             game={activeGame}
             onWin={handleGameWon}
-            onNextGame={handleGoNextGame}
           />
         )}
         {activeGame.type === 'order' && (
@@ -763,7 +739,6 @@ export default function AdaptiveGamesArena({ pkg, activity, onCompleteGames }) {
             game={activeGame}
             isRecorded={completedIds.includes(activeGame.id)}
             onWin={handleGameWon}
-            onNextGame={handleGoNextGame}
           />
         )}
         {activeGame.type === 'classify' && (
@@ -773,7 +748,6 @@ export default function AdaptiveGamesArena({ pkg, activity, onCompleteGames }) {
             game={activeGame}
             isRecorded={completedIds.includes(activeGame.id)}
             onWin={handleGameWon}
-            onNextGame={handleGoNextGame}
           />
         )}
         {activeGame.type === 'fill' && (
@@ -787,20 +761,43 @@ export default function AdaptiveGamesArena({ pkg, activity, onCompleteGames }) {
         )}
       </div>
 
-      {/* Pie amigable y paso al Examen Final */}
+      {/* Navegación paso a paso por los juegos y al final paso al Examen */}
       <div className="aia-slide-footer">
+        <button
+          type="button"
+          className="aia-btn-secondary"
+          disabled={safeIdx === 0}
+          onClick={() => setActiveGameIdx((idx) => Math.max(0, idx - 1))}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+            arrow_back
+          </span>
+          <span>Juego anterior</span>
+        </button>
+
         <span className="aia-slide-counter aia-tabular">
+          Juego {safeIdx + 1} de {games.length} ·{' '}
           {completedCount === games.length
-            ? '✓ ¡Superaste todos los juegos! Ya estás listo para tu examen.'
-            : `Llevas ${completedCount} de ${games.length} juegos completados · ¡Avanza a tu ritmo!`}
+            ? '✓ Todos realizados'
+            : `${completedCount}/${games.length} realizados`}
         </span>
-        {onCompleteGames && (
-          <button type="button" className="aia-btn-primary" onClick={onCompleteGames}>
-            <span>Pasar a Mi Examen de Refuerzo</span>
+
+        {safeIdx < games.length - 1 ? (
+          <button type="button" className="aia-btn-primary" onClick={handleGoNextGame}>
+            <span>Siguiente juego</span>
             <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-              quiz
+              arrow_forward
             </span>
           </button>
+        ) : (
+          onCompleteGames && (
+            <button type="button" className="aia-btn-primary" onClick={onCompleteGames}>
+              <span>Pasar a Mi Examen de Refuerzo</span>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                quiz
+              </span>
+            </button>
+          )
         )}
       </div>
     </div>

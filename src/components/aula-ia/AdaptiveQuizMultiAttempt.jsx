@@ -14,10 +14,15 @@ function parseTargetSlideIndex(remediationRef, fallbackIdx, totalSlides) {
   return fallbackIdx % safeTotal;
 }
 
-export default function AdaptiveQuizMultiAttempt({ pkg, activity, onNavigateToMedia }) {
+export default function AdaptiveQuizMultiAttempt({
+  pkg,
+  activity,
+  isMirrorPreview = false,
+  onNavigateToMedia
+}) {
   const { submitQuizAttempt } = useAulaIa();
   const questions = Array.isArray(pkg?.quizQuestions) ? pkg.quizQuestions : [];
-  const attempts = Array.isArray(activity?.attempts) ? activity.attempts : [];
+  const attempts = isMirrorPreview ? [] : Array.isArray(activity?.attempts) ? activity.attempts : [];
   const maxAttempts = pkg?.maxAttempts || 3;
 
   const [selectedAnswers, setSelectedAnswers] = useState({});
@@ -91,6 +96,7 @@ export default function AdaptiveQuizMultiAttempt({ pkg, activity, onNavigateToMe
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (isMirrorPreview) return;
     stopSpeech();
     const durationSec = Math.max(
       15,
@@ -110,32 +116,48 @@ export default function AdaptiveQuizMultiAttempt({ pkg, activity, onNavigateToMe
 
   return (
     <div className="aia-media-surface">
-      {/* Cabecera de intentos y mejor puntaje */}
+      {/* Cabecera de intentos y mejor puntaje (o modo vista previa no evaluativo para el docente) */}
       <div className="aia-media-header">
         <div className="aia-media-title-group">
           <span className="aia-step-pill">PASO 04 · Mi Examen de Refuerzo</span>
-          <span className="aia-badge-soft aia-tabular">
-            Intentos: {attemptsUsed} de {maxAttempts}
-          </span>
+          {isMirrorPreview ? (
+            <span className="aia-badge-soft aia-tabular">
+              Vista previa · {questions.length} preguntas ({maxAttempts} intentos)
+            </span>
+          ) : (
+            <span className="aia-badge-soft aia-tabular">
+              Intentos: {attemptsUsed} de {maxAttempts}
+            </span>
+          )}
         </div>
 
-        <div className="aia-telemetry-chip">
-          <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-            emoji_events
-          </span>
-          <span className="aia-tabular">Mejor logro: {bestScorePct}%</span>
-        </div>
+        {isMirrorPreview ? (
+          <div className="aia-telemetry-chip">
+            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+              visibility
+            </span>
+            <span>Solo vista de recursos</span>
+          </div>
+        ) : (
+          <div className="aia-telemetry-chip">
+            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+              emoji_events
+            </span>
+            <span className="aia-tabular">Mejor logro: {bestScorePct}%</span>
+          </div>
+        )}
       </div>
 
-      {/* Modo 1: Estudiante respondiendo 1 pregunta a la vez (baja carga cognitiva) */}
-      {isTakingNewAttempt && currentQuestion ? (
+      {/* Modo 1: Estudiante respondiendo 1 pregunta a la vez (o docente revisando preguntas en modo vista previa) */}
+      {(isTakingNewAttempt || isMirrorPreview) && currentQuestion ? (
         <form onSubmit={handleSubmit} className="aia-quiz-form aia-quiz-fixed-shell">
           <div className="aia-stage-scroll-body aia-quiz-scroll-inner">
             <div className="aia-quiz-stepper-top">
             <div className="aia-quiz-stepper-info">
               <strong>
-                Intento #{attemptsUsed + 1} de {maxAttempts} · Pregunta {safeQIdx + 1} de{' '}
-                {questions.length}
+                {isMirrorPreview
+                  ? `Vista previa · Pregunta ${safeQIdx + 1} de ${questions.length}`
+                  : `Intento #${attemptsUsed + 1} de ${maxAttempts} · Pregunta ${safeQIdx + 1} de ${questions.length}`}
               </strong>
               <span className="aia-tabular">
                 {answeredCount}/{questions.length} respondidas
@@ -226,9 +248,11 @@ export default function AdaptiveQuizMultiAttempt({ pkg, activity, onNavigateToMe
             </button>
 
             <span className="aia-slide-counter">
-              {allAnswered
-                ? '✓ Todas respondidas. Ya puedes calificar tu intento.'
-                : `Te faltan ${questions.length - answeredCount} por responder.`}
+              {isMirrorPreview
+                ? 'Modo vista previa · Las calificaciones se consultan en Intentos y Telemetría.'
+                : allAnswered
+                  ? '✓ Todas respondidas. Ya puedes calificar tu intento.'
+                  : `Te faltan ${questions.length - answeredCount} por responder.`}
             </span>
 
             {safeQIdx < questions.length - 1 ? (
@@ -242,7 +266,7 @@ export default function AdaptiveQuizMultiAttempt({ pkg, activity, onNavigateToMe
                   arrow_forward
                 </span>
               </button>
-            ) : (
+            ) : !isMirrorPreview ? (
               <button
                 type="submit"
                 className="aia-btn-primary"
@@ -252,6 +276,17 @@ export default function AdaptiveQuizMultiAttempt({ pkg, activity, onNavigateToMe
                   send
                 </span>
                 <span>Calificar Intento #{attemptsUsed + 1}</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="aia-btn-secondary"
+                onClick={() => handleJumpQuestion(0)}
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                  first_page
+                </span>
+                <span>Volver a P1</span>
               </button>
             )}
           </div>

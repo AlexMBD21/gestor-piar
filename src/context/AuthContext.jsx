@@ -79,6 +79,8 @@ export function AuthProvider({ children }) {
 
   const refreshStudentSession = useCallback(async () => {
     if (!studentSession?.studentDoc || !studentSession?.accessPin) return null;
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return null;
+
     const { data, error } = await authenticateStudent({
       documentNumber: studentSession.studentDoc,
       accessPin: studentSession.accessPin
@@ -91,6 +93,21 @@ export function AuthProvider({ children }) {
       }
       setStudentSession(data);
       return data;
+    }
+
+    // Si el docente cambió el PIN, pausó la cuenta o modificó el documento, interrumpir sesión inmediatamente
+    if (error && ['INVALID_PIN', 'INACTIVE', 'NOT_FOUND'].includes(error.code)) {
+      const reason =
+        error.code === 'INACTIVE'
+          ? 'Tu profesor pausó temporalmente el acceso a tu Aula. Consulta con él para reactivarlo.'
+          : 'Tu PIN de acceso fue actualizado por tu profesor. Ingresa con tu nuevo PIN para continuar.';
+      try {
+        localStorage.removeItem(STUDENT_SESSION_KEY);
+        sessionStorage.setItem('piar_student_logout_reason', reason);
+      } catch {
+        // Ignorar
+      }
+      setStudentSession(null);
     }
     return null;
   }, [studentSession?.studentDoc, studentSession?.accessPin]);

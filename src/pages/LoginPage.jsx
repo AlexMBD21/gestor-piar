@@ -3,13 +3,27 @@ import { useAuth } from '../context/AuthContext';
 
 export default function LoginPage() {
   const { signIn, signInAsStudent } = useAuth();
-  const [loginMode, setLoginMode] = useState('teacher'); // 'teacher' | 'student'
+  const [loginMode, setLoginMode] = useState(() => {
+    try {
+      return sessionStorage.getItem('piar_student_logout_reason') ? 'student' : 'teacher';
+    } catch {
+      return 'teacher';
+    }
+  }); // 'teacher' | 'student'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [studentDoc, setStudentDoc] = useState('');
   const [studentPin, setStudentPin] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(() => {
+    try {
+      const reason = sessionStorage.getItem('piar_student_logout_reason') || '';
+      if (reason) sessionStorage.removeItem('piar_student_logout_reason');
+      return reason;
+    } catch {
+      return '';
+    }
+  });
   const [loading, setLoading] = useState(false);
   const [darkMode, setDarkMode] = useState(
     () => localStorage.getItem('piar_dark_mode') === 'enabled'
