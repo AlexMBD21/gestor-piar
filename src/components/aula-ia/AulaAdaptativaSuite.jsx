@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { usePiar } from '../../context/PiarContext';
 import { useAulaIa } from '../../context/AulaIaContext';
 import { supabase } from '../../lib/supabaseClient';
@@ -1215,46 +1216,48 @@ export default function AulaAdaptativaSuite({
       />
 
       {/* Modal de confirmación antes de eliminar un material */}
-      {pendingDeletePkg && (
-        <div
-          className="aia-confirm-modal-backdrop"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="aia-delete-pkg-title"
-          onClick={() => setPendingDeletePkg(null)}
-        >
-          <div className="aia-confirm-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="aia-confirm-modal-icon">
-              <span className="material-symbols-outlined">delete_forever</span>
+      {pendingDeletePkg &&
+        createPortal(
+          <div
+            className="aia-confirm-modal-backdrop"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="aia-delete-pkg-title"
+            onClick={() => setPendingDeletePkg(null)}
+          >
+            <div className="aia-confirm-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="aia-confirm-modal-icon">
+                <span className="material-symbols-outlined">delete_forever</span>
+              </div>
+              <h3 id="aia-delete-pkg-title">¿Eliminar este material?</h3>
+              <p>
+                Se eliminará el paquete de <strong>{pendingDeletePkg.subject}</strong> (
+                {pendingDeletePkg.topic}) junto con su progreso y telemetría local. Podrás volver a
+                generarlo con el Agente IA cuando quieras.
+              </p>
+              <div className="aia-confirm-modal-actions">
+                <button
+                  type="button"
+                  className="aia-btn-secondary"
+                  onClick={() => setPendingDeletePkg(null)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="aia-btn-danger"
+                  onClick={handleConfirmDeletePackage}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>
+                    delete
+                  </span>
+                  <span>Eliminar material</span>
+                </button>
+              </div>
             </div>
-            <h3 id="aia-delete-pkg-title">¿Eliminar este material?</h3>
-            <p>
-              Se eliminará el paquete de <strong>{pendingDeletePkg.subject}</strong> (
-              {pendingDeletePkg.topic}) junto con su progreso y telemetría local. Podrás volver a
-              generarlo con el Agente IA cuando quieras.
-            </p>
-            <div className="aia-confirm-modal-actions">
-              <button
-                type="button"
-                className="aia-btn-secondary"
-                onClick={() => setPendingDeletePkg(null)}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="aia-btn-danger"
-                onClick={handleConfirmDeletePackage}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>
-                  delete
-                </span>
-                <span>Eliminar material</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

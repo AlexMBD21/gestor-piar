@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { getPackageGames, GAME_TYPES } from '../../lib/aulaGames';
 import { useAulaIa } from '../../context/AulaIaContext';
 
@@ -696,47 +697,50 @@ export default function TeacherTelemetryAnalytics({ pkg, activity, studentPiar }
       </div>
 
       {/* Confirmación antes de reiniciar intentos */}
-      {confirmReset && (
-        <div
-          className="aia-confirm-modal-backdrop"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="aia-reset-attempts-title"
-          onClick={() => setConfirmReset(false)}
-        >
-          <div className="aia-confirm-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="aia-confirm-modal-icon">
-              <span className="material-symbols-outlined">restart_alt</span>
+      {confirmReset &&
+        createPortal(
+          <div
+            className="aia-confirm-modal-backdrop"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="aia-reset-attempts-title"
+            onClick={() => setConfirmReset(false)}
+          >
+            <div className="aia-confirm-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="aia-confirm-modal-icon">
+                <span className="material-symbols-outlined">restart_alt</span>
+              </div>
+              <h3 id="aia-reset-attempts-title">¿Reiniciar los intentos?</h3>
+              <p>
+                Los {attempts.length}{' '}
+                {attempts.length === 1 ? 'intento actual' : 'intentos actuales'} de{' '}
+                <strong>{pkg.subject}</strong> se guardarán como historial archivado y el
+                estudiante volverá a tener sus {maxAttempts} intentos disponibles.
+              </p>
+              <div className="aia-confirm-modal-actions">
+                <button
+                  type="button"
+                  className="aia-btn-secondary"
+                  onClick={() => setConfirmReset(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className="aia-btn-primary"
+                  onClick={handleConfirmReset}
+                  disabled={isResetting}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>
+                    restart_alt
+                  </span>
+                  <span>{isResetting ? 'Reiniciando...' : 'Reiniciar intentos'}</span>
+                </button>
+              </div>
             </div>
-            <h3 id="aia-reset-attempts-title">¿Reiniciar los intentos?</h3>
-            <p>
-              Los {attempts.length} {attempts.length === 1 ? 'intento actual' : 'intentos actuales'}{' '}
-              de <strong>{pkg.subject}</strong> se guardarán como historial archivado y el
-              estudiante volverá a tener sus {maxAttempts} intentos disponibles.
-            </p>
-            <div className="aia-confirm-modal-actions">
-              <button
-                type="button"
-                className="aia-btn-secondary"
-                onClick={() => setConfirmReset(false)}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="aia-btn-primary"
-                onClick={handleConfirmReset}
-                disabled={isResetting}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>
-                  restart_alt
-                </span>
-                <span>{isResetting ? 'Reiniciando...' : 'Reiniciar intentos'}</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

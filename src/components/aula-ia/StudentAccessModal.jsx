@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   generateRandomPin,
   getStudentCredential,
@@ -92,7 +93,7 @@ export default function StudentAccessModal({
     if (onSaved) onSaved(result.credential);
   };
 
-  return (
+  return createPortal(
     <div
       className="aia-confirm-modal-backdrop"
       role="dialog"
@@ -245,7 +246,8 @@ export default function StudentAccessModal({
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

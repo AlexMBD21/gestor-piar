@@ -7,8 +7,6 @@ export default function Sidebar({
   setActiveIaSubTab,
   sidebarCollapsed,
   setSidebarCollapsed,
-  darkMode,
-  setDarkMode,
   isSuperAdmin,
   onSignOut
 }) {
@@ -258,30 +256,6 @@ export default function Sidebar({
             <span className="material-symbols-outlined">logout</span>
             <span>Cerrar Sesión</span>
           </a>
-          <div
-            className="theme-toggle-row"
-            title={darkMode ? 'Modo oscuro activo' : 'Activar modo oscuro'}
-          >
-            <div
-              className="theme-toggle-label"
-              style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-            >
-              <span
-                className="material-symbols-outlined"
-                style={{ fontSize: '18px', color: 'var(--text-muted)' }}
-              >
-                {darkMode ? 'dark_mode' : 'light_mode'}
-              </span>
-              <span>Modo Oscuro</span>
-            </div>
-            <button
-              className={`theme-toggle-btn ${darkMode ? 'active' : ''}`}
-              onClick={() => setDarkMode(!darkMode)}
-              aria-label="Alternar modo oscuro"
-            >
-              <div className="toggle-thumb"></div>
-            </button>
-          </div>
         </div>
       </div>
     </aside>

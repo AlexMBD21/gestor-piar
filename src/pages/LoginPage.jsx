@@ -27,11 +27,11 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const isDark = localStorage.getItem('piar_dark_mode') === 'enabled';
-    if (isDark) {
-      document.body.classList.add('dark-mode');
-    } else {
-      document.body.classList.remove('dark-mode');
+    document.body.classList.remove('dark-mode');
+    try {
+      localStorage.removeItem('piar_dark_mode');
+    } catch {
+      // Ignorar restricciones de almacenamiento
     }
   }, []);
 

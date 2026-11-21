@@ -801,7 +801,6 @@ body.dark-mode .nav-link.active {
   overflow-x: hidden;
   scrollbar-gutter: stable;
   position: relative;
-  z-index: 1;
 }
 
 /* Top App Header bar */
@@ -9297,7 +9296,6 @@ body.dark-mode .nav-link-preview.active {
   scrollbar-gutter: stable;
   padding-bottom: 36px;
   position: relative;
-  z-index: 1;
 }
 
 .aia-student-topbar {

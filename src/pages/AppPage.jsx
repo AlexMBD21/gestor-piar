@@ -56,18 +56,18 @@ export default function AppPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => localStorage.getItem('piar_sidebar_collapsed') === 'true'
   );
-  const [darkMode, setDarkMode] = useState(
-    () => localStorage.getItem('piar_dark_mode') === 'enabled'
-  );
   const [toasts, setToasts] = useState([]);
   const [showStudentModal, setShowStudentModal] = useState(false);
   const [confirmModal, setConfirmModal] = useState({ show: false, tabId: null });
 
   useEffect(() => {
-    if (darkMode) document.body.classList.add('dark-mode');
-    else document.body.classList.remove('dark-mode');
-    localStorage.setItem('piar_dark_mode', darkMode ? 'enabled' : 'disabled');
-  }, [darkMode]);
+    document.body.classList.remove('dark-mode');
+    try {
+      localStorage.removeItem('piar_dark_mode');
+    } catch {
+      // Ignorar restricciones de almacenamiento
+    }
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('piar_sidebar_collapsed', sidebarCollapsed ? 'true' : '');
@@ -151,8 +151,6 @@ export default function AppPage() {
         setActiveIaSubTab={setActiveIaSubTab}
         sidebarCollapsed={sidebarCollapsed}
         setSidebarCollapsed={setSidebarCollapsed}
-        darkMode={darkMode}
-        setDarkMode={setDarkMode}
         isSuperAdmin={isSuperAdmin}
         onSignOut={signOut}
       />
@@ -169,15 +167,6 @@ export default function AppPage() {
           <span className="mobile-top-bar__subtitle">Gestor PIAR Suite</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <button
-            className="mobile-top-bar__theme"
-            onClick={() => setDarkMode(!darkMode)}
-            title="Cambiar tema"
-          >
-            <span className="material-symbols-outlined">
-              {darkMode ? 'light_mode' : 'dark_mode'}
-            </span>
-          </button>
           <button
             className="mobile-top-bar__theme mobile-top-bar__logout"
             onClick={signOut}
