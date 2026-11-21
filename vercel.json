@@ -2,6 +2,9 @@
   "functions": {
     "api/aula-ia-generate.js": {
       "maxDuration": 60
+    },
+    "api/youtube-resolve.js": {
+      "maxDuration": 20
     }
   },
   "rewrites": [

@@ -43,11 +43,13 @@ export default function AdaptiveVideoGuide({
     videoId: workingVideoId
   };
 
-  // Verificación real contra YouTube oEmbed: prueba el video del paquete y, si falla,
-  // recorre automáticamente los respaldos verificados de la misma asignatura.
+  const searchQuery = pkg?.youtubeVideo?.searchQuery || defaultYt.searchQuery || '';
+
+  // Verificación real contra YouTube (playabilityStatus): prueba el video del paquete y, si falla
+  // o es un evento en directo expirado, busca automáticamente un video activo del tema.
   useEffect(() => {
     const list = candidatesKey ? candidatesKey.split('|') : [];
-    if (list.length === 0) {
+    if (list.length === 0 && !searchQuery) {
       setVideoAvailability('unavailable');
       setVerifiedMeta(null);
       setWorkingVideoId(null);
@@ -59,7 +61,7 @@ export default function AdaptiveVideoGuide({
     setVerifiedMeta(null);
     setAutoReplaced(false);
 
-    resolveWorkingYoutubeVideo(list, controller.signal)
+    resolveWorkingYoutubeVideo(list, controller.signal, { searchQuery })
       .then((resolved) => {
         if (controller.signal.aborted) return;
         if (resolved.status === 'none' || !resolved.videoId) {
@@ -82,7 +84,7 @@ export default function AdaptiveVideoGuide({
       });
 
     return () => controller.abort();
-  }, [candidatesKey, rawPkgVideoId]);
+  }, [candidatesKey, rawPkgVideoId, searchQuery]);
 
   // Si el video original estaba caído, el docente guarda automáticamente el respaldo verificado
   // para que el estudiante reciba directamente un video que funciona.

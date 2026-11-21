@@ -248,12 +248,13 @@ export function buildDefaultYoutubeVideo(subject = '', topic = '') {
 
   if (domain === 'espanol') {
     return {
-      videoId: '11wUdm7gBmI',
-      title: `Categorías Gramaticales y Comprensión (${cleanSubject})`,
-      channelTitle: 'La Profe Mónica',
+      videoId: 'B-Gt430Y-GY',
+      fallbackVideoIds: ['aA-O5WW6dRQ'],
+      title: `Comprensión Lectora y Estructura Narrativa (${cleanSubject})`,
+      channelTitle: 'YouTube Educativo',
       searchQuery,
       keyMoments: [
-        '0:40 Identificación rápida de palabras clave en la oración',
+        '0:40 Identificación rápida de las partes e ideas clave del texto',
         '1:50 Ejemplos prácticos paso a paso',
         '2:40 Trucos para evitar errores en lectura'
       ]
