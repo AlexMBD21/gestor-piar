@@ -107,7 +107,10 @@ export default function AppPage() {
   };
 
   const switchTab = async (tabId) => {
-    if (unsavedChanges && (tabId === 'tab-dashboard' || tabId === 'tab-admin')) {
+    if (
+      unsavedChanges &&
+      (tabId === 'tab-dashboard' || tabId === 'tab-admin' || tabId === 'tab-aula-ia')
+    ) {
       setConfirmModal({ show: true, tabId });
       return;
     }
