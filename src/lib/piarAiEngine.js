@@ -176,9 +176,10 @@ export function buildDefaultYoutubeVideo(subject = '', topic = '') {
 
   if (domain === 'edu_fisica') {
     return {
-      videoId: null,
+      videoId: 'F5nGQTnoacQ',
+      fallbackVideoIds: ['wUxWiu5Veg8'],
       title: `Guía Práctica: ${cleanTopic} (${cleanSubject})`,
-      channelTitle: 'Selección sugerida para Educación Física',
+      channelTitle: 'Lezama Sports TV',
       searchQuery,
       keyMoments: [
         '0:30 Calentamiento articular y ubicación espacial en cancha',
@@ -190,9 +191,10 @@ export function buildDefaultYoutubeVideo(subject = '', topic = '') {
 
   if (domain === 'artes') {
     return {
-      videoId: null,
+      videoId: 'Jh5LAEcWVZs',
+      fallbackVideoIds: ['MNKRUoKcWb0'],
       title: `Taller Visual: ${cleanTopic} (${cleanSubject})`,
-      channelTitle: 'Selección sugerida para Educación Artística',
+      channelTitle: 'Miss Teresa Art',
       searchQuery,
       keyMoments: [
         '0:30 Preparación del espacio y trazos iniciales suaves',
@@ -204,9 +206,10 @@ export function buildDefaultYoutubeVideo(subject = '', topic = '') {
 
   if (domain === 'convivencia') {
     return {
-      videoId: null,
+      videoId: 'ZjZHxOEv1p8',
+      fallbackVideoIds: ['hsECYeYB2po'],
       title: `Análisis Participativo: ${cleanTopic} (${cleanSubject})`,
-      channelTitle: 'Selección sugerida para Ciudadanía y Sociales',
+      channelTitle: 'Smile and Learn - Español',
       searchQuery,
       keyMoments: [
         '0:30 Contexto cotidiano y lectura del caso central',
