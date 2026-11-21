@@ -299,11 +299,12 @@ export function AulaIaProvider({ children }) {
       });
       newPkg.status = publishImmediately ? 'published' : 'draft';
       // Verificar en YouTube que el video asignado realmente funcione antes de entregarlo
-      onProgress?.('Verificando disponibilidad del video de apoyo en YouTube...');
+      onProgress?.('Verificando video reproducible en YouTube para el estudiante...');
       newPkg.youtubeVideo = await ensureVerifiedPackageYoutube(
         newPkg.youtubeVideo,
         newPkg.subject || subject,
-        newPkg.topic || topic
+        newPkg.topic || topic,
+        onProgress
       );
 
       const initialAct = createInitialActivityState();

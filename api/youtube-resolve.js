@@ -118,7 +118,7 @@ async function searchYoutubeCandidates(query) {
     if (!res.ok) return [];
     const html = await res.text();
     const matches = [...html.matchAll(/"videoRenderer":\{"videoId":"([A-Za-z0-9_-]{11})"/g)];
-    return Array.from(new Set(matches.map((m) => m[1]))).slice(0, 6);
+    return Array.from(new Set(matches.map((m) => m[1]))).slice(0, 8);
   } catch {
     return [];
   }
@@ -133,6 +133,14 @@ export default async function handler(req, res) {
   const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body || {};
   const videoId = typeof body.videoId === 'string' ? body.videoId.trim() : '';
   const searchQuery = typeof body.searchQuery === 'string' ? body.searchQuery.trim() : '';
+  const retryQueries = Array.isArray(body.retryQueries)
+    ? body.retryQueries
+        .filter((q) => typeof q === 'string' && q.trim())
+        .map((q) => q.trim())
+    : [];
+  const allSearchQueries = Array.from(
+    new Set([searchQuery, ...retryQueries].filter(Boolean))
+  ).slice(0, 3);
   const fallbackIds = Array.isArray(body.fallbackIds)
     ? body.fallbackIds.filter((id) => typeof id === 'string' && YT_ID_REGEX.test(id))
     : [];
@@ -173,10 +181,18 @@ export default async function handler(req, res) {
     return null;
   };
 
-  // 1. Si se pide priorizar búsqueda (al generar nuevo paquete IA), buscar video exacto del tema primero
-  if (preferSearch && searchQuery) {
-    const foundIds = await searchYoutubeCandidates(searchQuery);
-    const match = await tryIds(foundIds, 'search');
+  const trySearchWithRetries = async () => {
+    for (const query of allSearchQueries) {
+      const foundIds = await searchYoutubeCandidates(query);
+      const match = await tryIds(foundIds, 'search');
+      if (match) return match;
+    }
+    return null;
+  };
+
+  // 1. Si se pide priorizar búsqueda (al generar nuevo paquete IA), reintentar búsquedas hasta hallar un video reproducible
+  if (preferSearch && allSearchQueries.length > 0) {
+    const match = await trySearchWithRetries();
     if (match) return res.status(200).json(match);
   }
 
@@ -186,14 +202,13 @@ export default async function handler(req, res) {
     if (direct) return res.status(200).json(direct);
   }
 
-  // 3. Si el video actual falló y no se buscó aún, buscar por tema en YouTube
-  if (!preferSearch && searchQuery) {
-    const foundIds = await searchYoutubeCandidates(searchQuery);
-    const match = await tryIds(foundIds, 'search');
+  // 3. Si el video actual falló y no se buscó aún, buscar con reintentos por tema y asignatura
+  if (!preferSearch && allSearchQueries.length > 0) {
+    const match = await trySearchWithRetries();
     if (match) return res.status(200).json(match);
   }
 
-  // 4. Último recurso: probar respaldos verificados de la misma asignatura
+  // 4. Garantía final: probar respaldos verificados de la asignatura para asegurar sí o sí un video reproducible
   const fallbackMatch = await tryIds(fallbackIds, 'fallback');
   if (fallbackMatch) return res.status(200).json(fallbackMatch);
 
