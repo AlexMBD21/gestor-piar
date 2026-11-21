@@ -7,14 +7,15 @@ function getLabelText(label) {
 }
 
 export default function AnexoQuickNav({ sections, ariaLabel }) {
-  const [activeSectionId, setActiveSectionId] = useState(() => (Array.isArray(sections) && sections[0]?.id) || '');
+  const [activeSectionId, setActiveSectionId] = useState(
+    () => (Array.isArray(sections) && sections[0]?.id) || ''
+  );
   const navRef = useRef(null);
   const btnRefs = useRef({});
   const [indicatorStyle, setIndicatorStyle] = useState({ left: 0, width: 0, opacity: 0 });
   const isScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef(null);
   const scrollAnimRef = useRef(null);
-  const wasHiddenRef = useRef(true);
 
   // Sincronizar activeSectionId si sections cambia o el id actual no existe en la lista
   useEffect(() => {
@@ -31,7 +32,7 @@ export default function AnexoQuickNav({ sections, ariaLabel }) {
     if (activeBtn && nav) {
       const navRect = nav.getBoundingClientRect();
       const btnRect = activeBtn.getBoundingClientRect();
-      
+
       // Si el contenedor está oculto (display: none), no calcular
       if (navRect.width === 0 || btnRect.width === 0) return;
 
@@ -45,141 +46,162 @@ export default function AnexoQuickNav({ sections, ariaLabel }) {
     }
   }, [activeSectionId]);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      // Si el usuario acaba de hacer clic en un botón, no sobreescribir durante la animación de scroll
-      if (isScrollingRef.current) return;
-      if (!Array.isArray(sections) || sections.length === 0) return;
+  const computeActiveSectionFromScroll = useCallback(() => {
+    if (isScrollingRef.current) return;
+    if (!Array.isArray(sections) || sections.length === 0) return;
 
-      const navEl = navRef.current;
-      // Si el componente está en una pestaña oculta (display: none), ignorar eventos de scroll
-      if (!navEl || navEl.offsetParent === null) return;
+    const navEl = navRef.current;
+    if (!navEl) return;
 
-      const viewport = navEl.closest('.main-scroll-viewport');
-      const useViewport = Boolean(
-        viewport && viewport.scrollHeight > viewport.clientHeight + 2
-      );
-      const currentScrollY = useViewport
-        ? viewport.scrollTop
-        : window.pageYOffset || document.documentElement.scrollTop || 0;
+    // Si pertenece a una pestaña inactiva (display: none), ignorar
+    const tabParent = navEl.closest('.tab-content');
+    if (tabParent && !tabParent.classList.contains('active')) return;
+    if (navEl.getClientRects().length === 0) return;
 
-      // 1. Si el scroll está cerca del inicio superior, siempre debe ser la primera sección
-      if (currentScrollY < 120) {
-        if (sections[0]?.id) {
-          setActiveSectionId((prev) => (prev !== sections[0].id ? sections[0].id : prev));
-        }
-        return;
+    const viewport = navEl.closest('.main-scroll-viewport');
+    const useViewport = Boolean(
+      viewport && viewport.scrollHeight > viewport.clientHeight + 2
+    );
+    const currentScrollY = useViewport
+      ? viewport.scrollTop
+      : window.pageYOffset || document.documentElement.scrollTop || 0;
+
+    // 1. Si está en el tope inicial del formulario, activar la primera sección
+    if (currentScrollY <= 36) {
+      if (sections[0]?.id) {
+        setActiveSectionId((prev) => (prev !== sections[0].id ? sections[0].id : prev));
       }
+      return;
+    }
 
-      // 2. Si el scroll ha llegado al final de la página (fondo), activar la última sección
-      const isAtBottom = useViewport
-        ? viewport.clientHeight + currentScrollY >= viewport.scrollHeight - 60
-        : window.innerHeight + currentScrollY >= document.documentElement.scrollHeight - 60;
-      if (isAtBottom) {
-        const lastSec = sections[sections.length - 1];
-        if (lastSec?.id) {
-          setActiveSectionId((prev) => (prev !== lastSec.id ? lastSec.id : prev));
-        }
-        return;
+    // 2. Si llegó al final inferior del scroll, activar la última sección
+    const isAtBottom = useViewport
+      ? viewport.clientHeight + currentScrollY >= viewport.scrollHeight - 40
+      : window.innerHeight + currentScrollY >= document.documentElement.scrollHeight - 40;
+    if (isAtBottom) {
+      const lastSec = sections[sections.length - 1];
+      if (lastSec?.id) {
+        setActiveSectionId((prev) => (prev !== lastSec.id ? lastSec.id : prev));
       }
+      return;
+    }
 
-      // 3. ScrollSpy preciso mediante getBoundingClientRect en el viewport
-      // Trigger a 130px (debajo del header y la barra sticky de secciones)
-      const triggerY = 130;
-      let matchedSectionId = sections[0].id;
+    // 3. ScrollSpy reactivo: línea de lectura activa debajo de la barra sticky (QuickNav)
+    const navRect = navEl.getBoundingClientRect();
+    const navBottom = navRect.bottom > 0 ? navRect.bottom : 88;
+    const triggerY = navBottom + 155;
+    let matchedSectionId = sections[0].id;
 
-      for (let i = 0; i < sections.length; i++) {
-        const sec = sections[i];
-        if (!sec?.id) continue;
-        const el = document.getElementById(sec.id);
-        if (!el || el.offsetParent === null) continue;
+    for (let i = 0; i < sections.length; i++) {
+      const sec = sections[i];
+      if (!sec?.id) continue;
+      const el = document.getElementById(sec.id);
+      if (!el || el.getClientRects().length === 0) continue;
 
-        const rect = el.getBoundingClientRect();
-        if (rect.top <= triggerY) {
-          matchedSectionId = sec.id;
-        } else {
-          // Como las secciones van en orden hacia abajo, si esta sección aún está por debajo del triggerY,
-          // la sección activa actual es la anterior
-          break;
-        }
+      const rect = el.getBoundingClientRect();
+      if (rect.top <= triggerY) {
+        matchedSectionId = sec.id;
+      } else {
+        break;
       }
+    }
 
-      if (matchedSectionId) {
-        setActiveSectionId((prev) => (prev !== matchedSectionId ? matchedSectionId : prev));
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
-    handleScroll();
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll, { capture: true });
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-    };
+    if (matchedSectionId) {
+      setActiveSectionId((prev) => (prev !== matchedSectionId ? matchedSectionId : prev));
+    }
   }, [sections]);
 
-  // Actualizar la posición del indicador deslizante al cambiar de sección activa o redimensionar
+  useEffect(() => {
+    const navEl = navRef.current;
+    const viewport = navEl?.closest('.main-scroll-viewport') || document.querySelector('.main-scroll-viewport');
+
+    const cancelProgrammaticScrollOnUserInput = () => {
+      if (isScrollingRef.current) {
+        if (scrollAnimRef.current) {
+          cancelAnimationFrame(scrollAnimRef.current);
+          scrollAnimRef.current = null;
+        }
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+          scrollTimeoutRef.current = null;
+        }
+        isScrollingRef.current = false;
+      }
+    };
+
+    if (viewport) {
+      viewport.addEventListener('scroll', computeActiveSectionFromScroll, { passive: true });
+      viewport.addEventListener('wheel', cancelProgrammaticScrollOnUserInput, { passive: true });
+      viewport.addEventListener('touchmove', cancelProgrammaticScrollOnUserInput, { passive: true });
+    }
+    window.addEventListener('scroll', computeActiveSectionFromScroll, { passive: true, capture: true });
+    window.addEventListener('wheel', cancelProgrammaticScrollOnUserInput, { passive: true });
+    window.addEventListener('touchmove', cancelProgrammaticScrollOnUserInput, { passive: true });
+
+    computeActiveSectionFromScroll();
+
+    return () => {
+      if (viewport) {
+        viewport.removeEventListener('scroll', computeActiveSectionFromScroll);
+        viewport.removeEventListener('wheel', cancelProgrammaticScrollOnUserInput);
+        viewport.removeEventListener('touchmove', cancelProgrammaticScrollOnUserInput);
+      }
+      window.removeEventListener('scroll', computeActiveSectionFromScroll, { capture: true });
+      window.removeEventListener('wheel', cancelProgrammaticScrollOnUserInput);
+      window.removeEventListener('touchmove', cancelProgrammaticScrollOnUserInput);
+    };
+  }, [computeActiveSectionFromScroll]);
+
+  // Actualizar la posición de la pastilla deslizante cuando cambia activeSectionId
   useEffect(() => {
     updateIndicator();
     const rafId = requestAnimationFrame(updateIndicator);
     const timerId = setTimeout(updateIndicator, 60);
     window.addEventListener('resize', updateIndicator);
 
-    let resizeObserver;
-    if (navRef.current && typeof ResizeObserver !== 'undefined') {
-      resizeObserver = new ResizeObserver(() => {
-        requestAnimationFrame(() => {
-          const navEl = navRef.current;
-          if (!navEl || navEl.offsetParent === null) {
-            wasHiddenRef.current = true;
-            return;
-          }
-
-          // Si acaba de transicionar de oculto a visible (por ejemplo al cambiar de pestaña)
-          if (wasHiddenRef.current) {
-            wasHiddenRef.current = false;
-            navEl.scrollLeft = 0;
-            const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
-            if (currentScrollY < 120 && Array.isArray(sections) && sections.length > 0) {
-              setActiveSectionId(sections[0].id);
-            }
-          }
-
-          updateIndicator();
-        });
-      });
-      resizeObserver.observe(navRef.current);
-    }
-
-    // Observador de mutación para detectar cuando el tab-content contenedor recibe la clase 'active'
-    let mutationObserver;
-    const tabContentParent = navRef.current?.closest('.tab-content');
-    if (tabContentParent && typeof MutationObserver !== 'undefined') {
-      mutationObserver = new MutationObserver(() => {
-        if (tabContentParent.classList.contains('active')) {
-          wasHiddenRef.current = false;
-          const navEl = navRef.current;
-          if (navEl) navEl.scrollLeft = 0;
-          const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
-          if (currentScrollY < 120 && Array.isArray(sections) && sections.length > 0) {
-            setActiveSectionId(sections[0].id);
-          }
-          requestAnimationFrame(updateIndicator);
-        } else {
-          wasHiddenRef.current = true;
-        }
-      });
-      mutationObserver.observe(tabContentParent, { attributes: true, attributeFilter: ['class', 'style'] });
-    }
-
     return () => {
       cancelAnimationFrame(rafId);
       clearTimeout(timerId);
       window.removeEventListener('resize', updateIndicator);
+    };
+  }, [updateIndicator]);
+
+  // Observar cambios de tamaño y activación de pestaña sin reiniciar activeSectionId durante el scroll
+  useEffect(() => {
+    const navEl = navRef.current;
+    if (!navEl) return undefined;
+
+    let resizeObserver;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        requestAnimationFrame(() => {
+          updateIndicator();
+        });
+      });
+      resizeObserver.observe(navEl);
+    }
+
+    let mutationObserver;
+    const tabContentParent = navEl.closest('.tab-content');
+    if (tabContentParent && typeof MutationObserver !== 'undefined') {
+      mutationObserver = new MutationObserver(() => {
+        if (tabContentParent.classList.contains('active')) {
+          navEl.scrollLeft = 0;
+          computeActiveSectionFromScroll();
+          requestAnimationFrame(updateIndicator);
+        }
+      });
+      mutationObserver.observe(tabContentParent, {
+        attributes: true,
+        attributeFilter: ['class', 'style']
+      });
+    }
+
+    return () => {
       if (resizeObserver) resizeObserver.disconnect();
       if (mutationObserver) mutationObserver.disconnect();
     };
-  }, [updateIndicator, sections]);
+  }, [updateIndicator, computeActiveSectionFromScroll]);
 
   // Asegurar que en pantallas angostas el botón activo sea visible en el contenedor scrolleable horizontalmente
   useEffect(() => {
@@ -218,15 +240,13 @@ export default function AnexoQuickNav({ sections, ariaLabel }) {
       : window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
     const targetY = Math.max(0, elementPosition + currentScrollY - headerOffset);
 
-    // Cancelar animación anterior si aún estaba en curso
     if (scrollAnimRef.current) {
       cancelAnimationFrame(scrollAnimRef.current);
     }
 
     const startY = currentScrollY;
     const distance = targetY - startY;
-    
-    // Si la distancia es insignificante, solo resaltar
+
     if (Math.abs(distance) < 4) {
       isScrollingRef.current = false;
       el.classList.remove('section-target-highlight');
@@ -236,11 +256,9 @@ export default function AnexoQuickNav({ sections, ariaLabel }) {
       return;
     }
 
-    // Duración proporcional y cinemática (entre 500ms y 850ms para un traslado agradable y visible)
-    const duration = Math.min(850, Math.max(500, Math.abs(distance) * 0.45));
+    const duration = Math.min(750, Math.max(420, Math.abs(distance) * 0.42));
     const startTime = performance.now();
 
-    // Curva cinemática ultra-suave (easeInOutCubic: aceleración gradual y desaceleración orgánica)
     function easeInOutCubic(t) {
       return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
     }
@@ -263,7 +281,6 @@ export default function AnexoQuickNav({ sections, ariaLabel }) {
         scrollAnimRef.current = null;
         isScrollingRef.current = false;
 
-        // Efecto visual de llegada suave en el contenedor de la sección
         el.classList.remove('section-target-highlight');
         void el.offsetWidth;
         el.classList.add('section-target-highlight');
@@ -276,7 +293,7 @@ export default function AnexoQuickNav({ sections, ariaLabel }) {
     if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
     scrollTimeoutRef.current = setTimeout(() => {
       isScrollingRef.current = false;
-    }, duration + 100);
+    }, duration + 80);
   };
 
   if (!Array.isArray(sections) || sections.length === 0) {
@@ -323,4 +340,3 @@ export default function AnexoQuickNav({ sections, ariaLabel }) {
     </nav>
   );
 }
-
