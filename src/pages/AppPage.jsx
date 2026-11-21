@@ -113,6 +113,7 @@ export default function AppPage() {
     }
     setActiveTab(tabId);
     window.scrollTo(0, 0);
+    document.querySelector('.main-scroll-viewport')?.scrollTo(0, 0);
   };
 
   const activeStudent = getActiveStudent();
@@ -287,60 +288,62 @@ export default function AppPage() {
           </div>
         </header>
 
-        {/* TABS */}
-        <div
-          id="tab-dashboard"
-          className={`tab-content ${activeTab === 'tab-dashboard' ? 'active' : ''}`}
-        >
-          <Dashboard
-            switchTab={switchTab}
-            showToast={showToast}
-            onNewStudent={() => setShowStudentModal(true)}
-          />
-        </div>
-        <div
-          id="tab-anexo1"
-          className={`tab-content ${activeTab === 'tab-anexo1' ? 'active' : ''}`}
-        >
-          <Anexo1Form showToast={showToast} switchTab={switchTab} />
-        </div>
-        <div
-          id="tab-anexo2"
-          className={`tab-content ${activeTab === 'tab-anexo2' ? 'active' : ''}`}
-        >
-          <Anexo2Form showToast={showToast} switchTab={switchTab} />
-        </div>
-        <div
-          id="tab-anexo3"
-          className={`tab-content ${activeTab === 'tab-anexo3' ? 'active' : ''}`}
-        >
-          <Anexo3Form showToast={showToast} switchTab={switchTab} />
-        </div>
-        <div
-          id="tab-preview"
-          className={`tab-content ${activeTab === 'tab-preview' ? 'active' : ''}`}
-        >
-          <PreviewTab showToast={showToast} switchTab={switchTab} />
-        </div>
-        <div
-          id="tab-aula-ia"
-          className={`tab-content ${activeTab === 'tab-aula-ia' ? 'active' : ''}`}
-        >
-          <AulaAdaptativaSuite
-            activeSubTab={activeIaSubTab}
-            setActiveSubTab={setActiveIaSubTab}
-            showToast={showToast}
-            onSwitchToPiarSuite={() => switchTab('tab-dashboard')}
-          />
-        </div>
-        {isSuperAdmin && (
+        {/* TABS (Área con scroll independiente debajo del topbar) */}
+        <div className="main-scroll-viewport">
           <div
-            id="tab-admin"
-            className={`tab-content ${activeTab === 'tab-admin' ? 'active' : ''}`}
+            id="tab-dashboard"
+            className={`tab-content ${activeTab === 'tab-dashboard' ? 'active' : ''}`}
           >
-            <TeacherList />
+            <Dashboard
+              switchTab={switchTab}
+              showToast={showToast}
+              onNewStudent={() => setShowStudentModal(true)}
+            />
           </div>
-        )}
+          <div
+            id="tab-anexo1"
+            className={`tab-content ${activeTab === 'tab-anexo1' ? 'active' : ''}`}
+          >
+            <Anexo1Form showToast={showToast} switchTab={switchTab} />
+          </div>
+          <div
+            id="tab-anexo2"
+            className={`tab-content ${activeTab === 'tab-anexo2' ? 'active' : ''}`}
+          >
+            <Anexo2Form showToast={showToast} switchTab={switchTab} />
+          </div>
+          <div
+            id="tab-anexo3"
+            className={`tab-content ${activeTab === 'tab-anexo3' ? 'active' : ''}`}
+          >
+            <Anexo3Form showToast={showToast} switchTab={switchTab} />
+          </div>
+          <div
+            id="tab-preview"
+            className={`tab-content ${activeTab === 'tab-preview' ? 'active' : ''}`}
+          >
+            <PreviewTab showToast={showToast} switchTab={switchTab} />
+          </div>
+          <div
+            id="tab-aula-ia"
+            className={`tab-content ${activeTab === 'tab-aula-ia' ? 'active' : ''}`}
+          >
+            <AulaAdaptativaSuite
+              activeSubTab={activeIaSubTab}
+              setActiveSubTab={setActiveIaSubTab}
+              showToast={showToast}
+              onSwitchToPiarSuite={() => switchTab('tab-dashboard')}
+            />
+          </div>
+          {isSuperAdmin && (
+            <div
+              id="tab-admin"
+              className={`tab-content ${activeTab === 'tab-admin' ? 'active' : ''}`}
+            >
+              <TeacherList />
+            </div>
+          )}
+        </div>
       </main>
 
       {/* MOBILE: Bottom Navigation */}
@@ -454,6 +457,7 @@ export default function AppPage() {
                   showToast('Cambios no guardados descartados.', 'warning');
                   setActiveTab(confirmModal.tabId);
                   window.scrollTo(0, 0);
+                  document.querySelector('.main-scroll-viewport')?.scrollTo(0, 0);
                 }}
                 style={{ flex: 1, justifyContent: 'center', height: '38px', gap: '6px' }}
               >

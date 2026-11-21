@@ -55,7 +55,13 @@ export default function AnexoQuickNav({ sections, ariaLabel }) {
       // Si el componente está en una pestaña oculta (display: none), ignorar eventos de scroll
       if (!navEl || navEl.offsetParent === null) return;
 
-      const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+      const viewport = navEl.closest('.main-scroll-viewport');
+      const useViewport = Boolean(
+        viewport && viewport.scrollHeight > viewport.clientHeight + 2
+      );
+      const currentScrollY = useViewport
+        ? viewport.scrollTop
+        : window.pageYOffset || document.documentElement.scrollTop || 0;
 
       // 1. Si el scroll está cerca del inicio superior, siempre debe ser la primera sección
       if (currentScrollY < 120) {
@@ -66,7 +72,9 @@ export default function AnexoQuickNav({ sections, ariaLabel }) {
       }
 
       // 2. Si el scroll ha llegado al final de la página (fondo), activar la última sección
-      const isAtBottom = (window.innerHeight + currentScrollY) >= (document.documentElement.scrollHeight - 60);
+      const isAtBottom = useViewport
+        ? viewport.clientHeight + currentScrollY >= viewport.scrollHeight - 60
+        : window.innerHeight + currentScrollY >= document.documentElement.scrollHeight - 60;
       if (isAtBottom) {
         const lastSec = sections[sections.length - 1];
         if (lastSec?.id) {
@@ -101,11 +109,11 @@ export default function AnexoQuickNav({ sections, ariaLabel }) {
       }
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true, capture: true });
     handleScroll();
 
     return () => {
-      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('scroll', handleScroll, { capture: true });
       if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
     };
   }, [sections]);
@@ -200,8 +208,14 @@ export default function AnexoQuickNav({ sections, ariaLabel }) {
 
     // Altura del topbar (46px) + sub-nav de secciones (42px) + margen de respiración (14px)
     const headerOffset = 102;
+    const viewport = navRef.current?.closest('.main-scroll-viewport');
+    const useViewport = Boolean(
+      viewport && window.getComputedStyle(viewport).overflowY === 'auto'
+    );
     const elementPosition = el.getBoundingClientRect().top;
-    const currentScrollY = window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    const currentScrollY = useViewport
+      ? viewport.scrollTop
+      : window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
     const targetY = Math.max(0, elementPosition + currentScrollY - headerOffset);
 
     // Cancelar animación anterior si aún estaba en curso
@@ -237,7 +251,11 @@ export default function AnexoQuickNav({ sections, ariaLabel }) {
       const ease = easeInOutCubic(progress);
 
       const nextY = startY + distance * ease;
-      window.scrollTo(0, nextY);
+      if (useViewport && viewport) {
+        viewport.scrollTo(0, nextY);
+      } else {
+        window.scrollTo(0, nextY);
+      }
 
       if (progress < 1) {
         scrollAnimRef.current = requestAnimationFrame(step);

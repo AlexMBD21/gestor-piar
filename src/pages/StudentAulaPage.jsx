@@ -285,7 +285,8 @@ export default function StudentAulaPage() {
       </header>
       )}
 
-      <div className="aia-student-page-inner">
+      <div className="aia-student-scroll-viewport">
+        <div className="aia-student-page-inner">
 
         {/* VISTA A: Portada "Mi Aula" (Tablero de todas las materias asociadas a su documento) */}
         {!activePkg ? (
@@ -513,6 +514,7 @@ export default function StudentAulaPage() {
             />
           </main>
         )}
+        </div>
       </div>
     </div>
   );

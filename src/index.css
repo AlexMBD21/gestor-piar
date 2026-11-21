@@ -2,7 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
 
 html {
-  scrollbar-gutter: stable;
+  scrollbar-gutter: auto;
 }
 
 :root {
@@ -784,18 +784,32 @@ body.dark-mode .nav-link.active {
 .main-content {
   margin-left: var(--sidebar-width);
   width: calc(100% - var(--sidebar-width));
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
   transition: margin var(--transition-normal), width var(--transition-normal);
   display: flex;
   flex-direction: column;
   align-items: stretch;
 }
 
+.main-scroll-viewport {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  position: relative;
+  z-index: 1;
+}
+
 /* Top App Header bar */
 .app-header {
-  position: sticky;
+  position: relative;
   top: 0;
-  z-index: 20;
+  z-index: 40;
+  flex-shrink: 0;
   width: 100%;
   height: 46px;
   display: flex;
@@ -803,9 +817,14 @@ body.dark-mode .nav-link.active {
   align-items: center;
   padding: 0 0 0 24px;
   background: var(--bg-sidebar);
-  border-bottom: none;
-  box-shadow: var(--shadow-sm);
-  transition: background var(--transition-normal), box-shadow var(--transition-normal);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.1), 0 2px 5px -1px rgba(15, 23, 42, 0.06);
+  transition: background var(--transition-normal), box-shadow var(--transition-normal), border-color var(--transition-normal);
+}
+
+body.dark-mode .app-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 6px 16px -2px rgba(0, 0, 0, 0.65), 0 2px 6px -1px rgba(0, 0, 0, 0.5);
 }
 
 .header-actions {
@@ -2737,11 +2756,15 @@ body:has(.modal-overlay.active) {
     margin: 0 !important;
   }
 
-  .main-content {
+  .main-content,
+  .main-scroll-viewport {
     margin-left: 0 !important;
     padding: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
   }
 
   .card {
@@ -3941,11 +3964,19 @@ body.dark-mode .btn-md3-outlined:hover {
     margin-left: 0 !important;
     width: 100% !important;
     max-width: 100vw;
+    height: auto !important;
+    max-height: none !important;
     padding-top: 64px;
     padding-bottom: 64px;
     min-height: 100vh;
     box-sizing: border-box;
-    overflow-x: hidden;
+    overflow: visible !important;
+    overflow-x: hidden !important;
+  }
+
+  .main-scroll-viewport {
+    overflow: visible !important;
+    height: auto !important;
   }
 
   /* â”€â”€ MOBILE TOP BAR â”€â”€ */
@@ -6567,7 +6598,7 @@ body.dark-mode .dashboard-toolbar {
 .anexo-quick-nav,
 .form-quick-nav {
   position: sticky;
-  top: 46px; /* Pegado directamente bajo el topbar */
+  top: 0; /* Pegado directamente al tope del área con scroll, justo bajo el topbar */
   z-index: 18;
   display: flex;
   align-items: center;
@@ -9054,19 +9085,41 @@ body.dark-mode .nav-link-preview.active {
 
 /* 5. Portal Educativo del Estudiante y Modo Espejo */
 .aia-student-page-shell {
-  min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background: var(--bg-app);
-  padding: 0 0 36px 0;
+  padding: 0;
+}
+
+.aia-student-scroll-viewport {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
+  padding-bottom: 36px;
+  position: relative;
+  z-index: 1;
 }
 
 .aia-student-topbar {
-  position: sticky;
+  position: relative;
   top: 0;
   z-index: 50;
+  flex-shrink: 0;
   width: 100%;
   background: var(--bg-card);
-  border-bottom: 1px solid var(--border-color);
-  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.28);
+  box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.1), 0 2px 5px -1px rgba(15, 23, 42, 0.06);
+}
+
+body.dark-mode .aia-student-topbar {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+  box-shadow: 0 6px 16px -2px rgba(0, 0, 0, 0.65), 0 2px 6px -1px rgba(0, 0, 0, 0.5);
 }
 
 .aia-student-topbar-inner {

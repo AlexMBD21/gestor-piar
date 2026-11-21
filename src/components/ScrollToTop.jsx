@@ -6,57 +6,47 @@ export default function ScrollToTop() {
   useEffect(() => {
     let timeoutId;
 
+    const getCurrentScrollTop = () => {
+      const viewport = document.querySelector('.main-scroll-viewport, .aia-student-scroll-viewport');
+      const vpScroll = viewport ? viewport.scrollTop : 0;
+      const winScroll = window.pageYOffset || document.documentElement.scrollTop || 0;
+      return Math.max(vpScroll, winScroll);
+    };
+
     const toggleVisibility = () => {
-      const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
+      const scrollPos = getCurrentScrollTop();
       if (scrollPos > 300) {
         setIsVisible(true);
-        // Reiniciar temporizador
         clearTimeout(timeoutId);
         timeoutId = setTimeout(() => {
           setIsVisible(false);
-        }, 1000); // Se oculta tras 1 segundo de inactividad
+        }, 1000);
       } else {
         setIsVisible(false);
         clearTimeout(timeoutId);
       }
     };
 
-    window.addEventListener('scroll', toggleVisibility);
-    const mainContent = document.querySelector('.main-content');
-    let handleMainContentScroll;
-    
-    if (mainContent) {
-      handleMainContentScroll = (e) => {
-        if (e.target.scrollTop > 300) {
-          setIsVisible(true);
-          clearTimeout(timeoutId);
-          timeoutId = setTimeout(() => {
-            setIsVisible(false);
-          }, 1000);
-        } else {
-          setIsVisible(false);
-          clearTimeout(timeoutId);
-        }
-      };
-      mainContent.addEventListener('scroll', handleMainContentScroll);
-    }
+    window.addEventListener('scroll', toggleVisibility, { passive: true, capture: true });
 
     return () => {
       clearTimeout(timeoutId);
-      window.removeEventListener('scroll', toggleVisibility);
-      if (mainContent && handleMainContentScroll) {
-        mainContent.removeEventListener('scroll', handleMainContentScroll);
-      }
+      window.removeEventListener('scroll', toggleVisibility, { capture: true });
     };
   }, []);
 
   const scrollToTop = () => {
-    // Scroll en window
     window.scrollTo({
       top: 0,
       behavior: 'smooth'
     });
-    // Scroll en main-content
+    const viewport = document.querySelector('.main-scroll-viewport, .aia-student-scroll-viewport');
+    if (viewport) {
+      viewport.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+    }
     const mainContent = document.querySelector('.main-content');
     if (mainContent) {
       mainContent.scrollTo({
@@ -86,7 +76,7 @@ export default function ScrollToTop() {
         opacity: isVisible ? 1 : 0,
         transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
         pointerEvents: isVisible ? 'auto' : 'none',
-        transition: 'all 0.3s cubic-bezier(0.2, 0, 0, 1)',
+        transition: 'all 0.3s cubic-bezier(0.2, 0, 1)',
         backgroundColor: '#1a1a1a',
         color: '#ffffff',
         border: '2px solid #ffffff'
