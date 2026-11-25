@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from './AuthContext';
 import localforage from 'localforage';
 import { validatePiarData } from '../utils/schemaValidation';
+import { purgeStudentAccessOnDelete } from '../lib/studentAccessService';
 
 const PiarContext = createContext(null);
 
@@ -465,6 +466,7 @@ export function PiarProvider({ children }) {
 
   const deletePiar = async (piarId) => {
     await supabase.from('piars').delete().eq('id', piarId);
+    await purgeStudentAccessOnDelete(piarId);
     setPiars(prev => prev.filter(p => p.id !== piarId));
     setEditLogs(prev => { const next = { ...prev }; delete next[piarId]; return next; });
     if (activeStudentId === piarId) setActiveStudentId(null);

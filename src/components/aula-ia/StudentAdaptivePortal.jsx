@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getPackageGames } from '../../lib/aulaGames';
+import { computePackageMetrics } from '../../lib/aulaProgress';
 import { hydrateCoherentPackage } from '../../lib/piarAiEngine';
+import { runViewTransition } from '../../lib/motionCraft';
+import { useFullscreenToggle } from './useFullscreenToggle';
 import AdaptiveSlidesViewer from './AdaptiveSlidesViewer';
 import AdaptiveVideoGuide from './AdaptiveVideoGuide';
 import AdaptiveGamesArena from './AdaptiveGamesArena';
@@ -26,40 +28,19 @@ export default function StudentAdaptivePortal({
   externalFullscreen = false,
   onToggleExternalFullscreen,
   studentProfile,
+  publishedPackages = [],
+  onSelectPackage,
   onBackToSubjects,
   onSignOutStudent
 }) {
   const pkg = useMemo(() => hydrateCoherentPackage(rawPkg), [rawPkg]);
   const [activeModule, setActiveModule] = useState(loadSavedStudentModule); // 'slides' | 'video' | 'games' | 'quiz'
   const [remediationFocus, setRemediationFocus] = useState(null);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const portalContainerRef = useRef(null);
-
-  useEffect(() => {
-    const onFsChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
-    };
-    document.addEventListener('fullscreenchange', onFsChange);
-    return () => document.removeEventListener('fullscreenchange', onFsChange);
-  }, []);
-
-  const handleToggleFullscreen = async () => {
-    const el = portalContainerRef.current;
-    if (!el) return;
-    try {
-      if (!document.fullscreenElement && el.requestFullscreen) {
-        await el.requestFullscreen();
-        return;
-      }
-      if (document.fullscreenElement && document.exitFullscreen) {
-        await document.exitFullscreen();
-        return;
-      }
-    } catch {
-      // Fallback CSS fullscreen si el entorno restringe requestFullscreen
-    }
-    setIsFullscreen((prev) => !prev);
-  };
+  const { isFullscreen, toggleFullscreen: handleToggleFullscreen } = useFullscreenToggle(
+    portalContainerRef
+  );
 
   useEffect(() => {
     try {
@@ -84,20 +65,18 @@ export default function StudentAdaptivePortal({
   }
 
   const studentDiag = pkg.studentDiagnosis || {};
-  const totalSlides = pkg.slides?.length || 5;
-  const slidesPct = Math.min(
-    100,
-    Math.round(((activity?.slidesViewed?.length || 1) / totalSlides) * 100)
-  );
-  const videoPct = activity?.videoMaxPercent || 0;
-  const gamesList = getPackageGames(pkg);
-  const totalGames = gamesList.length || 4;
-  const gamesCompletedCount = (activity?.gamesCompleted || []).filter((id) =>
-    gamesList.some((g) => g.id === id)
-  ).length;
-  const gamesPct = activity?.gamesMaxPercent || 0;
-  const attempts = activity?.attempts || [];
-  const quizCompleted = attempts.length > 0;
+  const {
+    slidesPct,
+    videoPct,
+    totalGames,
+    gamesCompletedCount,
+    gamesMaxPercent: gamesPct,
+    quizDone: quizCompleted
+  } = computePackageMetrics(pkg, activity);
+
+  const switchModule = (nextModule) => {
+    runViewTransition(() => setActiveModule(nextModule));
+  };
 
   const handleNavigateFromQuiz = (targetModule, context = null) => {
     const safeTarget = targetModule === 'audio' ? 'slides' : targetModule;
@@ -106,7 +85,7 @@ export default function StudentAdaptivePortal({
     } else {
       setRemediationFocus(null);
     }
-    setActiveModule(safeTarget);
+    switchModule(safeTarget);
   };
 
   const modules = [
@@ -182,82 +161,142 @@ export default function StudentAdaptivePortal({
         </header>
       )}
 
-      {/* Franja de Foco de Estudio y Guía Pedagógica Adaptativa (permanente, se oculta en pantalla completa) */}
+      {/* Cabecera compacta de foco de estudio + Guía y meta colapsable (se oculta en pantalla completa) */}
       {!isAnyFullscreen && (
-        <section className="aia-friendly-diag-card">
-          <div className="aia-friendly-diag-top">
-            <div className="aia-friendly-diag-badges">
-              {onBackToSubjects && (
-                <button
-                  type="button"
-                  className="aia-back-subjects-btn"
-                  onClick={onBackToSubjects}
-                  title="Volver a la lista de tus materias"
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                    arrow_back
+        <section className="aia-portal-focus-wrap">
+          <div className="aia-portal-focus-header">
+            <div className="aia-portal-focus-main">
+              <div className="aia-portal-focus-badges">
+                {!isMirrorPreview && onBackToSubjects && (
+                  <button
+                    type="button"
+                    className="aia-back-subjects-btn"
+                    onClick={onBackToSubjects}
+                    title="Volver a la lista de tus materias"
+                  >
+                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                      arrow_back
+                    </span>
+                    <span>Mis Materias</span>
+                  </button>
+                )}
+
+                <span className="aia-subject-tag">
+                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                    auto_awesome
                   </span>
-                  <span>Mis Materias</span>
-                </button>
-              )}
-
-              <span className="aia-subject-tag">
-                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                  auto_awesome
+                  <span>{pkg.subject}</span>
                 </span>
-                <span>{pkg.subject}</span>
-              </span>
 
-              {isMirrorPreview && (
-                <span className="aia-mirror-indicator">
-                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
-                    visibility
+                {isMirrorPreview && (
+                  <span className="aia-mirror-indicator">
+                    <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
+                      visibility
+                    </span>
+                    <span>Vista Estudiante · {pkg.studentFirstName || 'Alumno'}</span>
                   </span>
-                  <span>Vista Estudiante · {pkg.studentFirstName || 'Alumno'}</span>
-                </span>
-              )}
-            </div>
-          </div>
+                )}
+              </div>
 
-          <div className="aia-focus-topic-row">
-            <span className="aia-focus-topic-kicker">Hoy fortaleces:</span>
-            <strong className="aia-focus-topic-text">{pkg.topic}</strong>
-          </div>
-
-          <div className="aia-friendly-expanded-body">
-            <div className="aia-friendly-header-line">
-              <h3 className="aia-friendly-title">{studentDiag.greetingTitle}</h3>
+              <strong className="aia-portal-focus-topic" title={pkg.topic}>
+                {pkg.topic}
+              </strong>
             </div>
-            {studentDiag.encouragementMessage && (
-              <p className="aia-friendly-message">{studentDiag.encouragementMessage}</p>
+
+            {publishedPackages.length > 1 && onSelectPackage && (
+              <div className="aia-portal-subject-switcher" role="navigation" aria-label="Cambiar de materia">
+                {publishedPackages.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => onSelectPackage(p.id)}
+                    className={`aia-portal-subject-pill ${pkg.id === p.id ? 'active' : ''}`}
+                    aria-current={pkg.id === p.id ? 'page' : undefined}
+                  >
+                    {p.subject}
+                  </button>
+                ))}
+              </div>
             )}
 
-            <div className="aia-friendly-highlights">
-              <div className="aia-friendly-pill-box">
-                <div className="aia-friendly-pill-icon goal">
-                  <span className="material-symbols-outlined">flag</span>
+            <div className="aia-portal-focus-actions">
+              <button
+                type="button"
+                className={`aia-portal-guide-toggle ${showGuide ? 'is-open' : ''}`}
+                onClick={() => setShowGuide((prev) => !prev)}
+                aria-expanded={showGuide}
+                aria-controls="aia-portal-guide-drawer"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                  tips_and_updates
+                </span>
+                <span>Guía y meta</span>
+                <span
+                  className="material-symbols-outlined aia-portal-guide-chevron"
+                  style={{ fontSize: '16px' }}
+                >
+                  expand_more
+                </span>
+              </button>
+
+              <button
+                type="button"
+                className="aia-portal-fs-btn"
+                onClick={onToggleExternalFullscreen ? onToggleExternalFullscreen : handleToggleFullscreen}
+                title="Ver en pantalla completa"
+                aria-label="Ver en pantalla completa"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                  fullscreen
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {showGuide && (
+            <div id="aia-portal-guide-drawer" className="aia-portal-guide-drawer">
+              {(studentDiag.greetingTitle || studentDiag.encouragementMessage) && (
+                <div className="aia-portal-guide-intro">
+                  {studentDiag.greetingTitle && (
+                    <h3 className="aia-friendly-title">{studentDiag.greetingTitle}</h3>
+                  )}
+                  {studentDiag.encouragementMessage && (
+                    <p className="aia-friendly-message">{studentDiag.encouragementMessage}</p>
+                  )}
                 </div>
-                <div className="aia-friendly-pill-content">
-                  <small>Tu Meta de Hoy</small>
-                  <strong>{studentDiag.learningGoal || 'Completar tu ruta de refuerzo paso a paso.'}</strong>
+              )}
+
+              <div className="aia-friendly-highlights">
+                <div className="aia-friendly-pill-box">
+                  <div className="aia-friendly-pill-icon goal">
+                    <span className="material-symbols-outlined">flag</span>
+                  </div>
+                  <div className="aia-friendly-pill-content">
+                    <small>Tu Meta de Hoy</small>
+                    <strong>
+                      {studentDiag.learningGoal || 'Completar tu ruta de refuerzo paso a paso.'}
+                    </strong>
+                  </div>
                 </div>
-              </div>
-              <div className="aia-friendly-pill-box">
-                <div className="aia-friendly-pill-icon tip">
-                  <span className="material-symbols-outlined">bolt</span>
-                </div>
-                <div className="aia-friendly-pill-content">
-                  <small>Consejo Personalizado</small>
-                  <strong>{studentDiag.superpowerTip || 'Aprende a tu propio ritmo con calma.'}</strong>
+                <div className="aia-friendly-pill-box">
+                  <div className="aia-friendly-pill-icon tip">
+                    <span className="material-symbols-outlined">bolt</span>
+                  </div>
+                  <div className="aia-friendly-pill-content">
+                    <small>Consejo Personalizado</small>
+                    <strong>
+                      {studentDiag.superpowerTip || 'Aprende a tu propio ritmo con calma.'}
+                    </strong>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </section>
       )}
 
-      {/* Stepper compacto de los 4 pasos + botón de Pantalla Completa integrado al lado */}
-      <div className="aia-stepper-with-fs">
+      {/* Stepper compacto de los 4 pasos (botón de salir de pantalla completa visible solo en modo fullscreen) */}
+      <div className={`aia-stepper-with-fs ${!isAnyFullscreen ? 'is-full-width' : ''}`}>
         <nav className="aia-student-module-grid aia-stepper-compact" aria-label="Ruta de estudio y evaluación">
           {modules.map((m) => {
             const isActive = activeModule === m.id;
@@ -267,7 +306,7 @@ export default function StudentAdaptivePortal({
                 type="button"
                 onClick={() => {
                   if (m.id !== 'slides') setRemediationFocus(null);
-                  setActiveModule(m.id);
+                  switchModule(m.id);
                 }}
                 aria-current={isActive ? 'step' : undefined}
                 className={`aia-module-nav-card ${isActive ? 'active' : ''} ${m.done ? 'completed' : ''}`}
@@ -297,18 +336,18 @@ export default function StudentAdaptivePortal({
           })}
         </nav>
 
-        <button
-          type="button"
-          className={`aia-stepper-fs-btn ${isAnyFullscreen ? 'active' : ''}`}
-          onClick={onToggleExternalFullscreen ? onToggleExternalFullscreen : handleToggleFullscreen}
-          title={isAnyFullscreen ? 'Salir de pantalla completa (Esc)' : 'Ver en pantalla completa'}
-          aria-label={isAnyFullscreen ? 'Salir de pantalla completa' : 'Ver en pantalla completa'}
-        >
-          <span className="material-symbols-outlined">
-            {isAnyFullscreen ? 'fullscreen_exit' : 'fullscreen'}
-          </span>
-          <span>{isAnyFullscreen ? 'Salir' : 'Ampliar'}</span>
-        </button>
+        {isAnyFullscreen && (
+          <button
+            type="button"
+            className="aia-stepper-fs-btn active"
+            onClick={onToggleExternalFullscreen ? onToggleExternalFullscreen : handleToggleFullscreen}
+            title="Salir de pantalla completa (Esc)"
+            aria-label="Salir de pantalla completa"
+          >
+            <span className="material-symbols-outlined">fullscreen_exit</span>
+            <span>Salir</span>
+          </button>
+        )}
       </div>
 
       {/* Escenario Activo */}
@@ -322,11 +361,11 @@ export default function StudentAdaptivePortal({
             onClearRemediation={() => setRemediationFocus(null)}
             onReturnToQuiz={() => {
               setRemediationFocus(null);
-              setActiveModule('quiz');
+              switchModule('quiz');
             }}
             onCompleteSlides={() => {
               setRemediationFocus(null);
-              setActiveModule('video');
+              switchModule('video');
             }}
           />
         )}
@@ -335,7 +374,7 @@ export default function StudentAdaptivePortal({
             pkg={pkg}
             activity={activity}
             isMirrorPreview={isMirrorPreview}
-            onCompleteVideo={() => setActiveModule('games')}
+            onCompleteVideo={() => switchModule('games')}
           />
         )}
         {activeModule === 'games' && (
@@ -343,7 +382,7 @@ export default function StudentAdaptivePortal({
             pkg={pkg}
             activity={activity}
             isMirrorPreview={isMirrorPreview}
-            onCompleteGames={() => setActiveModule('quiz')}
+            onCompleteGames={() => switchModule('quiz')}
           />
         )}
         {activeModule === 'quiz' && (

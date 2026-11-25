@@ -1,7 +1,15 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useAulaIa } from '../context/AulaIaContext';
-import { getPackageGames } from '../lib/aulaGames';
+import { computePackageMetrics } from '../lib/aulaProgress';
+import { supabase } from '../lib/supabaseClient';
+import {
+  getStudentAccessChannelName,
+  LOCAL_CREDS_KEY,
+  STUDENT_ACCESS_REVOKED_EVENT
+} from '../lib/studentAccessService';
+import { animateStaggerIn, runViewTransition } from '../lib/motionCraft';
+import { useFullscreenToggle } from '../components/aula-ia/useFullscreenToggle';
 import StudentAdaptivePortal from '../components/aula-ia/StudentAdaptivePortal';
 
 function getSubjectIcon(subject = '') {
@@ -15,64 +23,8 @@ function getSubjectIcon(subject = '') {
   return 'auto_stories';
 }
 
-function computePackageProgress(pkg, activity) {
-  const totalSlides = pkg?.slides?.length || 5;
-  const slidesPct = Math.min(
-    100,
-    Math.round(((activity?.slidesViewed?.length || 0) / totalSlides) * 100)
-  );
-  const videoPct = activity?.videoMaxPercent || 0;
-  const videoDone = Boolean(activity?.videoCompleted || videoPct >= 90);
-  const gamesList = getPackageGames(pkg);
-  const totalGames = gamesList.length || 4;
-  const gamesDone = (activity?.gamesCompleted || []).filter((id) =>
-    gamesList.some((g) => g.id === id)
-  ).length;
-  const gamesPct = Math.min(100, Math.round((gamesDone / totalGames) * 100));
-  const attempts = Array.isArray(activity?.attempts) ? activity.attempts : [];
-  const quizDone = attempts.length > 0;
-
-  const overallPct = Math.round(
-    (slidesPct + (videoDone ? 100 : videoPct) + gamesPct + (quizDone ? 100 : 0)) / 4
-  );
-
-  let status = 'pending'; // 'pending' | 'progress' | 'mastered'
-  if (slidesPct >= 100 && videoDone && gamesDone >= totalGames && quizDone) {
-    status = 'mastered';
-  } else if (slidesPct > 0 || videoDone || videoPct > 0 || gamesDone > 0 || quizDone) {
-    status = 'progress';
-  }
-
-  let reviewSlidesCount = 0;
-  if (pkg?.id) {
-    try {
-      const raw = window.localStorage.getItem(`piar_slide_mastery_${pkg.id}`);
-      if (raw) {
-        const map = JSON.parse(raw);
-        reviewSlidesCount = Object.values(map).filter((v) => v === 'review').length;
-      }
-    } catch {
-      // Ignorar
-    }
-  }
-
-  return {
-    slidesPct,
-    videoPct,
-    videoDone,
-    gamesDone,
-    totalGames,
-    quizDone,
-    attemptsCount: attempts.length,
-    maxAttempts: pkg?.maxAttempts || 3,
-    overallPct,
-    status,
-    reviewSlidesCount
-  };
-}
-
 export default function StudentAulaPage() {
-  const { studentSession, refreshStudentSession, signOut } = useAuth();
+  const { studentSession, refreshStudentSession, revokeStudentSession, signOut } = useAuth();
   const {
     packagesByStudent,
     activityByPackage,
@@ -87,35 +39,14 @@ export default function StudentAulaPage() {
     }
   });
   const [refreshing, setRefreshing] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const didAutoRefreshRef = useRef(false);
+  const didAnimateKpisRef = useRef(false);
   const pageShellRef = useRef(null);
-
-  useEffect(() => {
-    const onFsChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
-    };
-    document.addEventListener('fullscreenchange', onFsChange);
-    return () => document.removeEventListener('fullscreenchange', onFsChange);
-  }, []);
-
-  const handleToggleFullscreen = async () => {
-    const el = pageShellRef.current || document.documentElement;
-    if (!el) return;
-    try {
-      if (!document.fullscreenElement && el.requestFullscreen) {
-        await el.requestFullscreen();
-        return;
-      }
-      if (document.fullscreenElement && document.exitFullscreen) {
-        await document.exitFullscreen();
-        return;
-      }
-    } catch {
-      // Fallback CSS fullscreen si el navegador lo restringe
-    }
-    setIsFullscreen((prev) => !prev);
-  };
+  const homeMainRef = useRef(null);
+  const { isFullscreen, toggleFullscreen: handleToggleFullscreen } = useFullscreenToggle(
+    pageShellRef,
+    { fallbackToDocument: true }
+  );
 
   useEffect(() => {
     try {
@@ -141,20 +72,34 @@ export default function StudentAulaPage() {
     hydrateFromStudentLogin
   ]);
 
-  // Refrescar sesión al entrar, cada 15s y al volver a la pestaña:
-  // trae nuevas materias publicadas e interrumpe automáticamente la sesión si el docente cambió el PIN o pausó el acceso
+  // Refrescar sesión al entrar, en tiempo real (Supabase Broadcast + storage entre pestañas),
+  // cada 10s y al volver a la pestaña: trae nuevas materias publicadas e interrumpe
+  // automáticamente la sesión si el docente cambió el PIN o pausó el acceso
   useEffect(() => {
-    if (!studentSession?.studentDoc) return undefined;
+    if (!studentSession?.studentDoc || !studentSession?.piarId) return undefined;
     if (!didAutoRefreshRef.current) {
       didAutoRefreshRef.current = true;
       refreshStudentSession();
     }
 
+    const channel = supabase
+      .channel(getStudentAccessChannelName(studentSession.piarId))
+      .on('broadcast', { event: 'access_updated' }, ({ payload }) => {
+        if (payload && payload.isActive === false) {
+          revokeStudentSession(
+            'Tu profesor pausó temporalmente el acceso a tu Aula. Consulta con él para reactivarlo.'
+          );
+          return;
+        }
+        refreshStudentSession();
+      })
+      .subscribe();
+
     const intervalId = setInterval(() => {
       if (document.visibilityState === 'visible') {
         refreshStudentSession();
       }
-    }, 15000);
+    }, 10000);
 
     const handleFocusOrVisible = () => {
       if (document.visibilityState === 'visible') {
@@ -162,15 +107,35 @@ export default function StudentAulaPage() {
       }
     };
 
+    const handleStorageChange = (event) => {
+      if (event.key === LOCAL_CREDS_KEY) {
+        refreshStudentSession();
+      }
+    };
+
+    const handleRevokedEvent = () => {
+      refreshStudentSession();
+    };
+
     window.addEventListener('focus', handleFocusOrVisible);
     document.addEventListener('visibilitychange', handleFocusOrVisible);
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener(STUDENT_ACCESS_REVOKED_EVENT, handleRevokedEvent);
 
     return () => {
+      supabase.removeChannel(channel);
       clearInterval(intervalId);
       window.removeEventListener('focus', handleFocusOrVisible);
       document.removeEventListener('visibilitychange', handleFocusOrVisible);
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener(STUDENT_ACCESS_REVOKED_EVENT, handleRevokedEvent);
     };
-  }, [studentSession?.studentDoc, refreshStudentSession]);
+  }, [
+    studentSession?.studentDoc,
+    studentSession?.piarId,
+    refreshStudentSession,
+    revokeStudentSession
+  ]);
 
   const piarId = studentSession?.piarId || '';
   const publishedPackages = useMemo(() => {
@@ -200,7 +165,7 @@ export default function StudentAulaPage() {
   const dashboardStats = useMemo(() => {
     const cards = publishedPackages.map((pkg) => ({
       pkg,
-      metrics: computePackageProgress(pkg, activityByPackage[pkg.id])
+      metrics: computePackageMetrics(pkg, activityByPackage[pkg.id], { includeReviewCount: true })
     }));
     const completedCount = cards.filter((c) => c.metrics.status === 'mastered').length;
     const avgProgress =
@@ -218,6 +183,41 @@ export default function StudentAulaPage() {
     setRefreshing(false);
   };
 
+  const handleSelectPackage = (pkgId) => {
+    runViewTransition(() => setSelectedPkgId(pkgId));
+  };
+
+  const isHomeView = !activePkg;
+  const publishedCount = publishedPackages.length;
+
+  useEffect(() => {
+    if (!isHomeView || !homeMainRef.current) return undefined;
+    const cleanups = [];
+    if (!didAnimateKpisRef.current) {
+      didAnimateKpisRef.current = true;
+      cleanups.push(
+        animateStaggerIn(homeMainRef.current, '.aia-student-kpi-pill', {
+          y: 8,
+          duration: 0.3,
+          stagger: 0.05
+        })
+      );
+    }
+    if (publishedCount > 0) {
+      cleanups.push(
+        animateStaggerIn(homeMainRef.current, '.aia-student-subject-card', {
+          y: 12,
+          duration: 0.34,
+          stagger: 0.045,
+          delay: 0.04
+        })
+      );
+    }
+    return () => {
+      cleanups.forEach((fn) => fn());
+    };
+  }, [isHomeView, publishedCount]);
+
   return (
     <div
       ref={pageShellRef}
@@ -230,7 +230,7 @@ export default function StudentAulaPage() {
           <button
             type="button"
             className="aia-student-brand aia-student-brand-btn"
-            onClick={() => setSelectedPkgId(null)}
+            onClick={() => handleSelectPackage(null)}
             title="Volver al inicio de Mi Aula"
           >
             <div className="aia-student-brand-badge">
@@ -254,31 +254,35 @@ export default function StudentAulaPage() {
           </button>
 
           <div className="aia-student-bar-actions">
-            <button
-              type="button"
-              className="aia-btn-secondary aia-btn-sm"
-              onClick={handleManualRefresh}
-              disabled={refreshing}
-              title="Actualizar materias publicadas por tu profesor"
+            <div
+              className="header-role-chip is-student"
+              title={
+                studentProfile.grado
+                  ? `Estudiante · ${studentProfile.nombreCompleto} (Grado ${studentProfile.grado})`
+                  : `Estudiante · ${studentProfile.nombreCompleto}`
+              }
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>
-                {refreshing ? 'hourglass_top' : 'sync'}
+              <span className="header-role-avatar" aria-hidden="true">
+                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                  school
+                </span>
               </span>
-              <span>{refreshing ? 'Actualizando...' : 'Actualizar'}</span>
-            </button>
+              <span className="header-role-label">Estudiante</span>
+            </div>
 
             <button
               type="button"
-              className="aia-btn-secondary aia-btn-sm"
+              className="aia-student-logout-btn"
               onClick={() => {
                 setSelectedPkgId(null);
                 signOut();
               }}
+              title="Cerrar sesión"
             >
-              <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
                 logout
               </span>
-              <span>Salir</span>
+              <span>Cerrar Sesión</span>
             </button>
           </div>
         </div>
@@ -290,20 +294,11 @@ export default function StudentAulaPage() {
 
         {/* VISTA A: Portada "Mi Aula" (Tablero de todas las materias asociadas a su documento) */}
         {!activePkg ? (
-          <main className="aia-student-home">
+          <main ref={homeMainRef} className="aia-student-home">
             <section className="aia-student-hero-card aia-student-hero-refined">
               <div className="aia-student-hero-text">
-                <span className="aia-subject-tag">
-                  <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                    auto_awesome
-                  </span>
-                  <span>Tu espacio de aprendizaje a tu ritmo</span>
-                </span>
                 <h1>¡Hola, {studentProfile.primerNombre}!</h1>
-                <p>
-                  Elige una materia para explorar sus láminas, ver el video, practicar con juegos y
-                  completar tu examen con calma.
-                </p>
+                <p>Elige una materia para avanzar a tu ritmo.</p>
               </div>
 
               <div className="aia-student-hero-stats aia-student-hero-stats-compact">
@@ -378,9 +373,6 @@ export default function StudentAulaPage() {
               <div className="aia-student-subjects-section">
                 <div className="aia-student-subjects-head">
                   <h2>Tus materias asignadas</h2>
-                  <span className="aia-mirror-count-pill aia-tabular">
-                    {dashboardStats.completedCount}/{publishedPackages.length} completadas
-                  </span>
                 </div>
 
                 <section className="aia-student-subjects-grid" aria-label="Mis materias publicadas">
@@ -448,23 +440,22 @@ export default function StudentAulaPage() {
                           <span className={metrics.quizDone ? 'done' : ''}>
                             {metrics.quizDone ? '✓ Examen' : 'Examen'}
                           </span>
-                        </div>
-
-                        {metrics.reviewSlidesCount > 0 && (
-                          <div className="aia-student-card-bookmark">
-                            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                              bookmark
+                          {metrics.reviewSlidesCount > 0 && (
+                            <span className="aia-chip-review">
+                              <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>
+                                bookmark
+                              </span>
+                              {metrics.reviewSlidesCount} por repasar
                             </span>
-                            <span>{metrics.reviewSlidesCount} por repasar</span>
-                          </div>
-                        )}
+                          )}
+                        </div>
 
                         <button
                           type="button"
                           className={`aia-student-subject-cta ${
                             metrics.status === 'mastered' ? 'aia-btn-secondary' : 'aia-btn-primary'
                           }`}
-                          onClick={() => setSelectedPkgId(pkg.id)}
+                          onClick={() => handleSelectPackage(pkg.id)}
                         >
                           <span>{ctaLabel}</span>
                           <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
@@ -481,26 +472,6 @@ export default function StudentAulaPage() {
         ) : (
           /* VISTA B: Espacio de Estudio de la Materia seleccionada */
           <main className="aia-student-workspace-wrap">
-            {publishedPackages.length > 1 && (
-              <div className="aia-package-bar" style={{ marginBottom: '12px' }}>
-                <div className="aia-package-bar-left">
-                  <span className="aia-package-bar-label">Cambiar de materia:</span>
-                  <div className="aia-package-pills">
-                    {publishedPackages.map((p) => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => setSelectedPkgId(p.id)}
-                        className={`aia-pkg-pill ${activePkg?.id === p.id ? 'active' : ''}`}
-                      >
-                        <span>{p.subject}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
             <StudentAdaptivePortal
               pkg={activePkg}
               activity={activeActivity}
@@ -509,7 +480,9 @@ export default function StudentAulaPage() {
               externalFullscreen={isFullscreen}
               onToggleExternalFullscreen={handleToggleFullscreen}
               studentProfile={studentProfile}
-              onBackToSubjects={() => setSelectedPkgId(null)}
+              publishedPackages={publishedPackages}
+              onSelectPackage={handleSelectPackage}
+              onBackToSubjects={() => handleSelectPackage(null)}
               onSignOutStudent={signOut}
             />
           </main>

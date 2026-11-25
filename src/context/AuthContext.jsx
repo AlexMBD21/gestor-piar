@@ -77,6 +77,19 @@ export function AuthProvider({ children }) {
     return { data, error: null };
   };
 
+  const revokeStudentSession = useCallback((reason) => {
+    try {
+      localStorage.removeItem(STUDENT_SESSION_KEY);
+      sessionStorage.removeItem('piar_student_selected_pkg');
+      if (reason) {
+        sessionStorage.setItem('piar_student_logout_reason', reason);
+      }
+    } catch {
+      // Ignorar
+    }
+    setStudentSession(null);
+  }, []);
+
   const refreshStudentSession = useCallback(async () => {
     if (!studentSession?.studentDoc || !studentSession?.accessPin) return null;
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return null;
@@ -96,24 +109,28 @@ export function AuthProvider({ children }) {
     }
 
     // Si el docente cambió el PIN, pausó la cuenta o modificó el documento, interrumpir sesión inmediatamente
-    if (error && ['INVALID_PIN', 'INACTIVE', 'NOT_FOUND'].includes(error.code)) {
-      const reason =
-        error.code === 'INACTIVE'
-          ? 'Tu profesor pausó temporalmente el acceso a tu Aula. Consulta con él para reactivarlo.'
-          : 'Tu PIN de acceso fue actualizado por tu profesor. Ingresa con tu nuevo PIN para continuar.';
-      try {
-        localStorage.removeItem(STUDENT_SESSION_KEY);
-        sessionStorage.setItem('piar_student_logout_reason', reason);
-      } catch {
-        // Ignorar
-      }
-      setStudentSession(null);
+    if (
+      error &&
+      ['INVALID_PIN', 'INACTIVE', 'DISABLED', 'NOT_FOUND', 'PIAR_NOT_FOUND'].includes(error.code)
+    ) {
+      const isDisabled = error.code === 'INACTIVE' || error.code === 'DISABLED';
+      const reason = isDisabled
+        ? 'Tu profesor pausó temporalmente el acceso a tu Aula. Consulta con él para reactivarlo.'
+        : error.code === 'INVALID_PIN'
+          ? 'Tu PIN de acceso fue actualizado por tu profesor. Ingresa con tu nuevo PIN para continuar.'
+          : 'Tu acceso estudiantil fue modificado o revocado por tu profesor. Consulta con él para ingresar.';
+      revokeStudentSession(reason);
     }
     return null;
-  }, [studentSession?.studentDoc, studentSession?.accessPin]);
+  }, [studentSession?.studentDoc, studentSession?.accessPin, revokeStudentSession]);
 
   const signOut = async () => {
-    localStorage.removeItem(STUDENT_SESSION_KEY);
+    try {
+      localStorage.removeItem(STUDENT_SESSION_KEY);
+      sessionStorage.removeItem('piar_student_selected_pkg');
+    } catch {
+      // Ignorar
+    }
     setStudentSession(null);
     await supabase.auth.signOut();
   };
@@ -132,6 +149,7 @@ export function AuthProvider({ children }) {
         signIn,
         signInAsStudent,
         refreshStudentSession,
+        revokeStudentSession,
         signOut,
         isSuperAdmin
       }}

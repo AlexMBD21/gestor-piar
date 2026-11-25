@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   generateRandomPin,
@@ -7,6 +7,7 @@ import {
   normalizeStudentDoc,
   saveStudentCredential
 } from '../../lib/studentAccessService';
+import { animateModalIn } from '../../lib/motionCraft';
 
 export default function StudentAccessModal({
   isOpen,
@@ -24,12 +25,21 @@ export default function StudentAccessModal({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const modalRef = useRef(null);
+  const copyTimerRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen || !modalRef.current) return undefined;
+    return animateModalIn(modalRef.current);
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen || !studentPiar?.id) return undefined;
     let active = true;
     setLoading(true);
     setFeedback(null);
+    setCopied(false);
 
     getStudentCredential(studentPiar.id).then((cred) => {
       if (!active) return;
@@ -56,10 +66,39 @@ export default function StudentAccessModal({
     return () => {
       active = false;
       window.removeEventListener('keydown', onKeyDown);
+      if (copyTimerRef.current) {
+        clearTimeout(copyTimerRef.current);
+        copyTimerRef.current = null;
+      }
     };
   }, [isOpen, studentPiar?.id, defaultDoc, onClose]);
 
   if (!isOpen || !studentPiar) return null;
+
+  const handleCopyCredentials = async () => {
+    if (!studentDoc || !accessPin) return;
+    const payload = `Documento: ${studentDoc} | PIN: ${accessPin}`;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(payload);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = payload;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      setCopied(true);
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
+      copyTimerRef.current = setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setFeedback({ type: 'error', text: 'No se pudo copiar al portapapeles.' });
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -102,6 +141,7 @@ export default function StudentAccessModal({
       onClick={onClose}
     >
       <div
+        ref={modalRef}
         className="aia-confirm-modal aia-access-modal"
         onClick={(e) => e.stopPropagation()}
       >
@@ -138,7 +178,7 @@ export default function StudentAccessModal({
         ) : (
           <form onSubmit={handleSubmit} className="aia-access-form">
             <div className="aia-access-field">
-              <label htmlFor="aia-access-doc">N° de Documento del Estudiante (TI / RC)</label>
+              <label htmlFor="aia-access-doc">Documento del estudiante (TI / RC)</label>
               <div className="aia-access-input-wrap">
                 <span className="material-symbols-outlined aia-access-input-icon" aria-hidden="true">
                   badge
@@ -153,13 +193,11 @@ export default function StudentAccessModal({
                   required
                 />
               </div>
-              <small>
-                El estudiante ingresará con este documento para ver únicamente sus materias publicadas.
-              </small>
+              <small>Usado para ingresar al Portal del Estudiante.</small>
             </div>
 
             <div className="aia-access-field">
-              <label htmlFor="aia-access-pin">PIN Personal de Acceso (4 a 6 dígitos)</label>
+              <label htmlFor="aia-access-pin">PIN de acceso (4 a 6 dígitos)</label>
               <div className="aia-access-pin-row">
                 <div className="aia-access-input-wrap aia-access-pin-wrap">
                   <span className="material-symbols-outlined aia-access-input-icon" aria-hidden="true">
@@ -194,11 +232,11 @@ export default function StudentAccessModal({
 
             <label className={`aia-access-toggle-row ${isActive ? 'is-on' : ''}`}>
               <span className="aia-access-toggle-copy">
-                <strong>Acceso activo al Portal del Estudiante</strong>
+                <strong>Acceso activo</strong>
                 <small>
                   {isActive
-                    ? 'El estudiante puede iniciar sesión y ver sus materias publicadas.'
-                    : 'El acceso está pausado; el estudiante no podrá ingresar.'}
+                    ? 'Puede ingresar y ver sus materias publicadas.'
+                    : 'Acceso pausado temporalmente.'}
                 </small>
               </span>
               <span className="aia-switch">
@@ -230,6 +268,18 @@ export default function StudentAccessModal({
             )}
 
             <div className="aia-access-modal-footer">
+              <button
+                type="button"
+                className={`aia-btn-secondary aia-access-copy-btn ${copied ? 'is-copied' : ''}`}
+                onClick={handleCopyCredentials}
+                disabled={!studentDoc || !accessPin}
+                title="Copiar documento y PIN para compartir con la familia"
+              >
+                <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>
+                  {copied ? 'check' : 'content_copy'}
+                </span>
+                <span>{copied ? '¡Copiado!' : 'Copiar acceso'}</span>
+              </button>
               <button type="submit" className="aia-btn-primary aia-btn-full" disabled={saving}>
                 <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
                   {saving ? 'hourglass_top' : 'verified_user'}

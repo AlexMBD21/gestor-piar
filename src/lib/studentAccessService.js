@@ -2,9 +2,53 @@
 import localforage from 'localforage';
 import { supabase } from './supabaseClient';
 
-const LOCAL_CREDS_KEY = 'piar_student_creds_local_v1';
+export const LOCAL_CREDS_KEY = 'piar_student_creds_local_v1';
+export const STUDENT_ACCESS_REVOKED_EVENT = 'piar-student-access-revoked';
 const STORAGE_PACKAGES_KEY = 'piar_aula_ia_packages_v3';
 const STORAGE_ACTIVITY_KEY = 'piar_aula_ia_activity_v3';
+
+export function getStudentAccessChannelName(piarId) {
+  return `student-access:${piarId}`;
+}
+
+/**
+ * Envía una señal Broadcast por Supabase Realtime para que cualquier sesión abierta
+ * del estudiante revalide o cierre su acceso al instante.
+ */
+function broadcastStudentAccessUpdate(piarId, payload) {
+  if (!piarId) return;
+  try {
+    const channel = supabase.channel(getStudentAccessChannelName(piarId));
+    let cleanedUp = false;
+    const cleanup = () => {
+      if (cleanedUp) return;
+      cleanedUp = true;
+      supabase.removeChannel(channel);
+    };
+
+    const timeoutId = setTimeout(cleanup, 4000);
+
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        channel
+          .send({
+            type: 'broadcast',
+            event: 'access_updated',
+            payload
+          })
+          .finally(() => {
+            clearTimeout(timeoutId);
+            setTimeout(cleanup, 300);
+          });
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        clearTimeout(timeoutId);
+        cleanup();
+      }
+    });
+  } catch {
+    // Fallback automático por polling en StudentAulaPage
+  }
+}
 
 export function normalizeStudentDoc(raw = '') {
   return String(raw || '').replace(/\s+/g, '').trim();
@@ -159,6 +203,13 @@ export async function saveStudentCredential({
   };
   writeLocalCredentialsMap({ ...localMap, [piarId]: record });
 
+  // Notificar en tiempo real a cualquier sesión abierta del estudiante (cierre inmediato si se pausó o cambió PIN)
+  broadcastStudentAccessUpdate(piarId, {
+    isActive: Boolean(isActive),
+    studentDoc: cleanDoc,
+    updatedAt: nowIso
+  });
+
   return { ok: true, credential: record, syncedCloud, warning: cloudWarning };
 }
 
@@ -309,9 +360,63 @@ export async function syncStudentActivityToCloud({ studentDoc, accessPin, packag
       p_package_id: packageId,
       p_activity: activity
     });
+    if (!error && data?.code === 'UNAUTHORIZED' && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent(STUDENT_ACCESS_REVOKED_EVENT));
+    }
     return !error && Boolean(data?.ok);
   } catch {
     return false;
   }
+}
+
+/**
+ * Purga el caché local (credenciales, paquetes y actividad) y expulsa en tiempo real
+ * cualquier sesión abierta del estudiante cuando se elimina su expediente PIAR.
+ */
+export async function purgeStudentAccessOnDelete(piarId) {
+  if (!piarId) return;
+
+  // 1. Limpiar respaldo local de credenciales
+  const localMap = readLocalCredentialsMap();
+  if (localMap[piarId]) {
+    const nextMap = { ...localMap };
+    delete nextMap[piarId];
+    writeLocalCredentialsMap(nextMap);
+  }
+
+  // 2. Limpiar paquetes y actividad cacheados en localforage
+  try {
+    const storedPackages = (await localforage.getItem(STORAGE_PACKAGES_KEY)) || {};
+    const studentPkgs = Array.isArray(storedPackages[piarId]) ? storedPackages[piarId] : [];
+    if (storedPackages[piarId]) {
+      const nextPackages = { ...storedPackages };
+      delete nextPackages[piarId];
+      await localforage.setItem(STORAGE_PACKAGES_KEY, nextPackages);
+    }
+
+    if (studentPkgs.length > 0) {
+      const storedActivity = (await localforage.getItem(STORAGE_ACTIVITY_KEY)) || {};
+      const nextActivity = { ...storedActivity };
+      let changed = false;
+      studentPkgs.forEach((pkg) => {
+        if (pkg?.id && nextActivity[pkg.id]) {
+          delete nextActivity[pkg.id];
+          changed = true;
+        }
+      });
+      if (changed) {
+        await localforage.setItem(STORAGE_ACTIVITY_KEY, nextActivity);
+      }
+    }
+  } catch {
+    // Ignorar errores de almacenamiento local
+  }
+
+  // 3. Notificar en tiempo real a cualquier sesión abierta del estudiante para expulsión inmediata
+  broadcastStudentAccessUpdate(piarId, {
+    isActive: false,
+    deleted: true,
+    updatedAt: new Date().toISOString()
+  });
 }
 

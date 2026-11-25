@@ -17,9 +17,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(() => {
     try {
-      const reason = sessionStorage.getItem('piar_student_logout_reason') || '';
-      if (reason) sessionStorage.removeItem('piar_student_logout_reason');
-      return reason;
+      return sessionStorage.getItem('piar_student_logout_reason') || '';
     } catch {
       return '';
     }
@@ -30,6 +28,7 @@ export default function LoginPage() {
     document.body.classList.remove('dark-mode');
     try {
       localStorage.removeItem('piar_dark_mode');
+      sessionStorage.removeItem('piar_student_logout_reason');
     } catch {
       // Ignorar restricciones de almacenamiento
     }

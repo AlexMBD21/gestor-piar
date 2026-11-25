@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, startTransition } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { usePiar } from '../context/PiarContext';
 import Sidebar from '../components/Sidebar';
@@ -131,6 +131,29 @@ export default function AppPage() {
     'tab-admin': 'Administración'
   };
   const headerTitle = tabTitles[activeTab] || 'Gestor PIAR';
+  const [suiteVisualMode, setSuiteVisualMode] = useState(
+    () => (activeTab === 'tab-aula-ia' ? 'aula' : 'piar')
+  );
+
+  useEffect(() => {
+    setSuiteVisualMode(activeTab === 'tab-aula-ia' ? 'aula' : 'piar');
+  }, [activeTab]);
+
+  const isAulaSuiteActive = suiteVisualMode === 'aula';
+
+  const handleSuiteSwitch = (targetMode) => {
+    if (targetMode === 'aula') {
+      setSuiteVisualMode('aula');
+      startTransition(() => {
+        switchTab('tab-aula-ia');
+      });
+    } else if (activeTab === 'tab-aula-ia') {
+      setSuiteVisualMode('piar');
+      startTransition(() => {
+        switchTab('tab-dashboard');
+      });
+    }
+  };
 
   const mobileNavItems = [
     { tab: 'tab-dashboard', icon: 'dashboard', label: 'Inicio' },
@@ -196,16 +219,21 @@ export default function AppPage() {
           </div>
 
           <div className="header-actions">
-            {/* Conmutador Único de la Suite en el Topbar */}
+            {/* Conmutador Único de la Suite en el Topbar con pastilla deslizante */}
             <div className="aia-topbar-suite-switcher" role="tablist" aria-label="Cambiar de apartado en la Suite">
+              <div
+                className="aia-topbar-sw-pill"
+                style={{
+                  transform: isAulaSuiteActive ? 'translateX(100%)' : 'translateX(0%)'
+                }}
+                aria-hidden="true"
+              />
               <button
                 type="button"
                 role="tab"
-                aria-selected={activeTab !== 'tab-aula-ia'}
-                className={`aia-topbar-sw-btn ${activeTab !== 'tab-aula-ia' ? 'active' : ''}`}
-                onClick={() => {
-                  if (activeTab === 'tab-aula-ia') switchTab('tab-dashboard');
-                }}
+                aria-selected={!isAulaSuiteActive}
+                className={`aia-topbar-sw-btn ${!isAulaSuiteActive ? 'active' : ''}`}
+                onClick={() => handleSuiteSwitch('piar')}
                 title="Apartado 1: Expediente Oficial PIAR (Exclusivo Docentes)"
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>
@@ -217,9 +245,9 @@ export default function AppPage() {
               <button
                 type="button"
                 role="tab"
-                aria-selected={activeTab === 'tab-aula-ia'}
-                className={`aia-topbar-sw-btn ${activeTab === 'tab-aula-ia' ? 'active' : ''}`}
-                onClick={() => switchTab('tab-aula-ia')}
+                aria-selected={isAulaSuiteActive}
+                className={`aia-topbar-sw-btn ${isAulaSuiteActive ? 'active' : ''}`}
+                onClick={() => handleSuiteSwitch('aula')}
                 title="Apartado 2: Aula Adaptativa IA (Gemini + Vista Estudiante + Telemetría)"
               >
                 <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>
@@ -244,38 +272,24 @@ export default function AppPage() {
                 <span>Guardar cambios</span>
               </button>
             )}
-            <div className="header-profile-chip">
-              <div className="profile-avatar">
-                <span className="material-symbols-outlined" style={{ fontSize: '22px' }}>
-                  person
+            <div
+              className={`header-role-chip ${isSuperAdmin ? 'is-admin' : 'is-teacher'}`}
+              title={
+                profile?.full_name
+                  ? `${isSuperAdmin ? 'Administrador' : 'Profesor'} · ${profile.full_name}`
+                  : isSuperAdmin
+                    ? 'Administrador'
+                    : 'Profesor'
+              }
+            >
+              <span className="header-role-avatar" aria-hidden="true">
+                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                  {isSuperAdmin ? 'workspace_premium' : 'person'}
                 </span>
-              </div>
-              <div className="profile-details">
-                <span className="profile-name">{profile?.full_name || 'Usuario'}</span>
-                <span className="profile-role">
-                  {isSuperAdmin ? (
-                    <>
-                      <span
-                        className="material-symbols-outlined"
-                        style={{ fontSize: '12px', marginRight: '4px' }}
-                      >
-                        workspace_premium
-                      </span>{' '}
-                      SuperAdmin
-                    </>
-                  ) : (
-                    <>
-                      <span
-                        className="material-symbols-outlined"
-                        style={{ fontSize: '12px', marginRight: '4px' }}
-                      >
-                        person
-                      </span>{' '}
-                      Docente
-                    </>
-                  )}
-                </span>
-              </div>
+              </span>
+              <span className="header-role-label">
+                {isSuperAdmin ? 'Administrador' : 'Profesor'}
+              </span>
             </div>
           </div>
         </header>

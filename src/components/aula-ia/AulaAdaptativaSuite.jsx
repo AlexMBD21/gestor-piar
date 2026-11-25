@@ -1,13 +1,19 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { usePiar } from '../../context/PiarContext';
 import { useAulaIa } from '../../context/AulaIaContext';
 import { supabase } from '../../lib/supabaseClient';
 import { extractStudentPedagogicalProfile } from '../../lib/piarAiEngine';
+import { getScoreTone, computePackageMetrics } from '../../lib/aulaProgress';
 import StudentAdaptivePortal from './StudentAdaptivePortal';
 import TeacherTelemetryAnalytics from './TeacherTelemetryAnalytics';
 import StudentAccessModal from './StudentAccessModal';
+import StudioPiarCard from './StudioPiarCard';
+import PackageAccordionList from './PackageAccordionList';
+import SubjectDock from './SubjectDock';
+import ConfirmModal from './ConfirmModal';
+import CustomSelect from '../CustomSelect';
 import { getStudentCredential } from '../../lib/studentAccessService';
+import { runViewTransition, animateStaggerIn } from '../../lib/motionCraft';
 
 export default function AulaAdaptativaSuite({
   activeSubTab = 'ia-studio',
@@ -64,8 +70,6 @@ export default function AulaAdaptativaSuite({
   const [pendingDeletePkg, setPendingDeletePkg] = useState(null);
   const [showAccessModal, setShowAccessModal] = useState(false);
   const [studentAccessMeta, setStudentAccessMeta] = useState(null);
-  const [lastTelemetrySyncAt, setLastTelemetrySyncAt] = useState(null);
-  const [isSyncingTelemetry, setIsSyncingTelemetry] = useState(false);
 
   const currentPkg =
     studentPackages.find((p) => p.id === selectedPkgId) || studentPackages[0] || null;
@@ -111,8 +115,6 @@ export default function AulaAdaptativaSuite({
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStep, setGenerationStep] = useState('');
   const resultsSectionRef = useRef(null);
-  const mirrorRailRef = useRef(null);
-  const telemetryRailRef = useRef(null);
 
   useEffect(() => {
     setSelectedAreaIndex(0);
@@ -133,14 +135,21 @@ export default function AulaAdaptativaSuite({
     };
   }, [activeStudent, hydrateFromPiarRecord]);
 
-  // Sincronización en tiempo real de Telemetría e Intentos cuando el docente observa "Intentos y Telemetría"
+  useEffect(() => {
+    if (activeSubTab !== 'ia-studio' || !resultsSectionRef.current) return undefined;
+    return animateStaggerIn(resultsSectionRef.current, '.aia-collapsible-pkg-card', {
+      y: 8,
+      duration: 0.3,
+      stagger: 0.04
+    });
+  }, [activeSubTab, activeStudent?.id]);
+
+  // Sincronización automática de Telemetría e Intentos cuando el docente observa "Intentos y Telemetría"
   useEffect(() => {
     if (activeSubTab !== 'ia-analytics' || !activeStudent?.id) return undefined;
-    let active = true;
 
     const runSync = async () => {
-      const ok = await refreshActivityFromCloud(activeStudent.id);
-      if (active && ok) setLastTelemetrySyncAt(new Date().toISOString());
+      await refreshActivityFromCloud(activeStudent.id);
     };
 
     // El sondeo se pausa cuando la pestaña está oculta y se reanuda al volver
@@ -170,29 +179,11 @@ export default function AulaAdaptativaSuite({
       .subscribe();
 
     return () => {
-      active = false;
       clearInterval(intervalId);
       document.removeEventListener('visibilitychange', runSyncIfVisible);
       supabase.removeChannel(channel);
     };
   }, [activeSubTab, activeStudent?.id, refreshActivityFromCloud]);
-
-  const handleManualTelemetrySync = async () => {
-    if (!activeStudent?.id || isSyncingTelemetry) return;
-    setIsSyncingTelemetry(true);
-    const ok = await refreshActivityFromCloud(activeStudent.id);
-    if (ok) setLastTelemetrySyncAt(new Date().toISOString());
-    setIsSyncingTelemetry(false);
-  };
-
-  useEffect(() => {
-    if (!pendingDeletePkg) return undefined;
-    const onKeyDown = (e) => {
-      if (e.key === 'Escape') setPendingDeletePkg(null);
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [pendingDeletePkg]);
 
   const handleConfirmDeletePackage = () => {
     if (!pendingDeletePkg || !activeStudent?.id) return;
@@ -286,37 +277,44 @@ export default function AulaAdaptativaSuite({
 
   return (
     <div className="aia-suite-container">
-      {/* BARRA SUPERIOR DEL APARTADO 2: Selector de Estudiante y Credencial de Acceso */}
-      <div className="aia-top-control-bar">
+      {/* BARRA SUPERIOR DEL ESTUDIO DOCENTE: Selector de Estudiante y Credencial de Acceso */}
+      {activeSubTab === 'ia-studio' && (
+        <div className="aia-top-control-bar">
         <div className="aia-student-context-selector">
           <div className="aia-context-avatar">
             <span className="material-symbols-outlined">psychology</span>
           </div>
           <div className="aia-context-fields">
             <label htmlFor="aia-student-select" className="aia-context-eyebrow">
-              EXPEDIENTE PIAR QUE ALIMENTA AUTOMÁTICAMENTE AL AGENTE IA (SOLO LECTURA)
+              ESTUDIANTE ACTIVO · PIAR (SOLO LECTURA)
             </label>
             <div className="aia-context-row">
-              <select
+              <CustomSelect
                 id="aia-student-select"
-                className="aia-student-select-input"
+                className="aia-student-custom-select"
                 value={activeStudent.id}
-                onChange={(e) => setActiveStudentId(e.target.value)}
-              >
-                {validPiars.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nombre} — Grado {p.grado || 'S/A'} (Doc: {p.data?.anexo1?.estudiante?.numeroIdentificacion || '1000000000'})
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setActiveStudentId(val)}
+                options={validPiars.map((p) => ({
+                  value: p.id,
+                  label: `${p.nombre} — Grado ${p.grado || 'S/A'}`
+                }))}
+                placeholder="Seleccionar estudiante..."
+              />
 
               <button
                 type="button"
-                className={`aia-credential-chip ${studentAccessMeta?.isActive ? 'is-active' : ''}`}
+                className={`aia-credential-btn ${
+                  studentAccessMeta?.isActive
+                    ? 'is-active'
+                    : studentAccessMeta
+                      ? 'is-paused'
+                      : 'is-unassigned'
+                }`}
                 onClick={() => setShowAccessModal(true)}
-                title="Asignar o gestionar el documento y PIN de acceso del estudiante"
+                title="Abrir modal para asignar o gestionar el documento y PIN de acceso del estudiante"
+                aria-haspopup="dialog"
               >
-                <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
                   key
                 </span>
                 <span className="aia-tabular">
@@ -324,518 +322,58 @@ export default function AulaAdaptativaSuite({
                     ? `Acceso Activo · Doc: ${studentAccessMeta.studentDoc}`
                     : studentAccessMeta
                       ? `Acceso Pausado · Doc: ${studentAccessMeta.studentDoc}`
-                      : `Asignar Acceso Alumno (${profile.numeroIdentificacion})`}
+                      : 'Asignar Acceso Alumno'}
+                </span>
+                <span className="material-symbols-outlined aia-credential-btn-launch" aria-hidden="true">
+                  open_in_new
                 </span>
               </button>
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      )}
 
       {/* SUB-VISTA 1: ESTUDIO DOCENTE — 100% AUTOMATIZADO Y CONTRAÍBLE POR ÁREA */}
       {activeSubTab === 'ia-studio' && (
         <div className="aia-studio-vertical-flow">
           {/* BLOQUE 1 (ARRIBA): Lectura Automática del PIAR y Carencias Detectadas por Área */}
-          <div className="aia-bento-card">
-            <div className="aia-bento-header">
-              <div>
-                <span className="aia-eyebrow">
-                  PASO 1 · LECTURA Y DETECCIÓN AUTOMÁTICA DE CARENCIAS DESDE EL PIAR (ANEXOS 1, 2 Y 3)
-                </span>
-                <h3 className="aia-bento-title">
-                  Análisis Automático del Expediente PIAR de {profile.nombreCompleto}
-                </h3>
-              </div>
+          <StudioPiarCard
+            profile={profile}
+            detectedAreas={detectedAreas}
+            selectedAreaIndex={selectedAreaIndex}
+            onSelectAreaIndex={setSelectedAreaIndex}
+            hasPackageForArea={hasPackageForArea}
+            activeArea={activeArea}
+            isGenerating={isGenerating}
+            shortGenerationLabel={shortGenerationLabel}
+            onGenerate={handleAutoGenerateFromPiar}
+          />
 
-              <span className="aia-status-badge readonly aia-tabular">
-                🔒 Lectura Automática PIAR ({profile.contextCompleteness}% Contexto)
-              </span>
-            </div>
-
-            {/* Mapeo Integral 360° de los Anexos 1, 2 y 3 del PIAR */}
-            <div className="aia-piar-dna-grid" style={{ marginBottom: '14px' }}>
-              <div className="aia-dna-item">
-                <span className="aia-dna-label">Anexo 1 · Perfil, Grado y Entorno Familiar</span>
-                <strong className="aia-dna-value">
-                  {profile.edad} años · Grado {profile.grado} ({profile.institucionEducativa})
-                </strong>
-                <p className="aia-dna-text" style={{ marginTop: '4px' }}>
-                  <strong>Núcleo familiar:</strong> {profile.apoyoFamiliar}
-                </p>
-              </div>
-              <div className="aia-dna-item">
-                <span className="aia-dna-label">Anexo 1 · Salud, Terapias y Productos de Apoyo</span>
-                <strong className="aia-dna-value">{profile.diagnosticoSalud}</strong>
-                <p className="aia-dna-text" style={{ marginTop: '4px' }}>
-                  <strong>Apoyos / Terapias:</strong>{' '}
-                  {profile.terapiasActivas?.length > 0
-                    ? `${profile.terapiasActivas.join(', ')} · ${profile.productosApoyo}`
-                    : profile.productosApoyo}
-                </p>
-              </div>
-              <div className="aia-dna-item full">
-                <span className="aia-dna-label">
-                  Anexo 1 y 2 · Trayectoria Educativa y Características Psicopedagógicas Mapeadas
-                </span>
-                <p className="aia-dna-text">{profile.caracteristicas}</p>
-                {profile.observacionesTrayectoria && (
-                  <p className="aia-dna-text" style={{ marginTop: '4px', color: 'var(--text-muted)' }}>
-                    <strong>Trayectoria (Anexo 1):</strong> {profile.observacionesTrayectoria}
-                  </p>
-                )}
-              </div>
-              <div className="aia-dna-item full">
-                <span className="aia-dna-label">
-                  Anexo 2 (PMI) y Anexo 3 · Directrices de Aula y Acuerdos con Hogar Mapeados
-                </span>
-                <p className="aia-dna-text">{profile.compromisosAula}</p>
-              </div>
-            </div>
-
-            {/* Carencias y Barreras por Área extraídas automáticamente por la IA desde el Anexo 2 */}
-            <div className="aia-dna-item full" style={{ marginBottom: '16px' }}>
-              <span className="aia-dna-label">
-                Selecciona un Área / Materia del PIAR para que la IA genere sus Materiales ({detectedAreas.length} áreas en su PIAR)
-              </span>
-              <div className="aia-package-pills" style={{ marginTop: '8px', marginBottom: '12px' }}>
-                {detectedAreas.map((ar, idx) => {
-                  const alreadyGenerated = hasPackageForArea(ar.displayArea);
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setSelectedAreaIndex(idx)}
-                      className={`aia-pkg-pill ${selectedAreaIndex === idx ? 'active' : ''}`}
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-                        {alreadyGenerated ? 'check_circle' : 'auto_awesome'}
-                      </span>
-                      <span>{ar.displayArea}</span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Ficha de lo que la IA detectó automáticamente en el área seleccionada del PIAR */}
-              {activeArea && (
-                <div className="aia-piar-dna-grid">
-                  <div className="aia-dna-item">
-                    <span className="aia-dna-label">
-                      Carencia / Dificultad Detectada por la IA en {activeArea.displayArea}
-                    </span>
-                    <strong className="aia-dna-value" style={{ color: 'var(--primary)' }}>
-                      {activeArea.carenciaDetectadaPorIa}
-                    </strong>
-                    <p className="aia-dna-text" style={{ marginTop: '4px' }}>
-                      <strong>Barrera en PIAR:</strong> {activeArea.barreras}
-                    </p>
-                  </div>
-
-                  <div className="aia-dna-item">
-                    <span className="aia-dna-label">
-                      Meta de Aprendizaje y Ajuste Razonable Extraídos del PIAR
-                    </span>
-                    <strong className="aia-dna-value">{activeArea.objetivos}</strong>
-                    <p className="aia-dna-text" style={{ marginTop: '4px' }}>
-                      <strong>Ajuste a aplicar por la IA:</strong> {activeArea.ajustes}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Botón Único de Generación Automática con Gemini IA */}
-            <button
-              type="button"
-              className={`aia-btn-primary aia-btn-full ${isGenerating ? 'aia-btn-generating' : ''}`}
-              disabled={isGenerating}
-              aria-busy={isGenerating}
-              onClick={() => handleAutoGenerateFromPiar(activeArea)}
-            >
-              {isGenerating ? (
-                <>
-                  <span className="aia-btn-spinner" aria-hidden="true" />
-                  <span>{shortGenerationLabel}</span>
-                </>
-              ) : (
-                <>
-                  <span className="material-symbols-outlined" style={{ fontSize: '19px' }}>
-                    auto_awesome
-                  </span>
-                  <span>Generar Material IA · {activeArea.displayArea}</span>
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* BLOQUE 2 (DEBAJO DEL BOTÓN): Lista Acordeón de Paquetes por Materia / Área (Contraíbles para no extender la pantalla) */}
-          {visiblePackages.length > 0 && (
-            <div ref={resultsSectionRef} className="aia-generated-results-section">
-              <div className="aia-accordion-section-header">
-                <div>
-                  <span className="aia-eyebrow">
-                    PASO 2 · MATERIALES POR ÁREA GENERADOS PARA {profile.primerNombre.toUpperCase()} ({visiblePackages.length}{' '}
-                    {visiblePackages.length === 1 ? 'ÁREA' : 'ÁREAS'})
-                  </span>
-                  <h4 className="aia-accordion-section-title">
-                    Haz clic en cada asignatura para desplegar o contraer su diagnóstico sin extender la pantalla
-                  </h4>
-                </div>
-              </div>
-
-              <div className="aia-packages-accordion-stack">
-                {visiblePackages.map((pkg) => {
-                  const isExpanded = expandedPkgId === pkg.id;
-                  const pkgDiag = pkg.teacherDiagnosis || {};
-                  const pkgActivity = activityByPackage[pkg.id] || null;
-                  const pkgAttemptsCount = pkgActivity?.attempts?.length || 0;
-                  const pkgLatestScore =
-                    pkgAttemptsCount > 0
-                      ? pkgActivity.attempts[pkgAttemptsCount - 1].percentage
-                      : null;
-
-                  return (
-                    <div
-                      key={pkg.id}
-                      className={`aia-bento-card aia-collapsible-pkg-card ${
-                        isExpanded ? 'expanded' : 'collapsed'
-                      }`}
-                    >
-                      {/* Cabecera siempre visible de cada Área / Materia (Permite contraer, supervisar o publicar en 1 clic) */}
-                      <div className="aia-collapsible-pkg-header">
-                        <button
-                          type="button"
-                          className="aia-collapsible-pkg-trigger"
-                          onClick={() => {
-                            setSelectedPkgId(pkg.id);
-                            setExpandedPkgId((prev) => (prev === pkg.id ? null : pkg.id));
-                          }}
-                          title={
-                            isExpanded
-                              ? `Contraer diagnóstico y materiales de ${pkg.subject}`
-                              : `Desplegar diagnóstico y materiales de ${pkg.subject}`
-                          }
-                        >
-                          <span className="aia-collapsible-pkg-icon">
-                            <span className="material-symbols-outlined">
-                              {isExpanded ? 'expand_less' : 'expand_more'}
-                            </span>
-                          </span>
-
-                          <div className="aia-collapsible-pkg-title-wrap">
-                            <strong className="aia-collapsible-pkg-subject">{pkg.subject}</strong>
-                            <span className="aia-collapsible-pkg-summary-pills">
-                              {pkg.slides?.length || 5} Diapositivas (.pptx) · Video YouTube · {pkg.games?.length || 4} Juegos · Examen
-                              {pkg.engineMode === 'local'
-                                ? ' · Respaldo local'
-                                : pkg.engineMode === 'gemini' || String(pkg.engineSource || '').startsWith('Gemini')
-                                  ? ' · Gemini IA'
-                                  : ''}
-                            </span>
-                            <span className="aia-collapsible-pkg-topic">{pkg.topic}</span>
-                          </div>
-                        </button>
-
-                        <div className="aia-collapsible-pkg-actions">
-                          <span
-                            className={`aia-status-icon-badge ${
-                              pkg.status === 'published' ? 'published' : 'draft'
-                            }`}
-                            data-tooltip={
-                              pkg.status === 'published'
-                                ? 'Publicado y activo en el Portal del Estudiante'
-                                : 'En Supervisión Docente (Oculto al estudiante)'
-                            }
-                            title={
-                              pkg.status === 'published'
-                                ? 'Publicado y activo en el Portal del Estudiante'
-                                : 'En Supervisión Docente (Oculto al estudiante)'
-                            }
-                          >
-                            {pkg.status === 'published' ? (
-                              <svg
-                                className="aia-published-live-svg"
-                                viewBox="0 0 24 24"
-                                width="20"
-                                height="20"
-                                fill="none"
-                                aria-hidden="true"
-                              >
-                                <circle
-                                  cx="12"
-                                  cy="12"
-                                  r="9"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  fill="rgba(22, 163, 74, 0.14)"
-                                />
-                                <path
-                                  d="M8.5 12.3L10.9 14.7L15.8 9.6"
-                                  stroke="currentColor"
-                                  strokeWidth="2.3"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            ) : (
-                              <svg
-                                className="aia-hourglass-svg"
-                                viewBox="0 0 24 24"
-                                width="20"
-                                height="20"
-                                fill="none"
-                                aria-hidden="true"
-                              >
-                                <defs>
-                                  <clipPath id={`hg-top-${pkg.id}`}>
-                                    <path d="M6.5 4.5 H17.5 C17.5 8.5 13.5 10.5 12 12 C10.5 10.5 6.5 8.5 6.5 4.5 Z" />
-                                  </clipPath>
-                                  <clipPath id={`hg-bot-${pkg.id}`}>
-                                    <path d="M12 12 C13.5 13.5 17.5 15.5 17.5 19.5 H6.5 C6.5 15.5 10.5 13.5 12 12 Z" />
-                                  </clipPath>
-                                </defs>
-                                <g className="aia-hg-flip-group">
-                                  {/* Arena superior que va bajando */}
-                                  <g clipPath={`url(#hg-top-${pkg.id})`}>
-                                    <rect
-                                      className="aia-hg-sand-top"
-                                      x="6"
-                                      y="5.2"
-                                      width="12"
-                                      height="7"
-                                      fill="#f59e0b"
-                                    />
-                                  </g>
-
-                                  {/* Hilo de arena cayendo por el centro */}
-                                  <line
-                                    className="aia-hg-sand-stream"
-                                    x1="12"
-                                    y1="11.5"
-                                    x2="12"
-                                    y2="19.2"
-                                    stroke="#f59e0b"
-                                    strokeWidth="1.5"
-                                    strokeLinecap="round"
-                                  />
-
-                                  {/* Arena inferior que se va acumulando en la base */}
-                                  <g clipPath={`url(#hg-bot-${pkg.id})`}>
-                                    <rect
-                                      className="aia-hg-sand-bottom"
-                                      x="6"
-                                      y="12.5"
-                                      width="12"
-                                      height="7"
-                                      fill="#f59e0b"
-                                    />
-                                  </g>
-
-                                  {/* Estructura del reloj de arena */}
-                                  <path
-                                    d="M6.5 4.5 H17.5 C17.5 8.5 13.5 10.5 12 12 C13.5 13.5 17.5 15.5 17.5 19.5 H6.5 C6.5 15.5 10.5 13.5 12 12 C10.5 10.5 6.5 8.5 6.5 4.5 Z"
-                                    stroke="currentColor"
-                                    strokeWidth="1.75"
-                                    strokeLinejoin="round"
-                                  />
-                                  <rect
-                                    x="5"
-                                    y="3"
-                                    width="14"
-                                    height="2"
-                                    rx="1"
-                                    fill="currentColor"
-                                  />
-                                  <rect
-                                    x="5"
-                                    y="19"
-                                    width="14"
-                                    height="2"
-                                    rx="1"
-                                    fill="currentColor"
-                                  />
-                                </g>
-                              </svg>
-                            )}
-                          </span>
-
-                          <button
-                            type="button"
-                            className={
-                              pkg.status === 'published'
-                                ? 'aia-btn-secondary aia-btn-sm'
-                                : 'aia-btn-primary aia-btn-sm'
-                            }
-                            onClick={() => {
-                              setSelectedPkgId(pkg.id);
-                              setActiveSubTab('ia-mirror');
-                            }}
-                            title={`Entrar a supervisar los materiales didácticos de ${pkg.subject} como los verá el estudiante`}
-                          >
-                            <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                              visibility
-                            </span>
-                            <span>Supervisar</span>
-                          </button>
-
-                          {pkg.status === 'published' && (
-                            <button
-                              type="button"
-                              className="aia-btn-secondary aia-btn-sm"
-                              onClick={() => {
-                                togglePackagePublishStatus(activeStudent.id, pkg.id, activeStudent);
-                                if (showToast) {
-                                  showToast(
-                                    `${pkg.subject} fue despublicado y volvió a Supervisión Docente.`
-                                  );
-                                }
-                              }}
-                              title={`Despublicar ${pkg.subject} del portal del estudiante`}
-                            >
-                              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                                visibility_off
-                              </span>
-                              <span>Despublicar</span>
-                            </button>
-                          )}
-
-                          <button
-                            type="button"
-                            className="aia-btn-danger-icon"
-                            onClick={() => setPendingDeletePkg(pkg)}
-                            title={`Eliminar material de ${pkg.subject}`}
-                            aria-label={`Eliminar material de ${pkg.subject}`}
-                          >
-                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                              delete
-                            </span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Cuerpo Desplegable del Área (Se oculta al contraer para no alargar la pantalla) */}
-                      {isExpanded && (
-                        <div className="aia-collapsible-pkg-body">
-                          <div className="aia-bento-header" style={{ marginTop: '14px' }}>
-                            <div>
-                              <span className="aia-eyebrow">
-                                INFORME PSICOPEDAGÓGICO DEL AGENTE IA PARA EL PROFESOR ({pkg.subject.toUpperCase()})
-                              </span>
-                              <h3 className="aia-bento-title">
-                                Diagnóstico Automático: {pkg.subject}
-                              </h3>
-                            </div>
-                            <span className="aia-status-badge ok">
-                              ✓ Evaluado automáticamente desde el PIAR de {profile.primerNombre}
-                            </span>
-                          </div>
-
-                          <div className="aia-teacher-report-stack">
-                            <div className="aia-report-block">
-                              <span className="aia-report-block-label">
-                                1. Carencias Detectadas y Causa Raíz (Evaluación Automática del PIAR)
-                              </span>
-                              <p className="aia-report-block-text">{pkgDiag.rootCauseAnalysis}</p>
-                            </div>
-
-                            <div className="aia-form-row-2">
-                              <div className="aia-report-block">
-                                <span className="aia-report-block-label">
-                                  2. Calibración Cognitiva ({profile.edad} años · Grado {profile.grado})
-                                </span>
-                                <p className="aia-report-block-text">
-                                  {pkgDiag.cognitiveCalibration}
-                                </p>
-                              </div>
-
-                              <div className="aia-report-block">
-                                <span className="aia-report-block-label">
-                                  3. Estrategia DUA Aplicada en los Materiales Didácticos
-                                </span>
-                                <p className="aia-report-block-text">{pkgDiag.pedagogicalStrategy}</p>
-                              </div>
-                            </div>
-
-                            <div className="aia-report-two-cols">
-                              <div className="aia-report-list-box strengths">
-                                <strong>✓ Fortalezas del PIAR Apalancadas por la IA</strong>
-                                <ul>
-                                  {(pkgDiag.detectedStrengths || []).map((st, i) => (
-                                    <li key={i}>{st}</li>
-                                  ))}
-                                </ul>
-                              </div>
-
-                              <div className="aia-report-list-box barriers">
-                                <strong>⚡ Carencias y Barreras Atendidas por la IA</strong>
-                                <ul>
-                                  {(pkgDiag.detectedBarriers || []).map((b, i) => (
-                                    <li key={i}>{b}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Resumen de la Fábrica de Contenidos Generada para esta Área */}
-                          <div className="aia-factory-summary">
-                            <div className="aia-factory-summary-header">
-                              <span>
-                                Materiales Didácticos de {pkg.subject} Generados para{' '}
-                                {profile.primerNombre}
-                              </span>
-                              {pkgLatestScore !== null && (
-                                <span className="aia-tabular aia-latest-score-pill">
-                                  Último intento del alumno: {pkgLatestScore}% ({pkgAttemptsCount}{' '}
-                                  intentos)
-                                </span>
-                              )}
-                            </div>
-
-                            <div className="aia-factory-cards-mini four-cols">
-                              <div className="aia-factory-mini-item">
-                                <span className="material-symbols-outlined">slideshow</span>
-                                <div>
-                                  <strong>{pkg.slides?.length || 5} Diapositivas (.pptx)</strong>
-                                  <small>Con voz, analogías y descarga PowerPoint</small>
-                                </div>
-                              </div>
-
-                              <div className="aia-factory-mini-item">
-                                <span className="material-symbols-outlined">smart_display</span>
-                                <div>
-                                  <strong>Video YouTube</strong>
-                                  <small>Video de apoyo + puntos clave IA</small>
-                                </div>
-                              </div>
-
-                              <div className="aia-factory-mini-item">
-                                <span className="material-symbols-outlined">sports_esports</span>
-                                <div>
-                                  <strong>Juegos Didácticos IA</strong>
-                                  <small>{pkg.games?.length || 4} retos interactivos</small>
-                                </div>
-                              </div>
-
-                              <div className="aia-factory-mini-item">
-                                <span className="material-symbols-outlined">quiz</span>
-                                <div>
-                                  <strong>Examen Multi-Intento</strong>
-                                  <small>
-                                    {pkg.quizQuestions?.length || 5} preguntas con pistas
-                                  </small>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          {/* BLOQUE 2 (DEBAJO DEL BOTÓN): Lista Acordeón de Paquetes por Materia / Área */}
+          <PackageAccordionList
+            sectionRef={resultsSectionRef}
+            packages={visiblePackages}
+            expandedPkgId={expandedPkgId}
+            profile={profile}
+            onToggleExpand={(pkgId) => {
+              setSelectedPkgId(pkgId);
+              setExpandedPkgId((prev) => (prev === pkgId ? null : pkgId));
+            }}
+            onSupervise={(pkgId) => {
+              setSelectedPkgId(pkgId);
+              if (setActiveSubTab) {
+                runViewTransition(() => setActiveSubTab('ia-mirror'));
+              }
+            }}
+            onTogglePublish={(pkg) => {
+              togglePackagePublishStatus(activeStudent.id, pkg.id, activeStudent);
+              if (showToast) {
+                showToast(`${pkg.subject} fue despublicado y volvió a Supervisión Docente.`);
+              }
+            }}
+            onRequestDelete={setPendingDeletePkg}
+          />
         </div>
       )}
 
@@ -843,52 +381,15 @@ export default function AulaAdaptativaSuite({
       {activeSubTab === 'ia-mirror' && (
         <div className="aia-studio-vertical-flow">
           {studentPackages.length > 0 && currentPkg && (
-            <div className="aia-mirror-dock">
-              {/* Fila 1: Contexto del área activa + Acciones fijas a la derecha */}
-              <div className="aia-mirror-dock-top">
-                <div className="aia-mirror-dock-identity">
-                  <span className="aia-mirror-dock-eyebrow">
-                    SUPERVISIÓN DOCENTE · {profile.primerNombre.toUpperCase()}
-                  </span>
-                  <div className="aia-mirror-dock-title-row">
-                    <h4 className="aia-mirror-dock-subject">{currentPkg.subject}</h4>
-                    <span
-                      className={`aia-mirror-state-pill ${
-                        currentPkg.status === 'published' ? 'is-published' : 'is-draft'
-                      }`}
-                    >
-                      <span className="aia-mirror-state-dot" aria-hidden="true" />
-                      <span>
-                        {currentPkg.status === 'published'
-                          ? 'Publicado al alumno'
-                          : 'En supervisión'}
-                      </span>
-                    </span>
-                    <span className="aia-mirror-count-pill aia-tabular">
-                      {studentPackages.filter((p) => p.status === 'published').length}/
-                      {studentPackages.length}{' '}
-                      {studentPackages.length === 1 ? 'materia publicada' : 'publicadas'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="aia-mirror-dock-actions">
-                  {studentPackages.length >= 5 && (
-                    <select
-                      aria-label="Cambiar materia rápidamente"
-                      className="aia-mirror-quick-select"
-                      value={currentPkg.id}
-                      onChange={(e) => setSelectedPkgId(e.target.value)}
-                    >
-                      {studentPackages.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.status === 'published' ? '✓ ' : '• '}
-                          {p.subject}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-
+            <SubjectDock
+              eyebrow={`SUPERVISIÓN DOCENTE · ${profile.primerNombre.toUpperCase()}`}
+              currentPkg={currentPkg}
+              packages={studentPackages}
+              onSelectPackage={setSelectedPkgId}
+              countPillText={`${studentPackages.filter((p) => p.status === 'published').length}/${studentPackages.length} ${studentPackages.length === 1 ? 'materia publicada' : 'publicadas'}`}
+              railAriaLabel="Asignaturas generadas para supervisar"
+              actions={
+                <>
                   <button
                     type="button"
                     className={
@@ -926,73 +427,9 @@ export default function AulaAdaptativaSuite({
                       delete
                     </span>
                   </button>
-                </div>
-              </div>
-
-              {/* Fila 2: Carril horizontal escalable de asignaturas (nunca colapsa aunque haya 10+ materias) */}
-              {studentPackages.length > 1 && (
-                <div className="aia-mirror-rail-wrap">
-                  {studentPackages.length >= 4 && (
-                    <button
-                      type="button"
-                      className="aia-mirror-rail-nav"
-                      aria-label="Desplazar asignaturas a la izquierda"
-                      onClick={() =>
-                        mirrorRailRef.current?.scrollBy({ left: -240, behavior: 'smooth' })
-                      }
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                        chevron_left
-                      </span>
-                    </button>
-                  )}
-
-                  <div
-                    ref={mirrorRailRef}
-                    className="aia-mirror-subject-rail"
-                    role="tablist"
-                    aria-label="Asignaturas generadas para supervisar"
-                  >
-                    {studentPackages.map((p) => {
-                      const isActive = currentPkg?.id === p.id;
-                      const isPub = p.status === 'published';
-                      return (
-                        <button
-                          key={p.id}
-                          type="button"
-                          role="tab"
-                          aria-selected={isActive}
-                          onClick={() => setSelectedPkgId(p.id)}
-                          className={`aia-mirror-subject-tab ${isActive ? 'is-active' : ''}`}
-                        >
-                          <span
-                            className={`aia-mirror-tab-dot ${isPub ? 'pub' : 'draft'}`}
-                            title={isPub ? 'Publicado' : 'En supervisión'}
-                            aria-hidden="true"
-                          />
-                          <span className="aia-mirror-tab-name">{p.subject}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {studentPackages.length >= 4 && (
-                    <button
-                      type="button"
-                      className="aia-mirror-rail-nav"
-                      aria-label="Desplazar asignaturas a la derecha"
-                      onClick={() =>
-                        mirrorRailRef.current?.scrollBy({ left: 240, behavior: 'smooth' })
-                      }
-                    >
-                      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                        chevron_right
-                      </span>
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
+                </>
+              }
+            />
           )}
 
           <StudentAdaptivePortal
@@ -1009,173 +446,23 @@ export default function AulaAdaptativaSuite({
         <div className="aia-studio-vertical-flow">
           {studentPackages.length > 0 && currentPkg ? (
             <>
-              <div className="aia-mirror-dock">
-                {/* Fila 1: Contexto del área activa + Indicador En Vivo y Actualizar */}
-                <div className="aia-mirror-dock-top">
-                  <div className="aia-mirror-dock-identity">
-                    <span className="aia-mirror-dock-eyebrow">
-                      TELEMETRÍA EN VIVO · {profile.primerNombre.toUpperCase()}
+              <SubjectDock
+                eyebrow={`TELEMETRÍA EN VIVO · ${profile.primerNombre.toUpperCase()}`}
+                currentPkg={currentPkg}
+                packages={studentPackages}
+                onSelectPackage={setSelectedPkgId}
+                countPillText={`${studentPackages.filter((p) => (activityByPackage[p.id]?.attempts?.length || 0) > 0).length}/${studentPackages.length} ${studentPackages.length === 1 ? 'materia evaluada' : 'evaluadas'}`}
+                railAriaLabel="Materias con estadísticas"
+                renderTabSuffix={(p) => {
+                  const { bestQuizPct } = computePackageMetrics(p, activityByPackage[p.id]);
+                  const scoreTone = getScoreTone(bestQuizPct, { allowEmpty: true });
+                  return (
+                    <span className={`aia-telemetry-rail-badge aia-tabular ${scoreTone}`}>
+                      {bestQuizPct !== null ? `${bestQuizPct}%` : 'Sin int.'}
                     </span>
-                    <div className="aia-mirror-dock-title-row">
-                      <h4 className="aia-mirror-dock-subject">{currentPkg.subject}</h4>
-                      <span
-                        className={`aia-mirror-state-pill ${
-                          currentPkg.status === 'published' ? 'is-published' : 'is-draft'
-                        }`}
-                      >
-                        <span className="aia-mirror-state-dot" aria-hidden="true" />
-                        <span>
-                          {currentPkg.status === 'published'
-                            ? 'Publicado al alumno'
-                            : 'En supervisión'}
-                        </span>
-                      </span>
-                      <span className="aia-mirror-count-pill aia-tabular">
-                        {studentPackages.filter(
-                          (p) => (activityByPackage[p.id]?.attempts?.length || 0) > 0
-                        ).length}
-                        /{studentPackages.length}{' '}
-                        {studentPackages.length === 1 ? 'materia evaluada' : 'evaluadas'}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="aia-mirror-dock-actions">
-                    {studentPackages.length >= 5 && (
-                      <select
-                        aria-label="Seleccionar materia para ver estadísticas"
-                        className="aia-mirror-quick-select"
-                        value={currentPkg.id}
-                        onChange={(e) => setSelectedPkgId(e.target.value)}
-                      >
-                        {studentPackages.map((p) => {
-                          const atts = activityByPackage[p.id]?.attempts || [];
-                          const best =
-                            atts.length > 0
-                              ? `${Math.max(...atts.map((a) => a.percentage || 0))}%`
-                              : 'Sin int.';
-                          return (
-                            <option key={p.id} value={p.id}>
-                              {p.subject} ({best})
-                            </option>
-                          );
-                        })}
-                      </select>
-                    )}
-
-                    <span className="aia-live-sync-pill aia-tabular">
-                      <span className="aia-live-dot" aria-hidden="true" />
-                      <span>
-                        En vivo
-                        {lastTelemetrySyncAt
-                          ? ` · ${new Date(lastTelemetrySyncAt).toLocaleTimeString('es-CO', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              second: '2-digit'
-                            })}`
-                          : ''}
-                      </span>
-                    </span>
-
-                    <button
-                      type="button"
-                      className="aia-btn-secondary aia-btn-sm"
-                      onClick={handleManualTelemetrySync}
-                      disabled={isSyncingTelemetry}
-                    >
-                      <span
-                        className={`material-symbols-outlined ${isSyncingTelemetry ? 'aia-icon-spin' : ''}`}
-                        style={{ fontSize: '15px' }}
-                      >
-                        sync
-                      </span>
-                      <span>{isSyncingTelemetry ? 'Sincronizando' : 'Actualizar'}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Fila 2: Carril horizontal escalable de asignaturas con indicador de mejor nota */}
-                {studentPackages.length > 1 && (
-                  <div className="aia-mirror-rail-wrap">
-                    {studentPackages.length >= 4 && (
-                      <button
-                        type="button"
-                        className="aia-mirror-rail-nav"
-                        aria-label="Desplazar asignaturas a la izquierda"
-                        onClick={() =>
-                          telemetryRailRef.current?.scrollBy({ left: -240, behavior: 'smooth' })
-                        }
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                          chevron_left
-                        </span>
-                      </button>
-                    )}
-
-                    <div
-                      ref={telemetryRailRef}
-                      className="aia-mirror-subject-rail"
-                      role="tablist"
-                      aria-label="Materias con estadísticas"
-                    >
-                      {studentPackages.map((p) => {
-                        const pAct = activityByPackage[p.id];
-                        const pAttempts = pAct?.attempts || [];
-                        const pBest =
-                          pAttempts.length > 0
-                            ? Math.max(...pAttempts.map((a) => a.percentage || 0))
-                            : null;
-                        const isSelected = currentPkg?.id === p.id;
-                        const scoreTone =
-                          pBest === null
-                            ? 'empty'
-                            : pBest >= 80
-                              ? 'high'
-                              : pBest >= 50
-                                ? 'mid'
-                                : 'low';
-                        return (
-                          <button
-                            key={p.id}
-                            type="button"
-                            role="tab"
-                            aria-selected={isSelected}
-                            onClick={() => setSelectedPkgId(p.id)}
-                            className={`aia-mirror-subject-tab ${isSelected ? 'is-active' : ''}`}
-                          >
-                            <span
-                              className={`aia-mirror-tab-dot ${
-                                p.status === 'published' ? 'pub' : 'draft'
-                              }`}
-                              title={p.status === 'published' ? 'Publicado' : 'En supervisión'}
-                              aria-hidden="true"
-                            />
-                            <span className="aia-mirror-tab-name">{p.subject}</span>
-                            <span className={`aia-telemetry-rail-badge aia-tabular ${scoreTone}`}>
-                              {pBest !== null ? `${pBest}%` : 'Sin int.'}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {studentPackages.length >= 4 && (
-                      <button
-                        type="button"
-                        className="aia-mirror-rail-nav"
-                        aria-label="Desplazar asignaturas a la derecha"
-                        onClick={() =>
-                          telemetryRailRef.current?.scrollBy({ left: 240, behavior: 'smooth' })
-                        }
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                          chevron_right
-                        </span>
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
+                  );
+                }}
+              />
 
               <TeacherTelemetryAnalytics
                 pkg={currentPkg}
@@ -1216,48 +503,26 @@ export default function AulaAdaptativaSuite({
       />
 
       {/* Modal de confirmación antes de eliminar un material */}
-      {pendingDeletePkg &&
-        createPortal(
-          <div
-            className="aia-confirm-modal-backdrop"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="aia-delete-pkg-title"
-            onClick={() => setPendingDeletePkg(null)}
-          >
-            <div className="aia-confirm-modal" onClick={(e) => e.stopPropagation()}>
-              <div className="aia-confirm-modal-icon">
-                <span className="material-symbols-outlined">delete_forever</span>
-              </div>
-              <h3 id="aia-delete-pkg-title">¿Eliminar este material?</h3>
-              <p>
-                Se eliminará el paquete de <strong>{pendingDeletePkg.subject}</strong> (
-                {pendingDeletePkg.topic}) junto con su progreso y telemetría local. Podrás volver a
-                generarlo con el Agente IA cuando quieras.
-              </p>
-              <div className="aia-confirm-modal-actions">
-                <button
-                  type="button"
-                  className="aia-btn-secondary"
-                  onClick={() => setPendingDeletePkg(null)}
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  className="aia-btn-danger"
-                  onClick={handleConfirmDeletePackage}
-                >
-                  <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>
-                    delete
-                  </span>
-                  <span>Eliminar material</span>
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body
+      <ConfirmModal
+        isOpen={Boolean(pendingDeletePkg)}
+        titleId="aia-delete-pkg-title"
+        icon="delete_forever"
+        title="¿Eliminar este material?"
+        cancelLabel="Cancelar"
+        confirmLabel="Eliminar material"
+        confirmIcon="delete"
+        confirmVariant="danger"
+        onCancel={() => setPendingDeletePkg(null)}
+        onConfirm={handleConfirmDeletePackage}
+      >
+        {pendingDeletePkg && (
+          <p>
+            Se eliminará el paquete de <strong>{pendingDeletePkg.subject}</strong> (
+            {pendingDeletePkg.topic}) junto con su progreso y telemetría local. Podrás volver a
+            generarlo con el Agente IA cuando quieras.
+          </p>
         )}
+      </ConfirmModal>
     </div>
   );
 }
