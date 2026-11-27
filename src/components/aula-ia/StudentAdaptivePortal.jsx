@@ -366,6 +366,7 @@ export default function StudentAdaptivePortal({
             activity={activity}
             isMirrorPreview={isMirrorPreview}
             fullscreenButton={fullscreenButton}
+            onBackToSlides={() => switchModule('slides')}
             onCompleteVideo={() => switchModule('games')}
           />
         )}
@@ -375,6 +376,7 @@ export default function StudentAdaptivePortal({
             activity={activity}
             isMirrorPreview={isMirrorPreview}
             fullscreenButton={fullscreenButton}
+            onBackToVideo={() => switchModule('video')}
             onCompleteGames={() => switchModule('quiz')}
           />
         )}

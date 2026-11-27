@@ -8,7 +8,6 @@ import { animateModalIn } from '../../lib/motionCraft';
 export default function ConfirmModal({
   isOpen,
   titleId,
-  icon = 'warning',
   title,
   children,
   cancelLabel = 'Cancelar',
@@ -51,9 +50,6 @@ export default function ConfirmModal({
         className="aia-confirm-modal"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="aia-confirm-modal-icon">
-          <span className="material-symbols-outlined">{icon}</span>
-        </div>
         <h3 id={titleId}>{title}</h3>
         <div className="aia-confirm-modal-body">{children}</div>
         <div className="aia-confirm-modal-actions">

@@ -760,17 +760,20 @@ export default function AdaptiveSlidesViewer({
 
       {/* Navegación inferior calmada */}
       <div className="aia-slide-footer">
-        <button
-          type="button"
-          className="aia-btn-secondary"
-          onClick={goPrev}
-          disabled={safeIndex === 0}
-        >
-          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-            arrow_back
-          </span>
-          <span>Anterior</span>
-        </button>
+        {safeIndex > 0 ? (
+          <button
+            type="button"
+            className="aia-btn-secondary"
+            onClick={goPrev}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+              arrow_back
+            </span>
+            <span>Anterior</span>
+          </button>
+        ) : (
+          <span className="aia-slide-footer-spacer" aria-hidden="true" />
+        )}
 
         <div className="aia-slide-dots-nav" aria-label="Progreso de láminas">
           {slides.map((s, idx) => {

@@ -9,6 +9,7 @@ import Anexo2Form from '../components/Anexo2Form';
 import Anexo3Form from '../components/Anexo3Form';
 import PreviewTab from '../components/PreviewTab';
 import AulaAdaptativaSuite from '../components/aula-ia/AulaAdaptativaSuite';
+import ConfirmModal from '../components/aula-ia/ConfirmModal';
 import Toast from '../components/Toast';
 import StudentModal from '../components/StudentModal';
 import TeacherList from '../components/admin/TeacherList';
@@ -392,95 +393,30 @@ export default function AppPage() {
         />
       )}
 
-      {confirmModal.show && (
-        <div
-          id="modal-confirm-discard"
-          className="modal-overlay active"
-          onClick={(e) =>
-            e.target.id === 'modal-confirm-discard' &&
-            setConfirmModal({ show: false, tabId: null })
-          }
-        >
-          <div className="modal-container" style={{ maxWidth: '420px' }}>
-            <div
-              className="modal-header"
-              style={{ borderBottom: 'none', paddingBottom: '8px' }}
-            >
-              <h3
-                className="modal-title"
-                style={{
-                  fontSize: '1.2rem',
-                  color: 'var(--danger)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px'
-                }}
-              >
-                <span className="material-symbols-outlined">warning</span>
-                ¿Descartar cambios?
-              </h3>
-              <button
-                type="button"
-                className="modal-close"
-                onClick={() => setConfirmModal({ show: false, tabId: null })}
-                aria-label="Cerrar modal"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>
-                  close
-                </span>
-              </button>
-            </div>
-            <div
-              className="modal-body"
-              style={{
-                padding: '0 24px 20px 24px',
-                fontSize: '0.95rem',
-                color: 'var(--text-main)',
-                lineHeight: '1.5'
-              }}
-            >
-              Tienes aportaciones sin guardar en el formulario. ¿Deseas descartar los cambios y salir?
-            </div>
-            <div
-              className="modal-footer"
-              style={{
-                borderTop: 'none',
-                paddingTop: '0',
-                display: 'flex',
-                gap: '10px',
-                justifyContent: 'flex-end'
-              }}
-            >
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={() => setConfirmModal({ show: false, tabId: null })}
-                style={{ flex: 1, justifyContent: 'center', height: '38px' }}
-              >
-                Continuar editando
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={async () => {
-                  setConfirmModal({ show: false, tabId: null });
-                  await discardActiveStudentChanges();
-                  showToast('Cambios no guardados descartados.', 'warning');
-                  setActiveTab(confirmModal.tabId);
-                  window.scrollTo(0, 0);
-                  document.querySelector('.main-scroll-viewport')?.scrollTo(0, 0);
-                }}
-                style={{ flex: 1, justifyContent: 'center', height: '38px', gap: '6px' }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                  delete_forever
-                </span>
-                <span>Descartar y Salir</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={confirmModal.show}
+        titleId="modal-confirm-discard-title"
+        icon="warning"
+        title="¿Descartar cambios?"
+        cancelLabel="Continuar editando"
+        confirmLabel="Descartar y salir"
+        confirmIcon="delete_forever"
+        confirmVariant="danger"
+        onCancel={() => setConfirmModal({ show: false, tabId: null })}
+        onConfirm={async () => {
+          const targetTab = confirmModal.tabId;
+          setConfirmModal({ show: false, tabId: null });
+          await discardActiveStudentChanges();
+          showToast('Cambios no guardados descartados.', 'warning');
+          setActiveTab(targetTab);
+          window.scrollTo(0, 0);
+          document.querySelector('.main-scroll-viewport')?.scrollTo(0, 0);
+        }}
+      >
+        <p>
+          Tienes aportaciones sin guardar en el formulario. ¿Deseas descartar los cambios y salir?
+        </p>
+      </ConfirmModal>
 
       <div id="toast-container" className="toast-container">
         {toasts.map((t) => (

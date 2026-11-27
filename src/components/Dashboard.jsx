@@ -3,13 +3,13 @@ import { createPortal } from 'react-dom';
 import { usePiar } from '../context/PiarContext';
 import { useAuth } from '../context/AuthContext';
 import GuideCard from './GuideCard';
+import ConfirmModal from './aula-ia/ConfirmModal';
 
 export default function Dashboard({ switchTab, showToast, onNewStudent }) {
   const { piars, activeStudentId, setActiveStudentId, deletePiar, loading, editLogs } = usePiar();
   const { user, isSuperAdmin } = useAuth();
   const [historyModalPiar, setHistoryModalPiar] = useState(null);
   const [deleteModalPiar, setDeleteModalPiar] = useState(null);
-  const [isClosingDeleteModal, setIsClosingDeleteModal] = useState(false);
   const [activeDropdownId, setActiveDropdownId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'diligenciado' | 'pendiente'
@@ -58,18 +58,14 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
   };
 
   const handleCloseDeleteModal = () => {
-    setIsClosingDeleteModal(true);
-    setTimeout(() => {
-      setDeleteModalPiar(null);
-      setIsClosingDeleteModal(false);
-    }, 350);
+    setDeleteModalPiar(null);
   };
 
   const handleConfirmDelete = async () => {
     if (!deleteModalPiar) return;
     const targetName = deleteModalPiar.nombre;
     const targetId = deleteModalPiar.id;
-    handleCloseDeleteModal();
+    setDeleteModalPiar(null);
     await deletePiar(targetId);
     showToast(`PIAR de ${targetName} eliminado.`, 'danger');
   };
@@ -517,36 +513,22 @@ export default function Dashboard({ switchTab, showToast, onNewStudent }) {
       )}
 
       {/* Modal de Confirmación para Eliminar PIAR */}
-      {deleteModalPiar && createPortal(
-        <div id="modal-delete-piar" className={`modal-overlay active ${isClosingDeleteModal ? 'closing' : ''}`} onClick={(e) => e.target.id === 'modal-delete-piar' && handleCloseDeleteModal()}>
-          <div className="modal-container" style={{ maxWidth: '420px', width: '100%' }}>
-            <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: '8px' }}>
-              <h3 className="modal-title" style={{ fontSize: '1.2rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="material-symbols-outlined" style={{ color: 'var(--danger)', fontSize: '24px' }}>delete_forever</span>
-                ¿Eliminar registro PIAR?
-              </h3>
-              <button type="button" className="modal-close" onClick={handleCloseDeleteModal} aria-label="Cerrar modal">
-                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
-              </button>
-            </div>
-            <div className="modal-body" style={{ padding: '0 24px 20px 24px', fontSize: '0.95rem', color: 'var(--text-main)', lineHeight: '1.5' }}>
-              ¿Estás seguro de que deseas eliminar permanentemente el PIAR de <strong>{deleteModalPiar.nombre}</strong>? Esta acción no se puede deshacer.
-            </div>
-            <div className="modal-footer" style={{ borderTop: 'none', paddingTop: '0' }}>
-              <button 
-                type="button" 
-                className="btn btn-danger" 
-                onClick={handleConfirmDelete}
-                style={{ width: '100%', padding: '12px 16px', height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
-                Eliminar Permanentemente
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      <ConfirmModal
+        isOpen={Boolean(deleteModalPiar)}
+        titleId="modal-delete-piar-title"
+        icon="delete_forever"
+        title="¿Eliminar registro PIAR?"
+        confirmLabel="Eliminar permanentemente"
+        confirmIcon="delete_forever"
+        confirmVariant="danger"
+        onCancel={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+      >
+        <p>
+          Se eliminará permanentemente el expediente PIAR de{' '}
+          <strong>{deleteModalPiar?.nombre}</strong>. Esta acción no se puede deshacer.
+        </p>
+      </ConfirmModal>
     </div>
   );
 }

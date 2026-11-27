@@ -13,6 +13,7 @@ export default function AdaptiveVideoGuide({
   activity,
   isMirrorPreview = false,
   fullscreenButton = null,
+  onBackToSlides,
   onCompleteVideo
 }) {
   const { recordVideoTelemetry, updatePackageYoutubeVideo } = useAulaIa();
@@ -246,10 +247,17 @@ export default function AdaptiveVideoGuide({
       <div className="aia-yt-split-layout aia-stage-scroll-body">
         <div className="aia-yt-player-col">
           {videoAvailability === 'checking' ? (
-            <div className="aia-yt-empty-theater">
-              <span className="material-symbols-outlined aia-yt-empty-icon">
-                hourglass_top
-              </span>
+            <div className="aia-yt-empty-theater" role="status" aria-live="polite">
+              <div className="aia-dots-spinner" aria-hidden="true">
+                <span className="aia-dots-spinner-dot" />
+                <span className="aia-dots-spinner-dot" />
+                <span className="aia-dots-spinner-dot" />
+                <span className="aia-dots-spinner-dot" />
+                <span className="aia-dots-spinner-dot" />
+                <span className="aia-dots-spinner-dot" />
+                <span className="aia-dots-spinner-dot" />
+                <span className="aia-dots-spinner-dot" />
+              </div>
               <h4>Verificando disponibilidad del video en YouTube...</h4>
               <p>Comprobando que el enlace esté activo y listo para reproducirse aquí.</p>
             </div>
@@ -347,6 +355,16 @@ export default function AdaptiveVideoGuide({
       </div>
 
       <div className="aia-slide-footer">
+        {onBackToSlides ? (
+          <button type="button" className="aia-btn-secondary" onClick={onBackToSlides}>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+              arrow_back
+            </span>
+            <span>Volver a Diapositivas</span>
+          </button>
+        ) : (
+          <span className="aia-slide-footer-spacer" aria-hidden="true" />
+        )}
         <span className="aia-slide-counter">
           {activity?.videoCompleted
             ? '✓ Excelente, ya registraste tu video de apoyo.'

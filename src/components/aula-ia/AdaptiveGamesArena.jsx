@@ -613,6 +613,7 @@ export default function AdaptiveGamesArena({
   activity,
   isMirrorPreview = false,
   fullscreenButton = null,
+  onBackToVideo,
   onCompleteGames
 }) {
   const { recordGameTelemetry } = useAulaIa();
@@ -767,17 +768,27 @@ export default function AdaptiveGamesArena({
 
       {/* Navegación paso a paso por los juegos y al final paso al Examen */}
       <div className="aia-slide-footer">
-        <button
-          type="button"
-          className="aia-btn-secondary"
-          disabled={safeIdx === 0}
-          onClick={() => setActiveGameIdx((idx) => Math.max(0, idx - 1))}
-        >
-          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-            arrow_back
-          </span>
-          <span>Juego anterior</span>
-        </button>
+        {safeIdx > 0 ? (
+          <button
+            type="button"
+            className="aia-btn-secondary"
+            onClick={() => setActiveGameIdx((idx) => Math.max(0, idx - 1))}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+              arrow_back
+            </span>
+            <span>Juego anterior</span>
+          </button>
+        ) : onBackToVideo ? (
+          <button type="button" className="aia-btn-secondary" onClick={onBackToVideo}>
+            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+              arrow_back
+            </span>
+            <span>Volver a Video</span>
+          </button>
+        ) : (
+          <span className="aia-slide-footer-spacer" aria-hidden="true" />
+        )}
 
         <span className="aia-slide-counter aia-tabular">
           Juego {safeIdx + 1} de {games.length} ·{' '}

@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import CollaborativeSection from './CollaborativeSection';
 import CustomSelect from './CustomSelect';
+import ConfirmModal from './aula-ia/ConfirmModal';
 
 const TRIMESTRE_OPTIONS = [
   { value: 'Primer Cuatrimestre', label: '1er Trimestre' },
@@ -135,9 +136,7 @@ export default function AjustesTable({ list, studentData, onUpdate, docentesElab
   const [targetRowIdForNewArea, setTargetRowIdForNewArea] = useState(null);
 
   const [deleteModalAjuste, setDeleteModalAjuste] = useState(null);
-  const [isClosingDeleteModal, setIsClosingDeleteModal] = useState(false);
   const [deleteModalTrimestre, setDeleteModalTrimestre] = useState(null); // { areaId, trimestreId, label }
-  const [isClosingDeleteTrimestreModal, setIsClosingDeleteTrimestreModal] = useState(false);
   const [activeTabs, setActiveTabs] = useState({}); // { [areaId]: tabIndex }
   const [customDocenteIds, setCustomDocenteIds] = useState({}); // { [areaId]: true/false }
 
@@ -375,17 +374,13 @@ export default function AjustesTable({ list, studentData, onUpdate, docentesElab
   };
 
   const handleCloseDeleteTrimestreModal = () => {
-    setIsClosingDeleteTrimestreModal(true);
-    setTimeout(() => {
-      setDeleteModalTrimestre(null);
-      setIsClosingDeleteTrimestreModal(false);
-    }, 300);
+    setDeleteModalTrimestre(null);
   };
 
   const handleConfirmDeleteTrimestre = () => {
     if (deleteModalTrimestre) {
       handleRemoveTrimestre(deleteModalTrimestre.areaId, deleteModalTrimestre.trimestreId);
-      handleCloseDeleteTrimestreModal();
+      setDeleteModalTrimestre(null);
     }
   };
 
@@ -432,18 +427,14 @@ export default function AjustesTable({ list, studentData, onUpdate, docentesElab
   };
 
   const handleCloseDeleteModal = () => {
-    setIsClosingDeleteModal(true);
-    setTimeout(() => {
-      setDeleteModalAjuste(null);
-      setIsClosingDeleteModal(false);
-    }, 300);
+    setDeleteModalAjuste(null);
   };
 
   const handleConfirmDelete = () => {
     if (deleteModalAjuste) {
       const updated = ajustes.filter(item => item.id !== deleteModalAjuste);
       handleUpdate(updated);
-      handleCloseDeleteModal();
+      setDeleteModalAjuste(null);
     }
   };
 
@@ -956,76 +947,40 @@ export default function AjustesTable({ list, studentData, onUpdate, docentesElab
       )}
 
       {/* Modal de Confirmación para Eliminar Ajuste */}
-      {deleteModalAjuste && createPortal(
-        <div id="modal-delete-ajuste" className={`modal-overlay active ${isClosingDeleteModal ? 'closing' : ''}`} onClick={(e) => e.target.id === 'modal-delete-ajuste' && handleCloseDeleteModal()}>
-          <div className="modal-container" style={{ maxWidth: '420px', width: '100%' }}>
-            <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: '8px' }}>
-              <h3 className="modal-title" style={{ fontSize: '1.2rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="material-symbols-outlined" style={{ color: 'var(--danger)', fontSize: '24px' }}>delete_forever</span>
-                ¿Eliminar área?
-              </h3>
-              <button type="button" className="modal-close" onClick={handleCloseDeleteModal} aria-label="Cerrar modal">
-                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
-              </button>
-            </div>
-            <div className="modal-body" style={{ padding: '0 24px 20px 24px', fontSize: '0.95rem', color: 'var(--text-main)', lineHeight: '1.5' }}>
-              ¿Estás seguro de que deseas eliminar esta área del PIAR y todos sus trimestres? Esta acción no se puede deshacer.
-            </div>
-            <div className="modal-footer" style={{ borderTop: 'none', paddingTop: '0' }}>
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={handleConfirmDelete}
-                style={{ width: '100%', padding: '12px 16px', height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
-                Eliminar Permanentemente
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      <ConfirmModal
+        isOpen={Boolean(deleteModalAjuste)}
+        titleId="modal-delete-ajuste-title"
+        icon="delete_forever"
+        title="¿Eliminar área?"
+        confirmLabel="Eliminar área"
+        confirmIcon="delete_forever"
+        confirmVariant="danger"
+        onCancel={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+      >
+        <p>
+          Se eliminará esta área del PIAR junto con todos sus trimestres. Esta acción no se puede
+          deshacer.
+        </p>
+      </ConfirmModal>
 
       {/* Modal de Confirmación para Eliminar Trimestre */}
-      {deleteModalTrimestre && createPortal(
-        <div id="modal-delete-trimestre" className={`modal-overlay active ${isClosingDeleteTrimestreModal ? 'closing' : ''}`} onClick={(e) => e.target.id === 'modal-delete-trimestre' && handleCloseDeleteTrimestreModal()}>
-          <div className="modal-container" style={{ maxWidth: '420px', width: '100%' }}>
-            <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: '8px' }}>
-              <h3 className="modal-title" style={{ fontSize: '1.2rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="material-symbols-outlined" style={{ color: 'var(--danger)', fontSize: '24px' }}>delete_forever</span>
-                ¿Eliminar trimestre?
-              </h3>
-              <button type="button" className="modal-close" onClick={handleCloseDeleteTrimestreModal} aria-label="Cerrar modal">
-                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
-              </button>
-            </div>
-            <div className="modal-body" style={{ padding: '0 24px 20px 24px', fontSize: '0.95rem', color: 'var(--text-main)', lineHeight: '1.5' }}>
-              ¿Estás seguro de que deseas eliminar <strong>{deleteModalTrimestre.label}</strong>? Se perderá la información ingresada en este periodo. Esta acción no se puede deshacer.
-            </div>
-            <div className="modal-footer" style={{ borderTop: 'none', paddingTop: '0', display: 'flex', gap: '10px' }}>
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={handleCloseDeleteTrimestreModal}
-                style={{ flex: 1, padding: '10px 16px' }}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={handleConfirmDeleteTrimestre}
-                style={{ flex: 1, padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
-                Eliminar Trimestre
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      <ConfirmModal
+        isOpen={Boolean(deleteModalTrimestre)}
+        titleId="modal-delete-trimestre-title"
+        icon="delete_forever"
+        title="¿Eliminar trimestre?"
+        confirmLabel="Eliminar trimestre"
+        confirmIcon="delete_forever"
+        confirmVariant="danger"
+        onCancel={handleCloseDeleteTrimestreModal}
+        onConfirm={handleConfirmDeleteTrimestre}
+      >
+        <p>
+          Se eliminará <strong>{deleteModalTrimestre?.label}</strong> y se perderá la información
+          ingresada en este periodo. Esta acción no se puede deshacer.
+        </p>
+      </ConfirmModal>
     </CollaborativeSection>
   );
 }

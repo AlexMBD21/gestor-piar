@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import { createPortal } from 'react-dom';
 import CollaborativeSection from './CollaborativeSection';
 import CustomSelect from './CustomSelect';
+import ConfirmModal from './aula-ia/ConfirmModal';
 
 export default function ActividadesTable({ list, studentData, onUpdate }) {
   const actividades = list || studentData?.anexo3?.actividadesHogar || [];
 
   const [deleteModalActividad, setDeleteModalActividad] = useState(null);
-  const [isClosingDeleteModal, setIsClosingDeleteModal] = useState(false);
 
   const handleUpdate = (updated) => {
     if (typeof onUpdate === 'function') {
@@ -38,11 +37,7 @@ export default function ActividadesTable({ list, studentData, onUpdate }) {
   };
 
   const handleCloseDeleteModal = () => {
-    setIsClosingDeleteModal(true);
-    setTimeout(() => {
-      setDeleteModalActividad(null);
-      setIsClosingDeleteModal(false);
-    }, 200);
+    setDeleteModalActividad(null);
   };
 
   const handleDeleteRequest = (item) => {
@@ -53,7 +48,7 @@ export default function ActividadesTable({ list, studentData, onUpdate }) {
     if (!deleteModalActividad) return;
     const updated = actividades.filter(item => item.id !== deleteModalActividad.id);
     handleUpdate(updated);
-    handleCloseDeleteModal();
+    setDeleteModalActividad(null);
   };
 
   return (
@@ -141,36 +136,23 @@ export default function ActividadesTable({ list, studentData, onUpdate }) {
       </div>
 
       {/* Modal de Confirmación para Eliminar Actividad */}
-      {deleteModalActividad && createPortal(
-        <div id="modal-delete-actividad" className={`modal-overlay active ${isClosingDeleteModal ? 'closing' : ''}`} onClick={(e) => e.target.id === 'modal-delete-actividad' && handleCloseDeleteModal()}>
-          <div className="modal-container" style={{ maxWidth: '420px', width: '100%' }}>
-            <div className="modal-header" style={{ borderBottom: 'none', paddingBottom: '8px' }}>
-              <h3 className="modal-title" style={{ fontSize: '1.2rem', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span className="material-symbols-outlined" style={{ color: 'var(--danger)', fontSize: '24px' }}>delete_forever</span>
-                ¿Eliminar actividad?
-              </h3>
-              <button type="button" className="modal-close" onClick={handleCloseDeleteModal} aria-label="Cerrar modal">
-                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
-              </button>
-            </div>
-            <div className="modal-body" style={{ padding: '0 24px 20px 24px', fontSize: '0.95rem', color: 'var(--text-main)', lineHeight: '1.5' }}>
-              ¿Estás seguro de que deseas eliminar <strong>"{deleteModalActividad.actividad || 'esta actividad'}"</strong> de los compromisos del hogar? Esta acción no se puede deshacer.
-            </div>
-            <div className="modal-footer" style={{ borderTop: 'none', paddingTop: '0' }}>
-              <button
-                type="button"
-                className="btn btn-danger"
-                onClick={handleConfirmDelete}
-                style={{ width: '100%', padding: '12px 16px', height: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
-                Eliminar Actividad
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      <ConfirmModal
+        isOpen={Boolean(deleteModalActividad)}
+        titleId="modal-delete-actividad-title"
+        icon="delete_forever"
+        title="¿Eliminar actividad?"
+        confirmLabel="Eliminar actividad"
+        confirmIcon="delete_forever"
+        confirmVariant="danger"
+        onCancel={handleCloseDeleteModal}
+        onConfirm={handleConfirmDelete}
+      >
+        <p>
+          Se eliminará{' '}
+          <strong>&ldquo;{deleteModalActividad?.actividad || 'esta actividad'}&rdquo;</strong> de
+          los compromisos del hogar. Esta acción no se puede deshacer.
+        </p>
+      </ConfirmModal>
     </CollaborativeSection>
   );
 }
