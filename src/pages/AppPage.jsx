@@ -1,6 +1,7 @@
 import { useState, useEffect, startTransition } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { usePiar } from '../context/PiarContext';
+import { useAulaIa } from '../context/AulaIaContext';
 import Sidebar from '../components/Sidebar';
 import Dashboard from '../components/Dashboard';
 import Anexo1Form from '../components/Anexo1Form';
@@ -50,7 +51,8 @@ function loadSavedIaSubTab() {
 
 export default function AppPage() {
   const { profile, isSuperAdmin, signOut } = useAuth();
-  const { getActiveStudent, unsavedChanges, saveActivePiar, discardActiveStudentChanges } = usePiar();
+  const { piars, getActiveStudent, unsavedChanges, saveActivePiar, discardActiveStudentChanges } = usePiar();
+  const { aulaStudentId } = useAulaIa();
   const [activeTab, setActiveTab] = useState(() => loadSavedTab(isSuperAdmin));
   const [activeIaSubTab, setActiveIaSubTab] = useState(loadSavedIaSubTab);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
@@ -120,6 +122,9 @@ export default function AppPage() {
   };
 
   const activeStudent = getActiveStudent();
+  const aulaActiveStudent = aulaStudentId
+    ? piars.find((p) => p.id === aulaStudentId) || null
+    : null;
 
   const tabTitles = {
     'tab-dashboard': 'Panel de Control',
@@ -127,7 +132,7 @@ export default function AppPage() {
     'tab-anexo2': activeStudent ? activeStudent.nombre : 'Anexo 2',
     'tab-anexo3': activeStudent ? activeStudent.nombre : 'Anexo 3',
     'tab-preview': 'Vista Previa',
-    'tab-aula-ia': activeStudent ? `Aula IA · ${activeStudent.nombre}` : 'Aula Adaptativa IA',
+    'tab-aula-ia': aulaActiveStudent ? `Aula IA · ${aulaActiveStudent.nombre}` : 'Aula Adaptativa IA',
     'tab-admin': 'Administración'
   };
   const headerTitle = tabTitles[activeTab] || 'Gestor PIAR';

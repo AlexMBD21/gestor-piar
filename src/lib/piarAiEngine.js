@@ -398,14 +398,31 @@ export function extractStudentPedagogicalProfile(piar) {
 
   // Calcular nivel de mapeo de los 3 Anexos del PIAR
   let filledSignals = 0;
-  if (est.nombres || est.edad || est.numeroIdentificacion) filledSignals += 2;
-  if (salud.diagnosticoCual || salud.atendidoTerapias === 'SI' || salud.productosApoyoCuales) filledSignals += 1;
-  if (hogar.nombreCuidador || hogar.personasConQuienVive || trayectoria.observaciones) filledSignals += 1;
-  if (anexo2.caracteristicasEstudiante?.trim()) filledSignals += 2;
-  if (ajustesPorArea.length > 0) filledSignals += 2;
-  if (pmiRecomendaciones.length > 0) filledSignals += 1;
-  if (anexo3.compromisosAula?.trim() || actividadesHogar.length > 0) filledSignals += 1;
-  const contextCompleteness = Math.min(100, Math.max(60, Math.round((filledSignals / 10) * 100)));
+  const hasIdentity = Boolean(est.nombres || est.edad || est.numeroIdentificacion);
+  const hasHealthInfo = Boolean(
+    (salud.diagnosticoMedico === 'SI' && salud.diagnosticoCual?.trim()) ||
+      terapiasActivas.length > 0 ||
+      (salud.productosApoyo === 'SI' && salud.productosApoyoCuales?.trim())
+  );
+  const hasFamilyOrHistory = Boolean(
+    hogar.nombreCuidador?.trim() ||
+      hogar.personasConQuienVive?.trim() ||
+      trayectoria.observaciones?.trim()
+  );
+  const hasCharacteristics = Boolean(anexo2.caracteristicasEstudiante?.trim());
+  const hasAreas = ajustesPorArea.length > 0;
+  const hasPmi = pmiRecomendaciones.length > 0;
+  const hasAgreements = Boolean(anexo3.compromisosAula?.trim() || actividadesHogar.length > 0);
+
+  if (hasIdentity) filledSignals += 2;
+  if (hasHealthInfo) filledSignals += 1;
+  if (hasFamilyOrHistory) filledSignals += 1;
+  if (hasCharacteristics) filledSignals += 2;
+  if (hasAreas) filledSignals += 2;
+  if (hasPmi) filledSignals += 1;
+  if (hasAgreements) filledSignals += 1;
+  const realCompleteness = Math.min(100, Math.round((filledSignals / 10) * 100));
+  const contextCompleteness = Math.min(100, Math.max(60, realCompleteness));
 
   return {
     piarId: piar?.id || 'demo',
@@ -431,7 +448,17 @@ export function extractStudentPedagogicalProfile(piar) {
     pmiRecomendaciones,
     compromisosAula,
     actividadesHogar,
-    contextCompleteness
+    contextCompleteness,
+    realCompleteness,
+    realDataFlags: {
+      hasIdentity,
+      hasHealthInfo,
+      hasFamilyOrHistory,
+      hasCharacteristics,
+      hasAreas,
+      hasPmi,
+      hasAgreements
+    }
   };
 }
 
@@ -670,7 +697,12 @@ function extractJsonObjectFromText(rawText) {
  * Respaldo directo hacia Gemini Interactions API usando `VITE_GEMINI_API_KEY`
  * cuando la Edge Function segura de Supabase no ha sido desplegada aún.
  */
-async function invokeDirectGeminiFallback(promptText, evidenceImageBase64, onProgress) {
+async function invokeDirectGeminiFallback(
+  promptText,
+  evidenceImageBase64,
+  onProgress,
+  validator = isCompleteGeneratedPackage
+) {
   const apiKey = import.meta.env?.VITE_GEMINI_API_KEY?.trim();
   if (!apiKey) return null;
 
@@ -690,7 +722,7 @@ async function invokeDirectGeminiFallback(promptText, evidenceImageBase64, onPro
     try {
       onProgress?.(
         modelIdx === 0
-          ? 'El Agente IA está redactando diapositivas, juegos y examen alineados a la meta del PIAR...'
+          ? 'El Agente IA está procesando la solicitud con Gemini...'
           : 'El primer modelo está saturado; reintentando con un modelo alterno de Gemini...'
       );
       const response = await fetch(
@@ -725,10 +757,10 @@ async function invokeDirectGeminiFallback(promptText, evidenceImageBase64, onPro
           .trim() || extractInteractionText(payload);
       if (!rawText) continue;
       const parsed = extractJsonObjectFromText(rawText);
-      if (isCompleteGeneratedPackage(parsed)) {
+      if (validator(parsed)) {
         return { data: parsed, model };
       }
-      console.warn(`[piarAiEngine] Gemini (${model}) devolvió materiales incompletos; probando siguiente modelo.`);
+      console.warn(`[piarAiEngine] Gemini (${model}) devolvió respuesta incompleta; probando siguiente modelo.`);
     } catch (err) {
       console.warn(`[piarAiEngine] Error en respaldo directo Gemini (${model}):`, err?.name === 'AbortError' ? 'tiempo agotado' : err);
     } finally {
@@ -742,7 +774,12 @@ async function invokeDirectGeminiFallback(promptText, evidenceImageBase64, onPro
  * Invoca la ruta serverless segura de Vercel `/api/aula-ia-generate`
  * (la clave GEMINI_API_KEY vive solo en Vercel, nunca en el navegador).
  */
-async function invokeVercelGeminiApi(promptText, evidenceImageBase64, onProgress) {
+async function invokeVercelGeminiApi(
+  promptText,
+  evidenceImageBase64,
+  onProgress,
+  validator = isCompleteGeneratedPackage
+) {
   if (vercelApiUnavailable || typeof fetch !== 'function') return null;
   try {
     onProgress?.('Conectando con el Agente IA en servidor seguro (Vercel)...');
@@ -788,8 +825,8 @@ async function invokeVercelGeminiApi(promptText, evidenceImageBase64, onProgress
     }
 
     const payload = await response.json();
-    if (!response.ok || !payload?.data || !isCompleteGeneratedPackage(payload.data)) {
-      console.warn('[piarAiEngine] /api/aula-ia-generate no devolvió paquete válido:', payload?.error || response.status);
+    if (!response.ok || !payload?.data || !validator(payload.data)) {
+      console.warn('[piarAiEngine] /api/aula-ia-generate no devolvió resultado válido:', payload?.error || response.status);
       return null;
     }
     return payload;
@@ -803,7 +840,11 @@ async function invokeVercelGeminiApi(promptText, evidenceImageBase64, onProgress
  * Invoca la Edge Function segura `aula-ia-generate` (la clave de Gemini vive solo en Supabase).
  * Devuelve `{ data, model }` o `null` si el servicio no está disponible.
  */
-async function invokeSecureGeminiFunction(promptText, evidenceImageBase64) {
+async function invokeSecureGeminiFunction(
+  promptText,
+  evidenceImageBase64,
+  validator = isCompleteGeneratedPackage
+) {
   if (secureFunctionUnavailable) return null;
   try {
     if (!supabase?.functions) return null;
@@ -819,7 +860,7 @@ async function invokeSecureGeminiFunction(promptText, evidenceImageBase64) {
       body: { prompt: promptText, image }
     });
 
-    if (error || !data?.data || !isCompleteGeneratedPackage(data.data)) {
+    if (error || !data?.data || !validator(data.data)) {
       // No desplegada (404) o sin permisos: no reintentar en cada generación
       const status = error?.context?.status;
       if (status === 404 || status === 401 || status === 403 || status === 503) {
@@ -834,6 +875,234 @@ async function invokeSecureGeminiFunction(promptText, evidenceImageBase64) {
     console.warn('[piarAiEngine] Error invocando aula-ia-generate:', err);
     return null;
   }
+}
+
+/**
+ * Calcula una huella determinista de los Anexos 1, 2 y 3 del PIAR
+ * para detectar si el expediente fue editado después del último análisis del Agente IA.
+ */
+export function computePiarAnalysisFingerprint(piar) {
+  const data = piar?.data || {};
+  const payload = JSON.stringify({
+    nombre: piar?.nombre || data?.estudianteNombre || '',
+    grado: piar?.grado || data?.grado || '',
+    anexo1: data?.anexo1 || null,
+    anexo2: data?.anexo2 || null,
+    anexo3: data?.anexo3 || null
+  });
+  let hash = 2166136261;
+  for (let i = 0; i < payload.length; i += 1) {
+    hash ^= payload.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `fp_${(hash >>> 0).toString(36)}_${payload.length}`;
+}
+
+function sanitizeStringList(list, maxItems = 4) {
+  return (Array.isArray(list) ? list : [])
+    .map((item) => String(item ?? '').trim())
+    .filter(Boolean)
+    .slice(0, maxItems);
+}
+
+function isValidPiarAnalysis(parsed) {
+  return (
+    parsed &&
+    typeof parsed === 'object' &&
+    typeof parsed.resumenEjecutivo === 'string' &&
+    parsed.resumenEjecutivo.trim().length >= 20
+  );
+}
+
+function buildPiarAnalysisPrompt(piar, profile) {
+  const data = piar?.data || {};
+  const est = data?.anexo1?.estudiante || {};
+  const salud = data?.anexo1?.salud || {};
+  const hogar = data?.anexo1?.hogar || {};
+  const trayectoria = data?.anexo1?.trayectoria || {};
+  const anexo2 = data?.anexo2 || {};
+  const anexo3 = data?.anexo3 || {};
+
+  const realSalud =
+    salud.diagnosticoMedico === 'SI' && salud.diagnosticoCual?.trim()
+      ? salud.diagnosticoCual.trim()
+      : 'No diligenciado en Anexo 1';
+  const realTratamiento =
+    salud.tratamientoMedico === 'SI' && salud.tratamientoCual?.trim()
+      ? salud.tratamientoCual.trim()
+      : 'No diligenciado';
+  const realTerapias =
+    profile.terapiasActivas.length > 0 ? profile.terapiasActivas.join('; ') : 'Ninguna reportada';
+  const realApoyos =
+    salud.productosApoyo === 'SI' && salud.productosApoyoCuales?.trim()
+      ? salud.productosApoyoCuales.trim()
+      : 'No diligenciado';
+  const realHogar =
+    [hogar.personasConQuienVive, hogar.nombreCuidador].filter(Boolean).join(' · ') ||
+    'No diligenciado en Anexo 1';
+  const realTrayectoria = trayectoria.observaciones?.trim() || 'No diligenciado en Anexo 1';
+  const realCaracteristicas =
+    anexo2.caracteristicasEstudiante?.trim() || 'No diligenciado en Anexo 2';
+  const realCompromisos = anexo3.compromisosAula?.trim() || 'No diligenciado en Anexo 3';
+  const realAreas =
+    profile.ajustesPorArea.length > 0
+      ? profile.ajustesPorArea
+          .map(
+            (a) =>
+              `- ${a.area}${a.asignatura && a.asignatura !== a.area ? ` (${a.asignatura})` : ''}: Objetivo="${a.objetivos}" | Barrera="${a.barreras}" | Ajuste="${a.ajustes}"`
+          )
+          .join('\n')
+      : 'Sin áreas diligenciadas en Anexo 2';
+
+  return `Eres un psicopedagogo experto en inclusión educativa colombiana (Decreto 1421 de 2017 - PIAR y DUA).
+Analiza el expediente PIAR REAL del estudiante y devuelve un resumen ejecutivo claro, conciso y accionable para que el docente entienda en 10 segundos qué pasa con el estudiante y cómo acompañarlo.
+
+REGLAS ESTRICTAS:
+1. Basa tu análisis EXCLUSIVAMENTE en los datos reales proporcionados abajo.
+2. NUNCA inventes diagnósticos médicos, terapias ni barreras que no estén escritos.
+3. Si algún anexo clave está marcado como "No diligenciado", señálalo constructivamente en "alertasPrioritarias" para que el docente sepa qué completar.
+4. Escribe en español claro, directo, empático y sin relleno.
+5. Responde ÚNICAMENTE con un objeto JSON válido con esta estructura exacta:
+{
+  "resumenEjecutivo": "2 a 3 oraciones claras sintetizando la situación actual del estudiante y su prioridad pedagógica.",
+  "fortalezas": ["Máximo 3 puntos breves con fortalezas o recursos reales del estudiante/entorno"],
+  "barrerasClave": ["Máximo 3 barreras principales detectadas en los anexos"],
+  "estrategiasAula": ["Máximo 3 acciones concretas y prácticas para aplicar en clase"],
+  "alertasPrioritarias": ["Máximo 3 alertas o campos importantes pendientes por diligenciar en el PIAR (vacío [] si todo está completo)"],
+  "acuerdoHogar": "1 oración breve sobre el apoyo familiar registrado o recomendación para Anexo 3."
+}
+
+EXPEDIENTE PIAR REAL:
+- Nombre: ${profile.nombreCompleto}
+- Edad: ${est.edad || 'No registrada'} | Grado: ${profile.grado} | Institución: ${profile.institucionEducativa}
+- Salud / Diagnóstico (Anexo 1): ${realSalud}
+- Tratamiento médico: ${realTratamiento}
+- Terapias activas: ${realTerapias}
+- Productos de apoyo: ${realApoyos}
+- Entorno familiar (Anexo 1): ${realHogar}
+- Trayectoria educativa (Anexo 1): ${realTrayectoria}
+- Características del estudiante (Anexo 2): ${realCaracteristicas}
+- Áreas y ajustes razonables (Anexo 2, ${profile.ajustesPorArea.length} registradas):
+${realAreas}
+- Compromisos de aula / hogar (Anexo 3): ${realCompromisos}`;
+}
+
+function buildLocalPiarAnalysisFallback(piar, profile) {
+  const data = piar?.data || {};
+  const flags = profile.realDataFlags || {};
+  const areasCount = profile.ajustesPorArea.length;
+  const areaNames = profile.ajustesPorArea
+    .slice(0, 4)
+    .map((a) => a.area)
+    .join(', ');
+
+  const fortalezas = [];
+  if (flags.hasAreas) {
+    fortalezas.push(
+      `Cuenta con ${areasCount} ${areasCount === 1 ? 'área planificada' : 'áreas planificadas'} en Anexo 2 (${areaNames}${areasCount > 4 ? '…' : ''}).`
+    );
+  }
+  if (flags.hasHealthInfo && profile.terapiasActivas.length > 0) {
+    fortalezas.push(`Recibe acompañamiento terapéutico activo: ${profile.terapiasActivas.slice(0, 2).join(', ')}.`);
+  }
+  if (flags.hasFamilyOrHistory && data?.anexo1?.hogar?.nombreCuidador) {
+    fortalezas.push(`Acudiente identificado en Anexo 1: ${data.anexo1.hogar.nombreCuidador}.`);
+  }
+  if (fortalezas.length === 0) {
+    fortalezas.push(`Expediente inicializado para Grado ${profile.grado}, listo para enriquecer con observaciones de aula.`);
+  }
+
+  const barrerasClave = [];
+  profile.ajustesPorArea.slice(0, 3).forEach((a) => {
+    if (a.barreras && !a.barreras.startsWith('Sobrecarga en textos densos')) {
+      barrerasClave.push(`${a.area}: ${a.barreras}`);
+    }
+  });
+  if (barrerasClave.length === 0 && flags.hasCharacteristics) {
+    barrerasClave.push(data.anexo2.caracteristicasEstudiante.trim().slice(0, 140));
+  }
+  if (barrerasClave.length === 0) {
+    barrerasClave.push('Aún no se han descrito barreras específicas en el Anexo 2.');
+  }
+
+  const estrategiasAula = [];
+  profile.ajustesPorArea.slice(0, 3).forEach((a) => {
+    if (a.ajustes && !a.ajustes.startsWith('Uso de organizadores gráficos')) {
+      estrategiasAula.push(`${a.area}: ${a.ajustes}`);
+    }
+  });
+  if (estrategiasAula.length === 0) {
+    estrategiasAula.push('Fragmentar instrucciones en pasos breves y verificar comprensión con ejemplos visuales.');
+  }
+
+  const alertasPrioritarias = [];
+  if (!flags.hasHealthInfo) {
+    alertasPrioritarias.push('Anexo 1: Sin diagnóstico clínico, terapias ni apoyos registrados.');
+  }
+  if (!flags.hasCharacteristics) {
+    alertasPrioritarias.push('Anexo 2: Falta diligenciar las características psicopedagógicas del estudiante.');
+  }
+  if (!flags.hasAgreements) {
+    alertasPrioritarias.push('Anexo 3: Aún no se registran compromisos de aula ni actividades con el hogar.');
+  }
+
+  const resumenEjecutivo = flags.hasCharacteristics
+    ? `${profile.nombreCompleto} (Grado ${profile.grado}) registra perfil psicopedagógico en Anexo 2 y ${areasCount} ${areasCount === 1 ? 'área' : 'áreas'} con ajustes razonables. ${flags.hasHealthInfo ? `Reporta antecedente de salud/apoyo: ${profile.diagnosticoSalud}.` : 'No registra diagnóstico médico en Anexo 1.'}`
+    : `${profile.nombreCompleto} (Grado ${profile.grado}) tiene ${areasCount} ${areasCount === 1 ? 'área registrada' : 'áreas registradas'} en su PIAR (${profile.realCompleteness}% de diligenciamiento real). Completar las características en Anexo 2 y acuerdos en Anexo 3 permitirá afinar el acompañamiento.`;
+
+  const acuerdoHogar = flags.hasAgreements
+    ? profile.compromisosAula
+    : 'Pendiente acordar y registrar compromisos con la familia en el Anexo 3.';
+
+  return {
+    resumenEjecutivo,
+    fortalezas: fortalezas.slice(0, 3),
+    barrerasClave: barrerasClave.slice(0, 3),
+    estrategiasAula: estrategiasAula.slice(0, 3),
+    alertasPrioritarias: alertasPrioritarias.slice(0, 3),
+    acuerdoHogar
+  };
+}
+
+/**
+ * Ejecuta bajo demanda el análisis psicopedagógico del expediente PIAR (Anexos 1, 2 y 3)
+ * usando el Agente IA (Gemini) con respaldo local honesto si la IA no responde.
+ */
+export async function analyzeStudentPiarWithGemini(piar, { onProgress = null } = {}) {
+  const profile = extractStudentPedagogicalProfile(piar);
+  const fingerprint = computePiarAnalysisFingerprint(piar);
+  const promptText = buildPiarAnalysisPrompt(piar, profile);
+
+  onProgress?.('Analizando Anexos 1, 2 y 3 con el Agente IA...');
+  const remote =
+    (await invokeVercelGeminiApi(promptText, null, onProgress, isValidPiarAnalysis)) ||
+    (await invokeSecureGeminiFunction(promptText, null, isValidPiarAnalysis)) ||
+    (await invokeDirectGeminiFallback(promptText, null, onProgress, isValidPiarAnalysis));
+
+  if (remote?.data) {
+    return {
+      resumenEjecutivo: String(remote.data.resumenEjecutivo || '').trim(),
+      fortalezas: sanitizeStringList(remote.data.fortalezas, 3),
+      barrerasClave: sanitizeStringList(remote.data.barrerasClave, 3),
+      estrategiasAula: sanitizeStringList(remote.data.estrategiasAula, 3),
+      alertasPrioritarias: sanitizeStringList(remote.data.alertasPrioritarias, 3),
+      acuerdoHogar: String(remote.data.acuerdoHogar || '').trim(),
+      analyzedAt: new Date().toISOString(),
+      fingerprint,
+      engineMode: 'gemini',
+      model: remote.model || 'gemini'
+    };
+  }
+
+  onProgress?.('Gemini no respondió; generando resumen directo desde los datos reales del PIAR...');
+  const fallback = buildLocalPiarAnalysisFallback(piar, profile);
+  return {
+    ...fallback,
+    analyzedAt: new Date().toISOString(),
+    fingerprint,
+    engineMode: 'local',
+    model: 'resumen-local'
+  };
 }
 
 /**

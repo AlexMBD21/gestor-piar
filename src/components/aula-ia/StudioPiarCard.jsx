@@ -1,3 +1,21 @@
+import { useState } from 'react';
+
+function formatAnalysisDate(isoString) {
+  if (!isoString) return '';
+  try {
+    const date = new Date(isoString);
+    if (Number.isNaN(date.getTime())) return '';
+    return new Intl.DateTimeFormat('es-CO', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  } catch {
+    return '';
+  }
+}
+
 export default function StudioPiarCard({
   profile,
   detectedAreas,
@@ -7,58 +25,205 @@ export default function StudioPiarCard({
   activeArea,
   isGenerating,
   shortGenerationLabel,
-  onGenerate
+  onGenerate,
+  studentAnalysis = null,
+  isAnalysisStale = false,
+  isAnalyzingPiar = false,
+  onAnalyzePiar
 }) {
+  const [analysisCollapsed, setAnalysisCollapsed] = useState(false);
+
+  const realPct =
+    typeof profile.realCompleteness === 'number'
+      ? profile.realCompleteness
+      : profile.contextCompleteness;
+  const analyzedDateLabel = formatAnalysisDate(studentAnalysis?.analyzedAt);
+
   return (
     <div className="aia-bento-card">
+      {/* Cabecera compacta con datos reales del expediente */}
       <div className="aia-dna-header-row">
-        <h3 className="aia-bento-title">Expediente PIAR · {profile.nombreCompleto}</h3>
+        <div>
+          <h3 className="aia-bento-title">Expediente PIAR · {profile.nombreCompleto}</h3>
+          <p className="aia-piar-meta-line">
+            Grado {profile.grado} · {profile.edad} años · {profile.institucionEducativa}
+          </p>
+        </div>
 
-        <span className="aia-status-badge readonly aia-tabular">
-          {profile.contextCompleteness}% contexto
+        <span className="aia-status-badge readonly aia-tabular" title="Porcentaje real de secciones diligenciadas en Anexos 1, 2 y 3">
+          {realPct}% diligenciado
         </span>
       </div>
 
-      <div className="aia-piar-dna-grid" style={{ marginBottom: '14px' }}>
-        <div className="aia-dna-item">
-          <span className="aia-dna-label">Anexo 1 · Perfil, Grado y Entorno Familiar</span>
-          <strong className="aia-dna-value">
-            {profile.edad} años · Grado {profile.grado} ({profile.institucionEducativa})
-          </strong>
-          <p className="aia-dna-text" style={{ marginTop: '4px' }}>
-            <strong>Núcleo familiar:</strong> {profile.apoyoFamiliar}
-          </p>
-        </div>
-        <div className="aia-dna-item">
-          <span className="aia-dna-label">Anexo 1 · Salud, Terapias y Productos de Apoyo</span>
-          <strong className="aia-dna-value">{profile.diagnosticoSalud}</strong>
-          <p className="aia-dna-text" style={{ marginTop: '4px' }}>
-            <strong>Apoyos / Terapias:</strong>{' '}
-            {profile.terapiasActivas?.length > 0
-              ? `${profile.terapiasActivas.join(', ')} · ${profile.productosApoyo}`
-              : profile.productosApoyo}
-          </p>
-        </div>
-        <div className="aia-dna-item full">
-          <span className="aia-dna-label">
-            Anexo 1 y 2 · Trayectoria Educativa y Características Psicopedagógicas
-          </span>
-          <p className="aia-dna-text">{profile.caracteristicas}</p>
-          {profile.observacionesTrayectoria && (
-            <p className="aia-dna-text" style={{ marginTop: '4px', color: 'var(--text-muted)' }}>
-              <strong>Trayectoria (Anexo 1):</strong> {profile.observacionesTrayectoria}
-            </p>
-          )}
-        </div>
-        <div className="aia-dna-item full">
-          <span className="aia-dna-label">
-            Anexo 2 (PMI) y Anexo 3 · Directrices de Aula y Acuerdos con Hogar
-          </span>
-          <p className="aia-dna-text">{profile.compromisosAula}</p>
-        </div>
+      {/* Bloque controlado: Resumen del Estudiante generado bajo demanda por el Agente IA */}
+      <div className="aia-piar-analysis-panel">
+        {!studentAnalysis ? (
+          <div className="aia-analysis-empty">
+            <div className="aia-analysis-empty-copy">
+              <div className="aia-analysis-icon-badge" aria-hidden="true">
+                <span className="material-symbols-outlined">psychology_alt</span>
+              </div>
+              <div>
+                <strong className="aia-analysis-empty-title">
+                  Resumen psicopedagógico del estudiante (Agente IA)
+                </strong>
+                <p className="aia-analysis-empty-sub">
+                  Analiza los Anexos 1, 2 y 3 solo cuando lo necesites. El resumen queda guardado
+                  para que no tenga que cargarse cada vez que selecciones este estudiante.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="aia-btn-secondary aia-analysis-action-btn"
+              disabled={isAnalyzingPiar || isGenerating}
+              aria-busy={isAnalyzingPiar}
+              onClick={onAnalyzePiar}
+            >
+              {isAnalyzingPiar ? (
+                <>
+                  <span className="aia-btn-spinner aia-spinner-dark" aria-hidden="true" />
+                  <span>Analizando PIAR...</span>
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>
+                    manage_search
+                  </span>
+                  <span>Analizar PIAR</span>
+                </>
+              )}
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="aia-analysis-bar">
+              <div className="aia-analysis-bar-left">
+                <span className="aia-analysis-mode-pill">
+                  <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>
+                    {studentAnalysis.engineMode === 'gemini' ? 'auto_awesome' : 'summarize'}
+                  </span>
+                  <span>
+                    {studentAnalysis.engineMode === 'gemini'
+                      ? 'Análisis Agente IA'
+                      : 'Resumen del PIAR'}
+                  </span>
+                </span>
+                {analyzedDateLabel && (
+                  <span className="aia-analysis-date aia-tabular">{analyzedDateLabel}</span>
+                )}
+                {isAnalysisStale && (
+                  <span
+                    className="aia-analysis-stale-pill"
+                    title="El expediente PIAR fue modificado después de este análisis"
+                  >
+                    PIAR actualizado · conviene renovar
+                  </span>
+                )}
+              </div>
+
+              <div className="aia-analysis-bar-actions">
+                <button
+                  type="button"
+                  className="aia-analysis-mini-btn"
+                  disabled={isAnalyzingPiar || isGenerating}
+                  aria-busy={isAnalyzingPiar}
+                  onClick={onAnalyzePiar}
+                  title="Volver a analizar los Anexos 1, 2 y 3 con el Agente IA"
+                >
+                  {isAnalyzingPiar ? (
+                    <>
+                      <span className="aia-btn-spinner aia-spinner-dark" aria-hidden="true" />
+                      <span>Renovando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                        refresh
+                      </span>
+                      <span>Renovar análisis</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  className="aia-analysis-mini-btn is-ghost"
+                  onClick={() => setAnalysisCollapsed((prev) => !prev)}
+                  aria-expanded={!analysisCollapsed}
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                    {analysisCollapsed ? 'expand_more' : 'expand_less'}
+                  </span>
+                  <span>{analysisCollapsed ? 'Ver resumen' : 'Ocultar'}</span>
+                </button>
+              </div>
+            </div>
+
+            {!analysisCollapsed && (
+              <div className="aia-analysis-body">
+                <p className="aia-analysis-summary-text">{studentAnalysis.resumenEjecutivo}</p>
+
+                <div className="aia-analysis-grid">
+                  {studentAnalysis.fortalezas?.length > 0 && (
+                    <div className="aia-analysis-box is-strength">
+                      <span className="aia-dna-label">Fortalezas y apoyos</span>
+                      <ul className="aia-analysis-list">
+                        {studentAnalysis.fortalezas.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {studentAnalysis.barrerasClave?.length > 0 && (
+                    <div className="aia-analysis-box is-barrier">
+                      <span className="aia-dna-label">Barreras detectadas</span>
+                      <ul className="aia-analysis-list">
+                        {studentAnalysis.barrerasClave.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {studentAnalysis.estrategiasAula?.length > 0 && (
+                    <div className="aia-analysis-box full">
+                      <span className="aia-dna-label">Estrategias recomendadas en aula</span>
+                      <ul className="aia-analysis-list">
+                        {studentAnalysis.estrategiasAula.map((item, idx) => (
+                          <li key={idx}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                {studentAnalysis.acuerdoHogar && (
+                  <p className="aia-analysis-home-line">
+                    <strong>Hogar / Anexo 3:</strong> {studentAnalysis.acuerdoHogar}
+                  </p>
+                )}
+
+                {studentAnalysis.alertasPrioritarias?.length > 0 && (
+                  <div className="aia-analysis-alert-box">
+                    <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                      info
+                    </span>
+                    <div>
+                      <strong>Pendiente por completar en el PIAR:</strong>{' '}
+                      {studentAnalysis.alertasPrioritarias.join(' · ')}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
-      {/* Selector de Área del PIAR (sin contenedor anidado) */}
+      {/* Selector de Área del PIAR (independiente del análisis general) */}
       <div className="aia-area-selector-section">
         <span className="aia-dna-label">Área del PIAR ({detectedAreas.length})</span>
         <div className="aia-package-pills" style={{ marginTop: '8px', marginBottom: '12px' }}>
@@ -95,7 +260,7 @@ export default function StudioPiarCard({
         )}
       </div>
 
-      {/* Botón Único de Generación Automática con Gemini IA */}
+      {/* Botón Único de Generación de Materiales con Gemini IA */}
       <button
         type="button"
         className={`aia-btn-primary aia-btn-full ${isGenerating ? 'aia-btn-generating' : ''}`}

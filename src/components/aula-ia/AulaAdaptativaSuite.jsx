@@ -2,7 +2,10 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { usePiar } from '../../context/PiarContext';
 import { useAulaIa } from '../../context/AulaIaContext';
 import { supabase } from '../../lib/supabaseClient';
-import { extractStudentPedagogicalProfile } from '../../lib/piarAiEngine';
+import {
+  extractStudentPedagogicalProfile,
+  computePiarAnalysisFingerprint
+} from '../../lib/piarAiEngine';
 import { getScoreTone, computePackageMetrics } from '../../lib/aulaProgress';
 import StudentAdaptivePortal from './StudentAdaptivePortal';
 import TeacherTelemetryAnalytics from './TeacherTelemetryAnalytics';
@@ -21,28 +24,38 @@ export default function AulaAdaptativaSuite({
   showToast,
   onSwitchToPiarSuite
 }) {
-  const { piars, activeStudentId, setActiveStudentId, getActiveStudent } = usePiar();
+  const { piars, loading: piarsLoading } = usePiar();
   const {
+    aulaStudentId,
+    setAulaStudentId,
     packagesByStudent,
     activityByPackage,
+    piarAnalysisByStudent,
     hydrateFromPiarRecord,
     refreshActivityFromCloud,
+    analyzeStudentPiar,
     createAdaptivePackage,
     togglePackagePublishStatus,
     deleteAdaptivePackage
   } = useAulaIa();
 
-  const validPiars = piars.filter((p) => p.data?.id !== 'blanco-temp');
-  const activeStudent = getActiveStudent() || validPiars[0] || null;
+  const validPiars = useMemo(
+    () => piars.filter((p) => p.data?.id !== 'blanco-temp'),
+    [piars]
+  );
+  const activeStudent = useMemo(
+    () => (aulaStudentId ? validPiars.find((p) => p.id === aulaStudentId) || null : null),
+    [aulaStudentId, validPiars]
+  );
 
-  // Seleccionar automáticamente el primer estudiante solo si no hay uno válido activo
+  // Si el estudiante guardado en el Aula ya no existe en la lista (ej. fue eliminado), limpiar sin afectar al Gestor PIAR
   useEffect(() => {
-    if (validPiars.length === 0) return;
-    const existsInList = activeStudentId && validPiars.some((p) => p.id === activeStudentId);
+    if (piarsLoading || !aulaStudentId) return;
+    const existsInList = validPiars.some((p) => p.id === aulaStudentId);
     if (!existsInList) {
-      setActiveStudentId(validPiars[0].id);
+      setAulaStudentId(null);
     }
-  }, [activeStudentId, validPiars, setActiveStudentId]);
+  }, [piarsLoading, aulaStudentId, validPiars, setAulaStudentId]);
 
   const studentPackages = activeStudent?.id ? packagesByStudent[activeStudent.id] || [] : [];
   const [selectedPkgId, setSelectedPkgId] = useState(() => {
@@ -114,7 +127,19 @@ export default function AulaAdaptativaSuite({
   const [selectedAreaIndex, setSelectedAreaIndex] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationStep, setGenerationStep] = useState('');
+  const [isAnalyzingPiar, setIsAnalyzingPiar] = useState(false);
   const resultsSectionRef = useRef(null);
+
+  const currentPiarFingerprint = useMemo(
+    () => (activeStudent ? computePiarAnalysisFingerprint(activeStudent) : null),
+    [activeStudent]
+  );
+  const studentAnalysis = activeStudent?.id ? piarAnalysisByStudent[activeStudent.id] || null : null;
+  const isAnalysisStale = Boolean(
+    studentAnalysis?.fingerprint &&
+      currentPiarFingerprint &&
+      studentAnalysis.fingerprint !== currentPiarFingerprint
+  );
 
   useEffect(() => {
     setSelectedAreaIndex(0);
@@ -197,15 +222,27 @@ export default function AulaAdaptativaSuite({
     }
   };
 
-  if (!activeStudent || !profile) {
+  if (piarsLoading && validPiars.length === 0) {
+    return (
+      <div className="aia-bento-card aia-loading-card" role="status" aria-live="polite">
+        <span className="aia-btn-spinner aia-loading-spinner-lg" aria-hidden="true" />
+        <h3 style={{ marginTop: '14px', marginBottom: '6px' }}>Cargando expedientes PIAR...</h3>
+        <p style={{ color: 'var(--text-muted)', maxWidth: '420px', margin: '0 auto' }}>
+          Sincronizando la información de tus estudiantes desde la nube.
+        </p>
+      </div>
+    );
+  }
+
+  if (validPiars.length === 0) {
     return (
       <div className="aia-bento-card" style={{ textAlign: 'center', padding: '48px 24px' }}>
         <span className="material-symbols-outlined" style={{ fontSize: '42px', color: 'var(--primary)' }}>
           person_search
         </span>
-        <h3 style={{ marginTop: '12px' }}>Primero crea o selecciona un estudiante en el Gestor PIAR</h3>
+        <h3 style={{ marginTop: '12px' }}>Primero crea un estudiante en el Gestor PIAR</h3>
         <p style={{ color: 'var(--text-muted)', maxWidth: '520px', margin: '8px auto 20px' }}>
-          Recuerda que el documento PIAR se crea primero en el Apartado 1 y es la fuente que alimenta automáticamente de información psicopedagógica a nuestro Agente IA.
+          Recuerda que el documento PIAR se crea primero en el Apartado 1 y es la fuente que alimenta en solo lectura al Aula Adaptativa IA.
         </p>
         {onSwitchToPiarSuite && (
           <button type="button" className="aia-btn-primary" onClick={onSwitchToPiarSuite}>
@@ -215,6 +252,50 @@ export default function AulaAdaptativaSuite({
             <span>Ir al Apartado 1 (Gestor PIAR)</span>
           </button>
         )}
+      </div>
+    );
+  }
+
+  if (!activeStudent || !profile) {
+    return (
+      <div className="aia-suite-container">
+        <div className="aia-top-control-bar">
+          <div className="aia-student-context-selector">
+            <div className="aia-context-avatar">
+              <span className="material-symbols-outlined">psychology</span>
+            </div>
+            <div className="aia-context-fields">
+              <label htmlFor="aia-student-select" className="aia-context-eyebrow">
+                ESTUDIANTE EN AULA IA · SELECCIÓN INDEPENDIENTE
+              </label>
+              <div className="aia-context-row">
+                <CustomSelect
+                  id="aia-student-select"
+                  className="aia-student-custom-select"
+                  value=""
+                  onChange={(val) => setAulaStudentId(val || null)}
+                  options={validPiars.map((p) => ({
+                    value: p.id,
+                    label: `${p.nombre} — Grado ${p.grado || 'S/A'}`
+                  }))}
+                  placeholder="Seleccionar estudiante para trabajar en el Aula..."
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="aia-bento-card" style={{ textAlign: 'center', padding: '44px 24px' }}>
+          <span className="material-symbols-outlined" style={{ fontSize: '40px', color: 'var(--primary)' }}>
+            school
+          </span>
+          <h3 style={{ marginTop: '12px', marginBottom: '6px' }}>
+            Elige un estudiante para abrir su Aula IA
+          </h3>
+          <p style={{ color: 'var(--text-muted)', maxWidth: '480px', margin: '0 auto' }}>
+            La selección del Aula es independiente del expediente que tengas abierto en el Gestor PIAR: cambiar aquí no afectará tu trabajo en los Anexos 1, 2 o 3.
+          </p>
+        </div>
       </div>
     );
   }
@@ -229,6 +310,26 @@ export default function AulaAdaptativaSuite({
       : stepLower.includes('leyendo')
         ? 'Analizando PIAR...'
         : 'Generando con IA...';
+
+  // Análisis bajo demanda del expediente PIAR (independiente de la generación de materiales)
+  const handleAnalyzePiar = async () => {
+    if (!activeStudent || isAnalyzingPiar) return;
+    setIsAnalyzingPiar(true);
+    try {
+      const result = await analyzeStudentPiar(activeStudent);
+      if (showToast && result) {
+        if (result.engineMode === 'gemini') {
+          showToast(`Análisis del expediente PIAR de ${profile.primerNombre} actualizado con Gemini IA.`);
+        } else {
+          showToast(
+            `Gemini no respondió a tiempo; se generó un resumen local con los datos reales del PIAR de ${profile.primerNombre}.`
+          );
+        }
+      }
+    } finally {
+      setIsAnalyzingPiar(false);
+    }
+  };
 
   // Ejecución 100% automática: el Agente IA toma los datos del PIAR, evalúa las carencias de esa área y genera el diagnóstico + materiales en borrador
   const handleAutoGenerateFromPiar = async (areaToProcess = activeArea) => {
@@ -293,7 +394,7 @@ export default function AulaAdaptativaSuite({
                 id="aia-student-select"
                 className="aia-student-custom-select"
                 value={activeStudent.id}
-                onChange={(val) => setActiveStudentId(val)}
+                onChange={(val) => setAulaStudentId(val || null)}
                 options={validPiars.map((p) => ({
                   value: p.id,
                   label: `${p.nombre} — Grado ${p.grado || 'S/A'}`
@@ -337,7 +438,7 @@ export default function AulaAdaptativaSuite({
       {/* SUB-VISTA 1: ESTUDIO DOCENTE — 100% AUTOMATIZADO Y CONTRAÍBLE POR ÁREA */}
       {activeSubTab === 'ia-studio' && (
         <div className="aia-studio-vertical-flow">
-          {/* BLOQUE 1 (ARRIBA): Lectura Automática del PIAR y Carencias Detectadas por Área */}
+          {/* BLOQUE 1 (ARRIBA): Resumen Controlado del PIAR (Agente IA) y Selector de Área */}
           <StudioPiarCard
             profile={profile}
             detectedAreas={detectedAreas}
@@ -348,6 +449,10 @@ export default function AulaAdaptativaSuite({
             isGenerating={isGenerating}
             shortGenerationLabel={shortGenerationLabel}
             onGenerate={handleAutoGenerateFromPiar}
+            studentAnalysis={studentAnalysis}
+            isAnalysisStale={isAnalysisStale}
+            isAnalyzingPiar={isAnalyzingPiar}
+            onAnalyzePiar={handleAnalyzePiar}
           />
 
           {/* BLOQUE 2 (DEBAJO DEL BOTÓN): Lista Acordeón de Paquetes por Materia / Área */}

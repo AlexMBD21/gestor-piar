@@ -1,7 +1,11 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import localforage from 'localforage';
 import { supabase } from '../lib/supabaseClient';
-import { generateAdaptivePackageWithGemini, extractYoutubeVideoId } from '../lib/piarAiEngine';
+import {
+  generateAdaptivePackageWithGemini,
+  analyzeStudentPiarWithGemini,
+  extractYoutubeVideoId
+} from '../lib/piarAiEngine';
 import { syncStudentActivityToCloud } from '../lib/studentAccessService';
 import { ensureVerifiedPackageYoutube } from '../lib/youtubeVerifier';
 
@@ -9,7 +13,9 @@ const AulaIaContext = createContext(null);
 
 const STORAGE_PACKAGES_KEY = 'piar_aula_ia_packages_v3';
 const STORAGE_ACTIVITY_KEY = 'piar_aula_ia_activity_v3';
+const STORAGE_ANALYSIS_KEY = 'piar_aula_ia_analysis_v1';
 const STUDENT_SESSION_KEY = 'piar_student_session_v1';
+const AULA_ACTIVE_STUDENT_STORAGE_KEY = 'aula_ia_active_student_id';
 
 function readActiveStudentCredentials() {
   try {
@@ -50,6 +56,29 @@ function createInitialActivityState() {
 export function AulaIaProvider({ children }) {
   const [packagesByStudent, setPackagesByStudent] = useState({});
   const [activityByPackage, setActivityByPackage] = useState({});
+  const [piarAnalysisByStudent, setPiarAnalysisByStudent] = useState({});
+  const [aulaStudentId, setAulaStudentIdState] = useState(() => {
+    try {
+      return window.sessionStorage.getItem(AULA_ACTIVE_STUDENT_STORAGE_KEY) || null;
+    } catch {
+      return null;
+    }
+  });
+  const setAulaStudentId = useCallback((nextId) => {
+    setAulaStudentIdState((prev) => {
+      const resolved = typeof nextId === 'function' ? nextId(prev) : nextId;
+      try {
+        if (resolved && resolved !== 'blanco-temp') {
+          window.sessionStorage.setItem(AULA_ACTIVE_STUDENT_STORAGE_KEY, String(resolved));
+        } else {
+          window.sessionStorage.removeItem(AULA_ACTIVE_STUDENT_STORAGE_KEY);
+        }
+      } catch {
+        // Ignorar si sessionStorage no está disponible
+      }
+      return resolved || null;
+    });
+  }, []);
   const [ready, setReady] = useState(false);
   const deletedPackageIdsRef = useRef(new Set());
 
@@ -60,6 +89,7 @@ export function AulaIaProvider({ children }) {
       try {
         const storedPackages = await localforage.getItem(STORAGE_PACKAGES_KEY);
         const storedActivity = await localforage.getItem(STORAGE_ACTIVITY_KEY);
+        const storedAnalysis = await localforage.getItem(STORAGE_ANALYSIS_KEY);
         if (mounted) {
           if (storedPackages && typeof storedPackages === 'object') {
             setPackagesByStudent(storedPackages);
@@ -70,6 +100,11 @@ export function AulaIaProvider({ children }) {
             setActivityByPackage(storedActivity);
           } else {
             setActivityByPackage({});
+          }
+          if (storedAnalysis && typeof storedAnalysis === 'object') {
+            setPiarAnalysisByStudent(storedAnalysis);
+          } else {
+            setPiarAnalysisByStudent({});
           }
           setReady(true);
         }
@@ -97,6 +132,14 @@ export function AulaIaProvider({ children }) {
       await localforage.setItem(STORAGE_ACTIVITY_KEY, nextActivity);
     } catch (err) {
       console.warn('[AulaIaContext] Error guardando telemetría:', err);
+    }
+  }, []);
+
+  const persistAnalysis = useCallback(async (nextAnalysis) => {
+    try {
+      await localforage.setItem(STORAGE_ANALYSIS_KEY, nextAnalysis);
+    } catch (err) {
+      console.warn('[AulaIaContext] Error guardando análisis del PIAR:', err);
     }
   }, []);
 
@@ -130,7 +173,31 @@ export function AulaIaProvider({ children }) {
     }
   }, []);
 
-  // Hidrata automáticamente los paquetes y la telemetría que estén guardados en la base de datos para ese estudiante
+  // Sincroniza el análisis psicopedagógico guardado del PIAR en Supabase (sin tocar anexo1, anexo2 ni anexo3)
+  const syncStudentAnalysisToDatabase = useCallback(async (piar, analysisObj) => {
+    if (
+      !piar?.id ||
+      piar.id === 'blanco-temp' ||
+      String(piar.id).startsWith('demo-') ||
+      String(piar.id).startsWith('student-')
+    ) {
+      return;
+    }
+    try {
+      await supabase.rpc('merge_piar_data', {
+        p_piar_id: piar.id,
+        p_data: {
+          aula_ia_piar_analysis: analysisObj
+        },
+        p_nombre: piar.nombre || piar.data?.estudianteNombre || 'Estudiante',
+        p_grado: piar.grado || piar.data?.grado || ''
+      });
+    } catch (err) {
+      console.warn('[AulaIaContext] Sincronización de análisis PIAR en espera:', err);
+    }
+  }, []);
+
+  // Hidrata automáticamente los paquetes, la telemetría y el análisis guardado en la base de datos para ese estudiante
   const hydrateFromPiarRecord = useCallback(
     (piar) => {
       if (!piar?.id) return;
@@ -146,6 +213,19 @@ export function AulaIaProvider({ children }) {
             return next;
           });
         }
+      }
+
+      const dbAnalysis = piar?.data?.aula_ia_piar_analysis;
+      if (dbAnalysis && typeof dbAnalysis === 'object' && dbAnalysis.resumenEjecutivo) {
+        setPiarAnalysisByStudent((prev) => {
+          const localAnalysis = prev[piar.id];
+          const remoteTs = Date.parse(dbAnalysis.analyzedAt || '') || 0;
+          const localTs = Date.parse(localAnalysis?.analyzedAt || '') || 0;
+          if (localAnalysis && localTs >= remoteTs) return prev;
+          const next = { ...prev, [piar.id]: dbAnalysis };
+          persistAnalysis(next);
+          return next;
+        });
       }
 
       const dbActivity = piar?.data?.aula_ia_activity;
@@ -170,7 +250,23 @@ export function AulaIaProvider({ children }) {
         });
       }
     },
-    [persistPackages, persistActivity]
+    [persistPackages, persistActivity, persistAnalysis]
+  );
+
+  // Analiza bajo demanda el expediente PIAR con el Agente IA y guarda el resultado para evitar recalcularlo
+  const analyzeStudentPiar = useCallback(
+    async (piar, { onProgress = null } = {}) => {
+      if (!piar?.id) return null;
+      const analysis = await analyzeStudentPiarWithGemini(piar, { onProgress });
+      setPiarAnalysisByStudent((prev) => {
+        const next = { ...prev, [piar.id]: analysis };
+        persistAnalysis(next);
+        return next;
+      });
+      syncStudentAnalysisToDatabase(piar, analysis);
+      return analysis;
+    },
+    [persistAnalysis, syncStudentAnalysisToDatabase]
   );
 
   // Consulta fresca directa desde Supabase para ver actividad e intentos en tiempo real sin recargar la página
@@ -713,11 +809,15 @@ export function AulaIaProvider({ children }) {
     <AulaIaContext.Provider
       value={{
         ready,
+        aulaStudentId,
+        setAulaStudentId,
         packagesByStudent,
         activityByPackage,
+        piarAnalysisByStudent,
         hydrateFromPiarRecord,
         hydrateFromStudentLogin,
         refreshActivityFromCloud,
+        analyzeStudentPiar,
         createAdaptivePackage,
         togglePackagePublishStatus,
         deleteAdaptivePackage,
