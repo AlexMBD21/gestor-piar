@@ -31,7 +31,25 @@ export default function StudioPiarCard({
   isAnalyzingPiar = false,
   onAnalyzePiar
 }) {
-  const [analysisCollapsed, setAnalysisCollapsed] = useState(false);
+  const [analysisCollapsed, setAnalysisCollapsed] = useState(() => {
+    try {
+      return window.sessionStorage.getItem('aula_ia_analysis_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleToggleAnalysisCollapsed = () => {
+    setAnalysisCollapsed((prev) => {
+      const next = !prev;
+      try {
+        window.sessionStorage.setItem('aula_ia_analysis_collapsed', next ? 'true' : 'false');
+      } catch {
+        // Ignorar restricciones de almacenamiento
+      }
+      return next;
+    });
+  };
 
   const realPct =
     typeof profile.realCompleteness === 'number'
@@ -60,23 +78,37 @@ export default function StudioPiarCard({
         {isAnalyzingPiar ? (
           <div className="aia-skel-analysis" role="status" aria-live="polite" aria-label="Analizando expediente PIAR con IA">
             <div className="aia-skel-row-between">
-              <span className="aia-skel aia-skel-pill" style={{ width: '150px', height: '24px' }} />
-              <span className="aia-skel" style={{ width: '96px', height: '22px' }} />
-            </div>
-            <span className="aia-skel" style={{ width: '96%', height: '13px' }} />
-            <span className="aia-skel" style={{ width: '82%', height: '13px' }} />
-            <div className="aia-skel-analysis-grid">
-              <div className="aia-skel-analysis-box">
-                <span className="aia-skel" style={{ width: '48%', height: '11px' }} />
-                <span className="aia-skel" style={{ width: '90%', height: '12px' }} />
-                <span className="aia-skel" style={{ width: '72%', height: '12px' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span className="aia-skel aia-skel-pill" style={{ width: '124px', height: '24px' }} />
+                <span className="aia-skel" style={{ width: '88px', height: '12px' }} />
               </div>
-              <div className="aia-skel-analysis-box">
-                <span className="aia-skel" style={{ width: '44%', height: '11px' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="aia-skel" style={{ width: '112px', height: '26px', borderRadius: '8px' }} />
+                <span className="aia-skel" style={{ width: '74px', height: '26px', borderRadius: '8px' }} />
+              </div>
+            </div>
+            <span className="aia-skel" style={{ width: '94%', height: '13px' }} />
+            <div className="aia-skel-analysis-grid">
+              <div className="aia-skel-analysis-box is-strength">
+                <span className="aia-skel" style={{ width: '44%', height: '10px' }} />
+                <span className="aia-skel" style={{ width: '88%', height: '12px' }} />
+                <span className="aia-skel" style={{ width: '72%', height: '12px' }} />
+                <span className="aia-skel" style={{ width: '80%', height: '12px' }} />
+              </div>
+              <div className="aia-skel-analysis-box is-barrier">
+                <span className="aia-skel" style={{ width: '42%', height: '10px' }} />
                 <span className="aia-skel" style={{ width: '86%', height: '12px' }} />
+                <span className="aia-skel" style={{ width: '76%', height: '12px' }} />
+                <span className="aia-skel" style={{ width: '82%', height: '12px' }} />
+              </div>
+              <div className="aia-skel-analysis-box full">
+                <span className="aia-skel" style={{ width: '28%', height: '10px' }} />
+                <span className="aia-skel" style={{ width: '64%', height: '12px' }} />
+                <span className="aia-skel" style={{ width: '58%', height: '12px' }} />
                 <span className="aia-skel" style={{ width: '68%', height: '12px' }} />
               </div>
             </div>
+            <span className="aia-skel" style={{ width: '54%', height: '11px' }} />
           </div>
         ) : !studentAnalysis ? (
           <div className="aia-analysis-empty">
@@ -171,7 +203,7 @@ export default function StudioPiarCard({
                 <button
                   type="button"
                   className="aia-analysis-mini-btn is-ghost"
-                  onClick={() => setAnalysisCollapsed((prev) => !prev)}
+                  onClick={handleToggleAnalysisCollapsed}
                   aria-expanded={!analysisCollapsed}
                 >
                   <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>

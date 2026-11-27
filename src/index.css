@@ -10084,6 +10084,28 @@ body.dark-mode .aia-skel {
   border: 1px solid var(--border-color);
 }
 
+.aia-skel-analysis-box.is-strength {
+  border-left: 3px solid rgba(34, 197, 94, 0.35);
+}
+
+.aia-skel-analysis-box.is-barrier {
+  border-left: 3px solid rgba(245, 158, 11, 0.35);
+}
+
+.aia-skel-analysis-box.full {
+  grid-column: 1 / -1;
+}
+
+.aia-skel-meta-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+}
+
 .aia-skel-pkg-card {
   display: flex;
   align-items: center;
@@ -10142,9 +10164,134 @@ body.dark-mode .aia-skel {
   border: 1px solid var(--border-color);
 }
 
+/* Skeleton para Ver como Estudiante (ia-mirror) */
+.aia-skel-dock {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+}
+
+.aia-skel-dock-left {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.aia-skel-dock-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.aia-skel-focus-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+}
+
+.aia-skel-stepper-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.aia-skel-step-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+
+.aia-skel-step-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.aia-skel-stage-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.aia-skel-stage-box {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+}
+
+.aia-skel-options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* Skeleton para Intentos y Telemetría (ia-analytics) */
+.aia-skel-telemetry-split {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.aia-skel-bars-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: 16px;
+  height: 76px;
+  padding-top: 8px;
+}
+
+.aia-skel-bar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.aia-skel-answer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border-radius: 9px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-left: 3px solid rgba(34, 197, 94, 0.32);
+}
+
+@media (max-width: 960px) {
+  .aia-skel-stepper-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 720px) {
-  .aia-skel-analysis-grid {
+  .aia-skel-analysis-grid,
+  .aia-skel-options-grid,
+  .aia-skel-telemetry-split {
     grid-template-columns: 1fr;
+  }
+
+  .aia-skel-dock,
+  .aia-skel-focus-bar {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .aia-skel-pkg-card {

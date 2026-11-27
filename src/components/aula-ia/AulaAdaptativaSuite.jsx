@@ -230,62 +230,370 @@ export default function AulaAdaptativaSuite({
     }
   };
 
+  const renderMirrorSkeleton = () => (
+    <div className="aia-suite-container aia-skel-suite" role="status" aria-live="polite" aria-label="Cargando vista de estudiante">
+      {/* Contenedor 1: Barra SubjectDock (Supervisión Docente) */}
+      <div className="aia-bento-card aia-skel-dock">
+        <div className="aia-skel-dock-left">
+          <span className="aia-skel" style={{ width: '160px', height: '10px' }} />
+          <div className="aia-skel-dock-row">
+            <span className="aia-skel aia-skel-pill" style={{ width: '158px', height: '32px' }} />
+            <span className="aia-skel aia-skel-pill" style={{ width: '116px', height: '24px' }} />
+            <span className="aia-skel aia-skel-pill" style={{ width: '82px', height: '24px' }} />
+          </div>
+        </div>
+        <div className="aia-skel-pkg-actions">
+          <span className="aia-skel" style={{ width: '108px', height: '32px', borderRadius: '8px' }} />
+          <span className="aia-skel" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
+        </div>
+      </div>
+
+      {/* Contenedor 2: Tarjeta de foco de estudio + Guía y meta */}
+      <div className="aia-bento-card aia-skel-focus-bar">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+          <div className="aia-skel-dock-row">
+            <span className="aia-skel aia-skel-pill" style={{ width: '124px', height: '24px' }} />
+            <span className="aia-skel aia-skel-pill" style={{ width: '148px', height: '24px' }} />
+          </div>
+          <span className="aia-skel" style={{ width: '320px', maxWidth: '80%', height: '17px' }} />
+        </div>
+        <span className="aia-skel aia-skel-pill" style={{ width: '126px', height: '36px', flexShrink: 0 }} />
+      </div>
+
+      {/* Contenedor 3: Stepper de 4 pasos (Diapositivas, Video, Juegos, Mi Examen) */}
+      <div className="aia-skel-stepper-grid">
+        {[0, 1, 2, 3].map((idx) => (
+          <div key={idx} className="aia-skel-step-card">
+            <div className="aia-skel-step-top">
+              <span className="aia-skel" style={{ width: '30px', height: '30px', borderRadius: '8px', flexShrink: 0 }} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1 }}>
+                <div className="aia-skel-row-between">
+                  <span className="aia-skel" style={{ width: '48px', height: '10px' }} />
+                  <span className="aia-skel" style={{ width: '36px', height: '10px' }} />
+                </div>
+                <span className="aia-skel" style={{ width: idx === 1 ? '82%' : '68%', height: '13px' }} />
+              </div>
+            </div>
+            <span className="aia-skel aia-skel-pill" style={{ width: '100%', height: '4px' }} />
+          </div>
+        ))}
+      </div>
+
+      {/* Contenedor 4: Escenario activo (cabecera + progreso + tarjeta + barra inferior) */}
+      <div className="aia-bento-card aia-skel-stage-card">
+        <div className="aia-skel-row-between">
+          <div className="aia-skel-dock-row">
+            <span className="aia-skel aia-skel-pill" style={{ width: '172px', height: '26px' }} />
+            <span className="aia-skel aia-skel-pill" style={{ width: '184px', height: '24px' }} />
+          </div>
+          <div className="aia-skel-pkg-actions">
+            <span className="aia-skel aia-skel-pill" style={{ width: '138px', height: '26px' }} />
+            <span className="aia-skel" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
+          </div>
+        </div>
+
+        {/* Barra de progreso y selector rápido */}
+        <div className="aia-skel-stage-box">
+          <div className="aia-skel-row-between">
+            <span className="aia-skel" style={{ width: '165px', height: '12px' }} />
+            <span className="aia-skel" style={{ width: '92px', height: '12px' }} />
+          </div>
+          <span className="aia-skel aia-skel-pill" style={{ width: '100%', height: '6px' }} />
+          <div className="aia-skel-chips-row">
+            {[0, 1, 2, 3, 4].map((n) => (
+              <span key={n} className="aia-skel" style={{ width: '34px', height: '24px', borderRadius: '7px' }} />
+            ))}
+          </div>
+        </div>
+
+        {/* Tarjeta central (pregunta/lámina + grilla 2x2) */}
+        <div className="aia-skel-stage-box">
+          <div className="aia-skel-row-between">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="aia-skel" style={{ width: '28px', height: '20px', borderRadius: '6px' }} />
+              <span className="aia-skel" style={{ width: '94px', height: '12px' }} />
+            </div>
+            <span className="aia-skel" style={{ width: '134px', height: '30px', borderRadius: '8px' }} />
+          </div>
+          <span className="aia-skel" style={{ width: '58%', height: '17px' }} />
+          <div className="aia-skel-options-grid">
+            {[0, 1, 2, 3].map((opt) => (
+              <span key={opt} className="aia-skel" style={{ width: '100%', height: '44px', borderRadius: '10px' }} />
+            ))}
+          </div>
+        </div>
+
+        {/* Footer de navegación */}
+        <div className="aia-skel-row-between" style={{ paddingTop: '6px' }}>
+          <span className="aia-skel" style={{ width: '104px', height: '36px', borderRadius: '10px' }} />
+          <span className="aia-skel" style={{ width: '220px', maxWidth: '40%', height: '12px' }} />
+          <span className="aia-skel" style={{ width: '154px', height: '36px', borderRadius: '10px' }} />
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderAnalyticsSkeleton = () => (
+    <div className="aia-suite-container aia-skel-suite" role="status" aria-live="polite" aria-label="Cargando telemetría e intentos">
+      {/* Contenedor 1: Barra SubjectDock (Telemetría en Vivo) */}
+      <div className="aia-bento-card aia-skel-dock">
+        <div className="aia-skel-dock-left">
+          <span className="aia-skel" style={{ width: '156px', height: '10px' }} />
+          <div className="aia-skel-dock-row">
+            <span className="aia-skel aia-skel-pill" style={{ width: '182px', height: '32px' }} />
+            <span className="aia-skel aia-skel-pill" style={{ width: '116px', height: '24px' }} />
+            <span className="aia-skel aia-skel-pill" style={{ width: '84px', height: '24px' }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Contenedor 2: Resumen de progreso (4 KPIs + chips de juegos + estado) */}
+      <div className="aia-bento-card aia-skel-stage-card">
+        <div className="aia-skel-row-between">
+          <span className="aia-skel" style={{ width: '290px', maxWidth: '70%', height: '16px' }} />
+          <span className="aia-skel" style={{ width: '165px', height: '12px' }} />
+        </div>
+
+        <div className="aia-skel-stepper-grid">
+          {[0, 1, 2, 3].map((idx) => (
+            <div key={idx} className="aia-skel-step-card">
+              <div className="aia-skel-step-top">
+                <span className="aia-skel" style={{ width: '30px', height: '30px', borderRadius: '8px', flexShrink: 0 }} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', flex: 1 }}>
+                  <span className="aia-skel" style={{ width: '68%', height: '12px' }} />
+                  <span className="aia-skel" style={{ width: '82%', height: '10px' }} />
+                </div>
+                <span className="aia-skel aia-skel-pill" style={{ width: idx === 1 ? '74px' : '48px', height: '20px', flexShrink: 0 }} />
+              </div>
+              <span className="aia-skel aia-skel-pill" style={{ width: '100%', height: '4px' }} />
+            </div>
+          ))}
+        </div>
+
+        <div className="aia-skel-chips-row" style={{ alignItems: 'center' }}>
+          <span className="aia-skel" style={{ width: '48px', height: '12px' }} />
+          <span className="aia-skel aia-skel-pill" style={{ width: '132px', height: '24px' }} />
+          <span className="aia-skel aia-skel-pill" style={{ width: '148px', height: '24px' }} />
+          <span className="aia-skel aia-skel-pill" style={{ width: '154px', height: '24px' }} />
+          <span className="aia-skel aia-skel-pill" style={{ width: '144px', height: '24px' }} />
+        </div>
+
+        <span className="aia-skel aia-skel-pill" style={{ width: '108px', height: '24px' }} />
+      </div>
+
+      {/* Contenedor 3: Resultados del examen + comparativa + lista de respuestas */}
+      <div className="aia-bento-card aia-skel-stage-card">
+        <div className="aia-skel-row-between">
+          <span className="aia-skel" style={{ width: '170px', height: '16px' }} />
+          <span className="aia-skel" style={{ width: '128px', height: '32px', borderRadius: '8px' }} />
+        </div>
+
+        <span className="aia-skel" style={{ width: '100%', height: '36px', borderRadius: '9px' }} />
+
+        <div className="aia-skel-row-between">
+          <span className="aia-skel" style={{ width: '64px', height: '13px' }} />
+          <div className="aia-skel-dock-row">
+            <span className="aia-skel aia-skel-pill" style={{ width: '104px', height: '30px' }} />
+            <span className="aia-skel aia-skel-pill" style={{ width: '98px', height: '30px' }} />
+            <span className="aia-skel aia-skel-pill" style={{ width: '112px', height: '30px' }} />
+          </div>
+        </div>
+
+        <div className="aia-skel-telemetry-split">
+          {/* Resultado del intento */}
+          <div className="aia-skel-stage-box">
+            <div className="aia-skel-row-between">
+              <span className="aia-skel" style={{ width: '132px', height: '10px' }} />
+              <span className="aia-skel aia-skel-pill" style={{ width: '82px', height: '20px' }} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+              <span className="aia-skel" style={{ width: '58px', height: '24px' }} />
+              <span className="aia-skel" style={{ width: '94px', height: '13px' }} />
+            </div>
+            <span className="aia-skel aia-skel-pill" style={{ width: '100%', height: '7px' }} />
+            <div className="aia-skel-row-between">
+              <span className="aia-skel" style={{ width: '112px', height: '11px' }} />
+              <span className="aia-skel" style={{ width: '48px', height: '11px' }} />
+            </div>
+          </div>
+
+          {/* Comparativa entre intentos (barras) */}
+          <div className="aia-skel-stage-box">
+            <span className="aia-skel" style={{ width: '168px', height: '10px' }} />
+            <div className="aia-skel-bars-row">
+              {[44, 18, 56].map((h, i) => (
+                <div key={i} className="aia-skel-bar-col">
+                  <span className="aia-skel" style={{ width: '28px', height: '10px' }} />
+                  <span className="aia-skel" style={{ width: '26px', height: `${h}px`, borderRadius: '6px' }} />
+                  <span className="aia-skel" style={{ width: '18px', height: '10px' }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Lista de respuestas */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <div className="aia-skel-row-between">
+            <span className="aia-skel" style={{ width: '174px', height: '14px' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span className="aia-skel" style={{ width: '76px', height: '12px' }} />
+              <span className="aia-skel" style={{ width: '126px', height: '28px', borderRadius: '8px' }} />
+            </div>
+          </div>
+          {[0, 1, 2, 3, 4].map((row) => (
+            <div key={row} className="aia-skel-answer-row">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1 }}>
+                <span className="aia-skel" style={{ width: '26px', height: '18px', borderRadius: '5px', flexShrink: 0 }} />
+                <span className="aia-skel" style={{ width: `${38 + (row % 3) * 10}%`, height: '12px' }} />
+              </div>
+              <div className="aia-skel-pkg-actions">
+                <span className="aia-skel aia-skel-pill" style={{ width: '68px', height: '20px' }} />
+                <span className="aia-skel aia-skel-pill" style={{ width: '64px', height: '20px' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
   if (piarsLoading && validPiars.length === 0) {
+    if (activeSubTab === 'ia-mirror') {
+      return renderMirrorSkeleton();
+    }
+    if (activeSubTab === 'ia-analytics') {
+      return renderAnalyticsSkeleton();
+    }
+
+    let isAnalysisCollapsedSaved = false;
+    try {
+      isAnalysisCollapsedSaved =
+        window.sessionStorage.getItem('aula_ia_analysis_collapsed') === 'true';
+    } catch {
+      isAnalysisCollapsedSaved = false;
+    }
+
     return (
       <div className="aia-suite-container aia-skel-suite" role="status" aria-live="polite" aria-label="Cargando Aula Adaptativa IA">
-        {/* Skeleton barra superior de selector */}
+        {/* Contenedor 1: Barra superior de selector de estudiante y acceso */}
         <div className="aia-top-control-bar aia-skel-topbar">
           <span className="aia-skel aia-skel-avatar" />
           <div className="aia-skel-topbar-fields">
-            <span className="aia-skel" style={{ width: '210px', height: '11px' }} />
+            <span className="aia-skel" style={{ width: '175px', height: '10px' }} />
             <div className="aia-skel-topbar-row">
-              <span className="aia-skel" style={{ width: '290px', maxWidth: '100%', height: '40px', borderRadius: '10px' }} />
+              <span className="aia-skel" style={{ width: '280px', maxWidth: '100%', height: '38px', borderRadius: '10px' }} />
               <span className="aia-skel aia-skel-access-pill" />
             </div>
           </div>
         </div>
 
-        {/* Skeleton tarjeta de expediente PIAR y áreas */}
+        {/* Contenedor 2: Tarjeta Expediente PIAR + Análisis Agente IA + Áreas + Meta + CTA */}
         <div className="aia-bento-card aia-skel-studio-card">
           <div className="aia-skel-row-between">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
-              <span className="aia-skel" style={{ width: '260px', maxWidth: '75%', height: '20px' }} />
-              <span className="aia-skel" style={{ width: '190px', maxWidth: '55%', height: '13px' }} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '7px', flex: 1 }}>
+              <span className="aia-skel" style={{ width: '250px', maxWidth: '72%', height: '19px' }} />
+              <span className="aia-skel" style={{ width: '210px', maxWidth: '58%', height: '12px' }} />
             </div>
-            <span className="aia-skel aia-skel-pill" style={{ width: '126px', height: '28px' }} />
+            <span className="aia-skel aia-skel-pill" style={{ width: '116px', height: '26px' }} />
           </div>
 
+          {/* Panel de Análisis Agente IA (respeta si el docente lo dejó contraído) */}
           <div className="aia-skel-analysis">
-            <span className="aia-skel" style={{ width: '92%', height: '13px' }} />
-            <span className="aia-skel" style={{ width: '74%', height: '13px' }} />
+            <div className="aia-skel-row-between">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span className="aia-skel aia-skel-pill" style={{ width: '124px', height: '24px' }} />
+                <span className="aia-skel" style={{ width: '88px', height: '12px' }} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="aia-skel" style={{ width: '112px', height: '26px', borderRadius: '8px' }} />
+                <span className="aia-skel" style={{ width: '74px', height: '26px', borderRadius: '8px' }} />
+              </div>
+            </div>
+
+            {!isAnalysisCollapsedSaved && (
+              <>
+                <span className="aia-skel" style={{ width: '94%', height: '13px' }} />
+
+                <div className="aia-skel-analysis-grid">
+                  <div className="aia-skel-analysis-box is-strength">
+                    <span className="aia-skel" style={{ width: '44%', height: '10px' }} />
+                    <span className="aia-skel" style={{ width: '86%', height: '12px' }} />
+                    <span className="aia-skel" style={{ width: '72%', height: '12px' }} />
+                    <span className="aia-skel" style={{ width: '80%', height: '12px' }} />
+                  </div>
+                  <div className="aia-skel-analysis-box is-barrier">
+                    <span className="aia-skel" style={{ width: '42%', height: '10px' }} />
+                    <span className="aia-skel" style={{ width: '88%', height: '12px' }} />
+                    <span className="aia-skel" style={{ width: '76%', height: '12px' }} />
+                    <span className="aia-skel" style={{ width: '82%', height: '12px' }} />
+                  </div>
+                  <div className="aia-skel-analysis-box full">
+                    <span className="aia-skel" style={{ width: '28%', height: '10px' }} />
+                    <span className="aia-skel" style={{ width: '64%', height: '12px' }} />
+                    <span className="aia-skel" style={{ width: '58%', height: '12px' }} />
+                    <span className="aia-skel" style={{ width: '68%', height: '12px' }} />
+                  </div>
+                </div>
+
+                <span className="aia-skel" style={{ width: '54%', height: '11px' }} />
+              </>
+            )}
           </div>
 
-          <div className="aia-skel-chips-row">
-            <span className="aia-skel aia-skel-pill" style={{ width: '132px', height: '34px' }} />
-            <span className="aia-skel aia-skel-pill" style={{ width: '154px', height: '34px' }} />
-            <span className="aia-skel aia-skel-pill" style={{ width: '118px', height: '34px' }} />
-            <span className="aia-skel aia-skel-pill" style={{ width: '140px', height: '34px' }} />
+          {/* Selector de Áreas del PIAR */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <span className="aia-skel" style={{ width: '108px', height: '10px' }} />
+            <div className="aia-skel-chips-row">
+              <span className="aia-skel aia-skel-pill" style={{ width: '164px', height: '32px' }} />
+              <span className="aia-skel aia-skel-pill" style={{ width: '132px', height: '32px' }} />
+              <span className="aia-skel aia-skel-pill" style={{ width: '126px', height: '32px' }} />
+              <span className="aia-skel aia-skel-pill" style={{ width: '118px', height: '32px' }} />
+              <span className="aia-skel aia-skel-pill" style={{ width: '108px', height: '32px' }} />
+              <span className="aia-skel aia-skel-pill" style={{ width: '126px', height: '32px' }} />
+            </div>
           </div>
 
+          {/* Caja Meta PIAR */}
+          <div className="aia-skel-meta-bar">
+            <span className="aia-skel" style={{ width: '16px', height: '16px', borderRadius: '4px', flexShrink: 0 }} />
+            <span className="aia-skel" style={{ width: '48%', height: '13px' }} />
+          </div>
+
+          {/* Botón Generar Material IA */}
           <span className="aia-skel" style={{ width: '100%', height: '44px', borderRadius: '11px' }} />
         </div>
 
-        {/* Skeleton tarjetas de materiales generados */}
-        {[0, 1].map((idx) => (
-          <div key={idx} className="aia-bento-card aia-skel-pkg-card">
-            <div className="aia-skel-pkg-left">
-              <span className="aia-skel" style={{ width: '32px', height: '32px', borderRadius: '9px', flexShrink: 0 }} />
-              <div className="aia-skel-pkg-lines">
-                <span className="aia-skel" style={{ width: idx === 0 ? '48%' : '40%', height: '15px' }} />
-                <span className="aia-skel" style={{ width: idx === 0 ? '68%' : '58%', height: '12px' }} />
+        {/* Contenedor 3: Materiales generados */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="aia-skel" style={{ width: '148px', height: '15px' }} />
+            <span className="aia-skel aia-skel-pill" style={{ width: '24px', height: '20px' }} />
+          </div>
+
+          {[0, 1].map((idx) => (
+            <div key={idx} className="aia-bento-card aia-skel-pkg-card">
+              <div className="aia-skel-pkg-left">
+                <span className="aia-skel" style={{ width: '30px', height: '30px', borderRadius: '8px', flexShrink: 0 }} />
+                <div className="aia-skel-pkg-lines">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span className="aia-skel" style={{ width: idx === 0 ? '138px' : '182px', height: '14px' }} />
+                    <span className="aia-skel aia-skel-pill" style={{ width: '74px', height: '20px' }} />
+                    <span className="aia-skel" style={{ width: '185px', height: '11px' }} />
+                  </div>
+                  <span className="aia-skel" style={{ width: idx === 0 ? '44%' : '52%', height: '12px' }} />
+                </div>
+              </div>
+              <div className="aia-skel-pkg-actions">
+                <span className="aia-skel" style={{ width: '96px', height: '32px', borderRadius: '8px' }} />
+                {idx === 0 && (
+                  <span className="aia-skel" style={{ width: '104px', height: '32px', borderRadius: '8px' }} />
+                )}
+                <span className="aia-skel" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
               </div>
             </div>
-            <div className="aia-skel-pkg-actions">
-              <span className="aia-skel" style={{ width: '112px', height: '32px', borderRadius: '8px' }} />
-              <span className="aia-skel" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   }
@@ -551,6 +859,9 @@ export default function AulaAdaptativaSuite({
 
       {/* SUB-VISTA 2: MODO ESPEJO ("VER COMO ESTUDIANTE" PARA SUPERVISIÓN MULTI-ÁREA DEL PROFESOR) */}
       {activeSubTab === 'ia-mirror' && (
+        !aulaReady && studentPackages.length === 0 ? (
+          renderMirrorSkeleton()
+        ) : (
         <div className="aia-studio-vertical-flow">
           {studentPackages.length > 0 && currentPkg && (
             <SubjectDock
@@ -611,10 +922,14 @@ export default function AulaAdaptativaSuite({
             studentProfile={profile}
           />
         </div>
+        )
       )}
 
       {/* SUB-VISTA 3: ANALÍTICA DE INTENTOS Y VERIFICACIÓN EN TIEMPO REAL POR MATERIA */}
       {activeSubTab === 'ia-analytics' && (
+        !aulaReady && studentPackages.length === 0 ? (
+          renderAnalyticsSkeleton()
+        ) : (
         <div className="aia-studio-vertical-flow">
           {studentPackages.length > 0 && currentPkg ? (
             <>
@@ -654,6 +969,7 @@ export default function AulaAdaptativaSuite({
             </div>
           )}
         </div>
+        )
       )}
 
       {/* Modal de gestión de cuenta estudiantil (Documento + PIN) */}

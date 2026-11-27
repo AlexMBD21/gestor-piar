@@ -76,17 +76,18 @@ export default function PackageAccordionList({
             aria-label={generatingSubject ? `Generando material de ${generatingSubject}` : 'Generando material'}
           >
             <div className="aia-skel-pkg-left">
-              <span className="aia-skel" style={{ width: '32px', height: '32px', borderRadius: '9px', flexShrink: 0 }} />
+              <span className="aia-skel" style={{ width: '30px', height: '30px', borderRadius: '8px', flexShrink: 0 }} />
               <div className="aia-skel-pkg-lines">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                  <span className="aia-skel" style={{ width: '165px', height: '15px' }} />
-                  <span className="aia-skel aia-skel-pill" style={{ width: '88px', height: '20px' }} />
+                  <span className="aia-skel" style={{ width: '165px', height: '14px' }} />
+                  <span className="aia-skel aia-skel-pill" style={{ width: '78px', height: '20px' }} />
+                  <span className="aia-skel" style={{ width: '185px', height: '11px' }} />
                 </div>
-                <span className="aia-skel" style={{ width: '66%', height: '12px' }} />
+                <span className="aia-skel" style={{ width: '50%', height: '12px' }} />
               </div>
             </div>
             <div className="aia-skel-pkg-actions">
-              <span className="aia-skel" style={{ width: '116px', height: '32px', borderRadius: '8px' }} />
+              <span className="aia-skel" style={{ width: '96px', height: '32px', borderRadius: '8px' }} />
               <span className="aia-skel" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
             </div>
           </div>
@@ -101,14 +102,21 @@ export default function PackageAccordionList({
                 aria-label="Cargando materiales generados"
               >
                 <div className="aia-skel-pkg-left">
-                  <span className="aia-skel" style={{ width: '32px', height: '32px', borderRadius: '9px', flexShrink: 0 }} />
+                  <span className="aia-skel" style={{ width: '30px', height: '30px', borderRadius: '8px', flexShrink: 0 }} />
                   <div className="aia-skel-pkg-lines">
-                    <span className="aia-skel" style={{ width: idx === 0 ? '46%' : '38%', height: '15px' }} />
-                    <span className="aia-skel" style={{ width: idx === 0 ? '68%' : '54%', height: '12px' }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span className="aia-skel" style={{ width: idx === 0 ? '138px' : '182px', height: '14px' }} />
+                      <span className="aia-skel aia-skel-pill" style={{ width: '74px', height: '20px' }} />
+                      <span className="aia-skel" style={{ width: '185px', height: '11px' }} />
+                    </div>
+                    <span className="aia-skel" style={{ width: idx === 0 ? '44%' : '52%', height: '12px' }} />
                   </div>
                 </div>
                 <div className="aia-skel-pkg-actions">
-                  <span className="aia-skel" style={{ width: '112px', height: '32px', borderRadius: '8px' }} />
+                  <span className="aia-skel" style={{ width: '96px', height: '32px', borderRadius: '8px' }} />
+                  {idx === 0 && (
+                    <span className="aia-skel" style={{ width: '104px', height: '32px', borderRadius: '8px' }} />
+                  )}
                   <span className="aia-skel" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
                 </div>
               </div>
