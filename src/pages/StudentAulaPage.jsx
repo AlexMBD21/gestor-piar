@@ -26,6 +26,7 @@ function getSubjectIcon(subject = '') {
 export default function StudentAulaPage() {
   const { studentSession, refreshStudentSession, revokeStudentSession, signOut } = useAuth();
   const {
+    ready: aulaReady,
     packagesByStudent,
     activityByPackage,
     hydrateFromStudentLogin
@@ -345,7 +346,39 @@ export default function StudentAulaPage() {
               </div>
             )}
 
-            {publishedPackages.length === 0 ? (
+            {publishedPackages.length === 0 && (!aulaReady || refreshing) ? (
+              <div className="aia-student-subjects-section" role="status" aria-live="polite" aria-label="Cargando materias asignadas">
+                <div className="aia-student-subjects-head">
+                  <span className="aia-skel" style={{ width: '190px', height: '20px' }} />
+                </div>
+                <section className="aia-student-subjects-grid">
+                  {[0, 1, 2].map((idx) => (
+                    <article key={idx} className="aia-skel-student-card">
+                      <div className="aia-skel-row-between">
+                        <span className="aia-skel aia-skel-pill" style={{ width: '128px', height: '26px' }} />
+                        <span className="aia-skel aia-skel-pill" style={{ width: '76px', height: '24px' }} />
+                      </div>
+                      <span className="aia-skel" style={{ width: '88%', height: '18px' }} />
+                      <span className="aia-skel" style={{ width: '62%', height: '14px' }} />
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <div className="aia-skel-row-between">
+                          <span className="aia-skel" style={{ width: '120px', height: '12px' }} />
+                          <span className="aia-skel" style={{ width: '34px', height: '12px' }} />
+                        </div>
+                        <span className="aia-skel aia-skel-pill" style={{ width: '100%', height: '7px' }} />
+                      </div>
+                      <div className="aia-skel-chips-row">
+                        <span className="aia-skel aia-skel-pill" style={{ width: '74px', height: '24px' }} />
+                        <span className="aia-skel aia-skel-pill" style={{ width: '58px', height: '24px' }} />
+                        <span className="aia-skel aia-skel-pill" style={{ width: '78px', height: '24px' }} />
+                        <span className="aia-skel aia-skel-pill" style={{ width: '64px', height: '24px' }} />
+                      </div>
+                      <span className="aia-skel" style={{ width: '100%', height: '40px', borderRadius: '10px', marginTop: 'auto' }} />
+                    </article>
+                  ))}
+                </section>
+              </div>
+            ) : publishedPackages.length === 0 ? (
               <div className="aia-bento-card aia-student-empty-state">
                 <span className="material-symbols-outlined aia-student-empty-icon">
                   menu_book

@@ -57,7 +57,28 @@ export default function StudioPiarCard({
 
       {/* Bloque controlado: Resumen del Estudiante generado bajo demanda por el Agente IA */}
       <div className="aia-piar-analysis-panel">
-        {!studentAnalysis ? (
+        {isAnalyzingPiar ? (
+          <div className="aia-skel-analysis" role="status" aria-live="polite" aria-label="Analizando expediente PIAR con IA">
+            <div className="aia-skel-row-between">
+              <span className="aia-skel aia-skel-pill" style={{ width: '150px', height: '24px' }} />
+              <span className="aia-skel" style={{ width: '96px', height: '22px' }} />
+            </div>
+            <span className="aia-skel" style={{ width: '96%', height: '13px' }} />
+            <span className="aia-skel" style={{ width: '82%', height: '13px' }} />
+            <div className="aia-skel-analysis-grid">
+              <div className="aia-skel-analysis-box">
+                <span className="aia-skel" style={{ width: '48%', height: '11px' }} />
+                <span className="aia-skel" style={{ width: '90%', height: '12px' }} />
+                <span className="aia-skel" style={{ width: '72%', height: '12px' }} />
+              </div>
+              <div className="aia-skel-analysis-box">
+                <span className="aia-skel" style={{ width: '44%', height: '11px' }} />
+                <span className="aia-skel" style={{ width: '86%', height: '12px' }} />
+                <span className="aia-skel" style={{ width: '68%', height: '12px' }} />
+              </div>
+            </div>
+          </div>
+        ) : !studentAnalysis ? (
           <div className="aia-analysis-empty">
             <div className="aia-analysis-empty-copy">
               <div className="aia-analysis-icon-badge" aria-hidden="true">

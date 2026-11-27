@@ -174,7 +174,24 @@ export default function StudentAccessModal({
         </div>
 
         {loading ? (
-          <div className="aia-access-loading">Cargando configuración de acceso...</div>
+          <div className="aia-skel-access-modal" role="status" aria-live="polite" aria-label="Cargando configuración de acceso">
+            <div className="aia-skel-field">
+              <span className="aia-skel" style={{ width: '58%', height: '13px' }} />
+              <span className="aia-skel" style={{ width: '100%', height: '42px', borderRadius: '10px' }} />
+            </div>
+            <div className="aia-skel-field">
+              <span className="aia-skel" style={{ width: '46%', height: '13px' }} />
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <span className="aia-skel" style={{ flex: 1, height: '42px', borderRadius: '10px' }} />
+                <span className="aia-skel" style={{ width: '128px', height: '42px', borderRadius: '10px' }} />
+              </div>
+            </div>
+            <span className="aia-skel" style={{ width: '100%', height: '56px', borderRadius: '12px' }} />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '4px' }}>
+              <span className="aia-skel" style={{ width: '96px', height: '38px', borderRadius: '10px' }} />
+              <span className="aia-skel" style={{ width: '148px', height: '38px', borderRadius: '10px' }} />
+            </div>
+          </div>
         ) : (
           <form onSubmit={handleSubmit} className="aia-access-form">
             <div className="aia-access-field">

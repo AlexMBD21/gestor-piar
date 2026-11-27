@@ -26,6 +26,7 @@ export default function AulaAdaptativaSuite({
 }) {
   const { piars, loading: piarsLoading } = usePiar();
   const {
+    ready: aulaReady,
     aulaStudentId,
     setAulaStudentId,
     packagesByStudent,
@@ -83,6 +84,7 @@ export default function AulaAdaptativaSuite({
   const [pendingDeletePkg, setPendingDeletePkg] = useState(null);
   const [showAccessModal, setShowAccessModal] = useState(false);
   const [studentAccessMeta, setStudentAccessMeta] = useState(null);
+  const [isLoadingAccess, setIsLoadingAccess] = useState(false);
 
   const currentPkg =
     studentPackages.find((p) => p.id === selectedPkgId) || studentPackages[0] || null;
@@ -149,11 +151,17 @@ export default function AulaAdaptativaSuite({
     let mounted = true;
     if (activeStudent) {
       hydrateFromPiarRecord(activeStudent);
-      getStudentCredential(activeStudent.id).then((cred) => {
-        if (mounted) setStudentAccessMeta(cred);
-      });
+      setIsLoadingAccess(true);
+      getStudentCredential(activeStudent.id)
+        .then((cred) => {
+          if (mounted) setStudentAccessMeta(cred);
+        })
+        .finally(() => {
+          if (mounted) setIsLoadingAccess(false);
+        });
     } else {
       setStudentAccessMeta(null);
+      setIsLoadingAccess(false);
     }
     return () => {
       mounted = false;
@@ -224,12 +232,60 @@ export default function AulaAdaptativaSuite({
 
   if (piarsLoading && validPiars.length === 0) {
     return (
-      <div className="aia-bento-card aia-loading-card" role="status" aria-live="polite">
-        <span className="aia-btn-spinner aia-loading-spinner-lg" aria-hidden="true" />
-        <h3 style={{ marginTop: '14px', marginBottom: '6px' }}>Cargando expedientes PIAR...</h3>
-        <p style={{ color: 'var(--text-muted)', maxWidth: '420px', margin: '0 auto' }}>
-          Sincronizando la información de tus estudiantes desde la nube.
-        </p>
+      <div className="aia-suite-container aia-skel-suite" role="status" aria-live="polite" aria-label="Cargando Aula Adaptativa IA">
+        {/* Skeleton barra superior de selector */}
+        <div className="aia-top-control-bar aia-skel-topbar">
+          <span className="aia-skel aia-skel-avatar" />
+          <div className="aia-skel-topbar-fields">
+            <span className="aia-skel" style={{ width: '210px', height: '11px' }} />
+            <div className="aia-skel-topbar-row">
+              <span className="aia-skel" style={{ width: '290px', maxWidth: '100%', height: '40px', borderRadius: '10px' }} />
+              <span className="aia-skel aia-skel-access-pill" />
+            </div>
+          </div>
+        </div>
+
+        {/* Skeleton tarjeta de expediente PIAR y áreas */}
+        <div className="aia-bento-card aia-skel-studio-card">
+          <div className="aia-skel-row-between">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+              <span className="aia-skel" style={{ width: '260px', maxWidth: '75%', height: '20px' }} />
+              <span className="aia-skel" style={{ width: '190px', maxWidth: '55%', height: '13px' }} />
+            </div>
+            <span className="aia-skel aia-skel-pill" style={{ width: '126px', height: '28px' }} />
+          </div>
+
+          <div className="aia-skel-analysis">
+            <span className="aia-skel" style={{ width: '92%', height: '13px' }} />
+            <span className="aia-skel" style={{ width: '74%', height: '13px' }} />
+          </div>
+
+          <div className="aia-skel-chips-row">
+            <span className="aia-skel aia-skel-pill" style={{ width: '132px', height: '34px' }} />
+            <span className="aia-skel aia-skel-pill" style={{ width: '154px', height: '34px' }} />
+            <span className="aia-skel aia-skel-pill" style={{ width: '118px', height: '34px' }} />
+            <span className="aia-skel aia-skel-pill" style={{ width: '140px', height: '34px' }} />
+          </div>
+
+          <span className="aia-skel" style={{ width: '100%', height: '44px', borderRadius: '11px' }} />
+        </div>
+
+        {/* Skeleton tarjetas de materiales generados */}
+        {[0, 1].map((idx) => (
+          <div key={idx} className="aia-bento-card aia-skel-pkg-card">
+            <div className="aia-skel-pkg-left">
+              <span className="aia-skel" style={{ width: '32px', height: '32px', borderRadius: '9px', flexShrink: 0 }} />
+              <div className="aia-skel-pkg-lines">
+                <span className="aia-skel" style={{ width: idx === 0 ? '48%' : '40%', height: '15px' }} />
+                <span className="aia-skel" style={{ width: idx === 0 ? '68%' : '58%', height: '12px' }} />
+              </div>
+            </div>
+            <div className="aia-skel-pkg-actions">
+              <span className="aia-skel" style={{ width: '112px', height: '32px', borderRadius: '8px' }} />
+              <span className="aia-skel" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
@@ -402,33 +458,41 @@ export default function AulaAdaptativaSuite({
                 placeholder="Seleccionar estudiante..."
               />
 
-              <button
-                type="button"
-                className={`aia-credential-btn ${
-                  studentAccessMeta?.isActive
-                    ? 'is-active'
-                    : studentAccessMeta
-                      ? 'is-paused'
-                      : 'is-unassigned'
-                }`}
-                onClick={() => setShowAccessModal(true)}
-                title="Abrir modal para asignar o gestionar el documento y PIN de acceso del estudiante"
-                aria-haspopup="dialog"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                  key
-                </span>
-                <span className="aia-tabular">
-                  {studentAccessMeta?.isActive
-                    ? `Acceso Activo · Doc: ${studentAccessMeta.studentDoc}`
-                    : studentAccessMeta
-                      ? `Acceso Pausado · Doc: ${studentAccessMeta.studentDoc}`
-                      : 'Asignar Acceso Alumno'}
-                </span>
-                <span className="material-symbols-outlined aia-credential-btn-launch" aria-hidden="true">
-                  open_in_new
-                </span>
-              </button>
+              {isLoadingAccess ? (
+                <span
+                  className="aia-skel aia-skel-access-pill"
+                  role="status"
+                  aria-label="Cargando estado de acceso del estudiante"
+                />
+              ) : (
+                <button
+                  type="button"
+                  className={`aia-credential-btn ${
+                    studentAccessMeta?.isActive
+                      ? 'is-active'
+                      : studentAccessMeta
+                        ? 'is-paused'
+                        : 'is-unassigned'
+                  }`}
+                  onClick={() => setShowAccessModal(true)}
+                  title="Abrir modal para asignar o gestionar el documento y PIN de acceso del estudiante"
+                  aria-haspopup="dialog"
+                >
+                  <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+                    key
+                  </span>
+                  <span className="aia-tabular">
+                    {studentAccessMeta?.isActive
+                      ? `Acceso Activo · Doc: ${studentAccessMeta.studentDoc}`
+                      : studentAccessMeta
+                        ? `Acceso Pausado · Doc: ${studentAccessMeta.studentDoc}`
+                        : 'Asignar Acceso Alumno'}
+                  </span>
+                  <span className="material-symbols-outlined aia-credential-btn-launch" aria-hidden="true">
+                    open_in_new
+                  </span>
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -461,6 +525,9 @@ export default function AulaAdaptativaSuite({
             packages={visiblePackages}
             expandedPkgId={expandedPkgId}
             profile={profile}
+            isLoading={!aulaReady}
+            isGenerating={isGenerating}
+            generatingSubject={activeArea?.displayArea || activeArea?.area || ''}
             onToggleExpand={(pkgId) => {
               setSelectedPkgId(pkgId);
               setExpandedPkgId((prev) => (prev === pkgId ? null : pkgId));

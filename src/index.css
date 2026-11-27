@@ -9958,6 +9958,216 @@ body.dark-mode .aia-credential-btn.is-paused {
   }
 }
 
+/* =========================================
+   AULA IA · SKELETON LOADERS DE TARJETAS
+   ========================================= */
+@keyframes aiaSkelShimmer {
+  0% {
+    background-position: -420px 0;
+  }
+  100% {
+    background-position: 420px 0;
+  }
+}
+
+.aia-skel {
+  display: block;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.16) 25%,
+    rgba(148, 163, 184, 0.3) 50%,
+    rgba(148, 163, 184, 0.16) 75%
+  );
+  background-size: 840px 100%;
+  animation: aiaSkelShimmer 1.35s linear infinite;
+}
+
+body.dark-mode .aia-skel {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.06) 25%,
+    rgba(255, 255, 255, 0.13) 50%,
+    rgba(255, 255, 255, 0.06) 75%
+  );
+  background-size: 840px 100%;
+}
+
+.aia-skel-pill {
+  border-radius: 999px;
+}
+
+.aia-skel-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.aia-skel-access-pill {
+  width: 210px;
+  height: 40px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.aia-skel-suite {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.aia-skel-topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+}
+
+.aia-skel-topbar-fields {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.aia-skel-topbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.aia-skel-studio-card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.aia-skel-row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.aia-skel-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.aia-skel-analysis {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--bg-app);
+  border: 1px solid var(--border-color);
+}
+
+.aia-skel-analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.aia-skel-analysis-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+
+.aia-skel-pkg-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+}
+
+.aia-skel-pkg-card.is-generating {
+  border-color: rgba(43, 87, 154, 0.35);
+}
+
+.aia-skel-pkg-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.aia-skel-pkg-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.aia-skel-pkg-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.aia-skel-access-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 6px 0 4px;
+}
+
+.aia-skel-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.aia-skel-student-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+}
+
+@media (max-width: 720px) {
+  .aia-skel-analysis-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .aia-skel-pkg-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .aia-skel-pkg-actions {
+    justify-content: flex-end;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aia-skel {
+    animation: none;
+    background: rgba(148, 163, 184, 0.2);
+  }
+
+  body.dark-mode .aia-skel {
+    background: rgba(255, 255, 255, 0.08);
+  }
+}
+
 /* Secuencia animada del Reloj de Arena (Arena baja -> llena base -> gira 180° -> repite sin salto) */
 .aia-yt-hourglass-wrap {
   display: inline-flex;
@@ -17365,34 +17575,113 @@ body.dark-mode .aia-portal-subject-switcher {
 }
 
 .aia-portal-guide-toggle {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 32px;
-  padding: 0 11px;
-  border-radius: 8px;
+  gap: 7px;
+  height: 36px;
+  padding: 0 12px 0 6px;
+  border-radius: 999px;
   border: 1px solid var(--border-color);
-  background: var(--bg-app);
+  background: var(--bg-card);
   color: var(--text-main);
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.8rem;
+  font-weight: 700;
   cursor: pointer;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05);
   transition:
     background-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
     border-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
     color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1),
     transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.aia-portal-guide-toggle:hover,
+.aia-guide-icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--bg-app);
+  color: var(--text-main);
+  flex-shrink: 0;
+  transition:
+    background-color 220ms ease,
+    color 220ms ease;
+}
+
+.aia-portal-guide-toggle:hover {
+  border-color: rgba(100, 116, 139, 0.45);
+  background: var(--bg-app);
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.07);
+  transform: translateY(-1px);
+}
+
+/* Al abrirse mantiene el mismo tono neutro del botón (solo gira la flecha y el foquito deja de parpadear) */
 .aia-portal-guide-toggle.is-open {
-  border-color: var(--primary);
-  background: var(--primary-light);
-  color: var(--primary);
+  border-color: rgba(100, 116, 139, 0.45);
 }
 
 .aia-portal-guide-toggle:active {
   transform: scale(0.97);
+}
+
+/* Solo el vidrio del bombillo se enciende en amarillo y parpadea suavemente al entrar (5s) */
+.aia-guide-bulb-svg {
+  display: block;
+  overflow: visible;
+}
+
+.aia-guide-bulb-glass {
+  fill: #fde047;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.aia-portal-guide-toggle.is-attention .aia-guide-bulb-glass {
+  animation: aiaGuideBulbGlassBlink 1.25s ease-in-out infinite;
+}
+
+.aia-portal-guide-toggle.is-attention .aia-guide-bulb-svg {
+  animation: aiaGuideBulbSvgGlow 1.25s ease-in-out infinite;
+}
+
+@keyframes aiaGuideBulbGlassBlink {
+  0%, 100% {
+    opacity: 0;
+  }
+  38%, 62% {
+    opacity: 1;
+  }
+}
+
+@keyframes aiaGuideBulbSvgGlow {
+  0%, 100% {
+    filter: none;
+  }
+  38%, 62% {
+    filter: drop-shadow(0 0 4px rgba(250, 204, 21, 0.9));
+  }
+}
+
+body.dark-mode .aia-portal-guide-toggle {
+  border-color: var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+}
+
+body.dark-mode .aia-guide-icon-badge {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aia-portal-guide-toggle.is-attention .aia-guide-bulb-glass,
+  .aia-portal-guide-toggle.is-attention .aia-guide-bulb-svg {
+    animation-duration: 1.8s;
+  }
 }
 
 .aia-portal-guide-chevron {

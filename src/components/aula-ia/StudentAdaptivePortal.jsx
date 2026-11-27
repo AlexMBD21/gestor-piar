@@ -37,10 +37,16 @@ export default function StudentAdaptivePortal({
   const [activeModule, setActiveModule] = useState(loadSavedStudentModule); // 'slides' | 'video' | 'games' | 'quiz'
   const [remediationFocus, setRemediationFocus] = useState(null);
   const [showGuide, setShowGuide] = useState(false);
+  const [highlightGuide, setHighlightGuide] = useState(true);
   const portalContainerRef = useRef(null);
   const { isFullscreen, toggleFullscreen: handleToggleFullscreen } = useFullscreenToggle(
     portalContainerRef
   );
+
+  useEffect(() => {
+    if (!pkg?.id) return;
+    setHighlightGuide(true);
+  }, [pkg?.id]);
 
   useEffect(() => {
     try {
@@ -237,13 +243,71 @@ export default function StudentAdaptivePortal({
             <div className="aia-portal-focus-actions">
               <button
                 type="button"
-                className={`aia-portal-guide-toggle ${showGuide ? 'is-open' : ''}`}
-                onClick={() => setShowGuide((prev) => !prev)}
+                className={`aia-portal-guide-toggle ${showGuide ? 'is-open' : ''} ${
+                  highlightGuide && !showGuide ? 'is-attention' : ''
+                }`}
+                onMouseEnter={() => setHighlightGuide(false)}
+                onClick={() => {
+                  setHighlightGuide(false);
+                  setShowGuide((prev) => !prev);
+                }}
                 aria-expanded={showGuide}
                 aria-controls="aia-portal-guide-drawer"
+                title="Ver tu meta de hoy y consejos personalizados"
               >
-                <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
-                  tips_and_updates
+                <span className="aia-guide-icon-badge" aria-hidden="true">
+                  <svg
+                    className="aia-guide-bulb-svg"
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="none"
+                  >
+                    {/* Relleno amarillo del vidrio (se enciende y parpadea solo esta parte) */}
+                    <path
+                      className="aia-guide-bulb-glass"
+                      d="M12 2.5C7.9 2.5 5 5.4 5 9.2C5 11.7 6.3 13.4 7.5 14.9C8.2 15.8 8.7 16.6 8.9 17.4H15.1C15.3 16.6 15.8 15.8 16.5 14.9C17.7 13.4 19 11.7 19 9.2C19 5.4 16.1 2.5 12 2.5Z"
+                    />
+                    {/* Contorno del vidrio */}
+                    <path
+                      d="M12 2.5C7.9 2.5 5 5.4 5 9.2C5 11.7 6.3 13.4 7.5 14.9C8.2 15.8 8.7 16.6 8.9 17.4H15.1C15.3 16.6 15.8 15.8 16.5 14.9C17.7 13.4 19 11.7 19 9.2C19 5.4 16.1 2.5 12 2.5Z"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinejoin="round"
+                    />
+                    {/* Reflejo curvo superior izquierdo */}
+                    <path
+                      className="aia-guide-bulb-shine"
+                      d="M7.6 8.6C7.8 7 8.8 5.8 10.2 5.2"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                    />
+                    {/* Filamento interno */}
+                    <path
+                      d="M10.4 17.2V13.6C10.4 12.8 9.7 12.2 9 12.6C8.4 13 8.8 14 9.6 14H14.4C15.2 14 15.6 13 15 12.6C14.3 12.2 13.6 12.8 13.6 13.6V17.2"
+                      stroke="currentColor"
+                      strokeWidth="1.35"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    {/* Base roscada */}
+                    <rect
+                      x="8.7"
+                      y="17.4"
+                      width="6.6"
+                      height="3"
+                      rx="1"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                    />
+                    <path
+                      d="M9.8 20.4C10.2 21.3 11 21.8 12 21.8C13 21.8 13.8 21.3 14.2 20.4"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                    />
+                  </svg>
                 </span>
                 <span>Guía y meta</span>
                 <span

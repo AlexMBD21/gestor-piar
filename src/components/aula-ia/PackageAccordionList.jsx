@@ -7,6 +7,9 @@ export default function PackageAccordionList({
   packages,
   expandedPkgId,
   profile,
+  isLoading = false,
+  isGenerating = false,
+  generatingSubject = '',
   onToggleExpand,
   onSupervise,
   onTogglePublish,
@@ -50,19 +53,67 @@ export default function PackageAccordionList({
     };
   }, [expandedPkgId]);
 
-  if (!packages || packages.length === 0) return null;
+  const hasPackages = Array.isArray(packages) && packages.length > 0;
+  if (!hasPackages && !isLoading && !isGenerating) return null;
 
   return (
     <div ref={sectionRef} className="aia-generated-results-section">
       <div className="aia-materials-header">
         <h4 className="aia-materials-heading">
           <span>Materiales generados</span>
-          <span className="aia-materials-count-pill aia-tabular">{packages.length}</span>
+          {hasPackages && (
+            <span className="aia-materials-count-pill aia-tabular">{packages.length}</span>
+          )}
         </h4>
       </div>
 
       <div className="aia-packages-accordion-stack aia-packages-compact-list">
-        {packages.map((pkg) => {
+        {isGenerating && (
+          <div
+            className="aia-bento-card aia-skel-pkg-card is-generating"
+            role="status"
+            aria-live="polite"
+            aria-label={generatingSubject ? `Generando material de ${generatingSubject}` : 'Generando material'}
+          >
+            <div className="aia-skel-pkg-left">
+              <span className="aia-skel" style={{ width: '32px', height: '32px', borderRadius: '9px', flexShrink: 0 }} />
+              <div className="aia-skel-pkg-lines">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                  <span className="aia-skel" style={{ width: '165px', height: '15px' }} />
+                  <span className="aia-skel aia-skel-pill" style={{ width: '88px', height: '20px' }} />
+                </div>
+                <span className="aia-skel" style={{ width: '66%', height: '12px' }} />
+              </div>
+            </div>
+            <div className="aia-skel-pkg-actions">
+              <span className="aia-skel" style={{ width: '116px', height: '32px', borderRadius: '8px' }} />
+              <span className="aia-skel" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
+            </div>
+          </div>
+        )}
+
+        {isLoading && !hasPackages
+          ? [0, 1].map((idx) => (
+              <div
+                key={`pkg-skel-${idx}`}
+                className="aia-bento-card aia-skel-pkg-card"
+                role="status"
+                aria-label="Cargando materiales generados"
+              >
+                <div className="aia-skel-pkg-left">
+                  <span className="aia-skel" style={{ width: '32px', height: '32px', borderRadius: '9px', flexShrink: 0 }} />
+                  <div className="aia-skel-pkg-lines">
+                    <span className="aia-skel" style={{ width: idx === 0 ? '46%' : '38%', height: '15px' }} />
+                    <span className="aia-skel" style={{ width: idx === 0 ? '68%' : '54%', height: '12px' }} />
+                  </div>
+                </div>
+                <div className="aia-skel-pkg-actions">
+                  <span className="aia-skel" style={{ width: '112px', height: '32px', borderRadius: '8px' }} />
+                  <span className="aia-skel" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
+                </div>
+              </div>
+            ))
+          : (packages || []).map((pkg) => {
           const isExpanded = expandedPkgId === pkg.id;
           const pkgDiag = pkg.teacherDiagnosis || {};
           const isPublished = pkg.status === 'published';
