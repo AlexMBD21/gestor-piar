@@ -612,6 +612,7 @@ export default function AdaptiveGamesArena({
   pkg,
   activity,
   isMirrorPreview = false,
+  fullscreenButton = null,
   onCompleteGames
 }) {
   const { recordGameTelemetry } = useAulaIa();
@@ -662,13 +663,16 @@ export default function AdaptiveGamesArena({
           <span className="aia-badge-soft">{meta.skill}</span>
         </div>
 
-        <div className="aia-telemetry-chip">
-          <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-            sports_esports
-          </span>
-          <span className="aia-tabular">
-            Juegos realizados: {completedCount}/{games.length}
-          </span>
+        <div className="aia-media-header-right">
+          <div className="aia-telemetry-chip">
+            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+              sports_esports
+            </span>
+            <span className="aia-tabular">
+              Juegos realizados: {completedCount}/{games.length}
+            </span>
+          </div>
+          {fullscreenButton}
         </div>
       </div>
 

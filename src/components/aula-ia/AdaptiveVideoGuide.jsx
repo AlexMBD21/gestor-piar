@@ -12,6 +12,7 @@ export default function AdaptiveVideoGuide({
   pkg,
   activity,
   isMirrorPreview = false,
+  fullscreenButton = null,
   onCompleteVideo
 }) {
   const { recordVideoTelemetry, updatePackageYoutubeVideo } = useAulaIa();
@@ -171,13 +172,16 @@ export default function AdaptiveVideoGuide({
           <span className="aia-badge-soft">{pkg?.subject}</span>
         </div>
 
-        <div className="aia-telemetry-chip">
-          <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-            smart_display
-          </span>
-          <span className="aia-tabular">
-            {activity?.videoCompleted ? '✓ Video completado' : 'Video de refuerzo'}
-          </span>
+        <div className="aia-media-header-right">
+          <div className="aia-telemetry-chip">
+            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+              smart_display
+            </span>
+            <span className="aia-tabular">
+              {activity?.videoCompleted ? '✓ Video completado' : 'Video de refuerzo'}
+            </span>
+          </div>
+          {fullscreenButton}
         </div>
       </div>
 

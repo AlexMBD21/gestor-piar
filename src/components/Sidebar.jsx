@@ -1,4 +1,5 @@
 import { usePiar } from '../context/PiarContext';
+import { useAulaIa } from '../context/AulaIaContext';
 
 export default function Sidebar({
   activeTab,
@@ -10,10 +11,24 @@ export default function Sidebar({
   isSuperAdmin,
   onSignOut
 }) {
-  const { getActiveStudent } = usePiar();
-  const activeStudent = getActiveStudent();
+  const { piars, getActiveStudent } = usePiar();
+  const { aulaStudentId } = useAulaIa();
 
   const isAulaIaMode = activeTab === 'tab-aula-ia';
+  const piarActiveStudent = getActiveStudent();
+  const aulaActiveStudent = aulaStudentId
+    ? piars.find((p) => p.id === aulaStudentId && p.data?.id !== 'blanco-temp') || null
+    : null;
+  const activeStudent = isAulaIaMode ? aulaActiveStudent : piarActiveStudent;
+
+  const handleStudentShortcutClick = () => {
+    if (isAulaIaMode) {
+      if (setActiveIaSubTab) setActiveIaSubTab('ia-studio');
+      document.querySelector('.main-scroll-viewport')?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    switchTab('tab-dashboard');
+  };
 
   const mainItem = {
     tab: 'tab-dashboard',
@@ -119,8 +134,12 @@ export default function Sidebar({
           ) : (
             <div
               className="sidebar-student-card sidebar-student-card--empty"
-              onClick={() => switchTab('tab-dashboard')}
-              title="Ir al Panel de Control para seleccionar un estudiante"
+              onClick={handleStudentShortcutClick}
+              title={
+                isAulaIaMode
+                  ? 'Seleccionar un estudiante en el Aula IA'
+                  : 'Ir al Panel de Control para seleccionar un estudiante'
+              }
               style={{ cursor: 'pointer' }}
             >
               <div className="sidebar-student-card__icon sidebar-student-card__icon--muted">
@@ -128,7 +147,9 @@ export default function Sidebar({
               </div>
               <div className="sidebar-student-card__info">
                 <span className="sidebar-student-card__empty-title">Ningún estudiante</span>
-                <span className="sidebar-student-card__empty-sub">Seleccionar en Panel →</span>
+                <span className="sidebar-student-card__empty-sub">
+                  {isAulaIaMode ? 'Seleccionar en Aula IA →' : 'Seleccionar en Panel →'}
+                </span>
               </div>
             </div>
           )}
@@ -139,10 +160,12 @@ export default function Sidebar({
           className={`sidebar-student-avatar ${activeStudent ? 'sidebar-student-avatar--active' : ''}`}
           title={
             activeStudent
-              ? `Estudiante: ${activeStudent.nombre}`
-              : 'Ningún estudiante (Ir al Panel)'
+              ? `${isAulaIaMode ? 'Estudiante en Aula IA' : 'Estudiante'}: ${activeStudent.nombre}`
+              : isAulaIaMode
+                ? 'Ningún estudiante en Aula IA'
+                : 'Ningún estudiante (Ir al Panel)'
           }
-          onClick={() => switchTab('tab-dashboard')}
+          onClick={handleStudentShortcutClick}
         >
           <span className="material-symbols-outlined">
             {activeStudent ? 'person' : 'person_search'}

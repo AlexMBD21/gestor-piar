@@ -10322,6 +10322,15 @@ body.dark-mode .aia-student-topbar {
   transform: translateY(-1px);
 }
 
+.aia-stepper-fs-btn:active {
+  transform: scale(0.97);
+}
+
+.aia-stepper-fs-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 .aia-stepper-fs-btn.active {
   background: var(--primary);
   border-color: var(--primary);
@@ -16875,6 +16884,31 @@ body.dark-mode .aia-portal-subject-switcher {
 
 .aia-portal-fs-btn:active {
   transform: scale(0.95);
+}
+
+.aia-media-header-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.aia-stage-fs-btn {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+}
+
+.aia-stage-fs-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+.aia-stage-fs-btn.active:hover {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+  color: #ffffff;
 }
 
 .aia-portal-guide-drawer {

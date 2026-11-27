@@ -129,6 +129,21 @@ export default function StudentAdaptivePortal({
 
   const isAnyFullscreen = isFullscreen || externalFullscreen;
 
+  const fullscreenButton = (
+    <button
+      type="button"
+      className={`aia-portal-fs-btn aia-stage-fs-btn ${isAnyFullscreen ? 'active' : ''}`}
+      onClick={onToggleExternalFullscreen ? onToggleExternalFullscreen : handleToggleFullscreen}
+      title={isAnyFullscreen ? 'Salir de pantalla completa (Esc)' : 'Ver en pantalla completa'}
+      aria-label={isAnyFullscreen ? 'Salir de pantalla completa' : 'Ver en pantalla completa'}
+      aria-pressed={isAnyFullscreen}
+    >
+      <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+        {isAnyFullscreen ? 'fullscreen_exit' : 'fullscreen'}
+      </span>
+    </button>
+  );
+
   return (
     <div
       ref={portalContainerRef}
@@ -238,18 +253,6 @@ export default function StudentAdaptivePortal({
                   expand_more
                 </span>
               </button>
-
-              <button
-                type="button"
-                className="aia-portal-fs-btn"
-                onClick={onToggleExternalFullscreen ? onToggleExternalFullscreen : handleToggleFullscreen}
-                title="Ver en pantalla completa"
-                aria-label="Ver en pantalla completa"
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                  fullscreen
-                </span>
-              </button>
             </div>
           </div>
 
@@ -295,8 +298,8 @@ export default function StudentAdaptivePortal({
         </section>
       )}
 
-      {/* Stepper compacto de los 4 pasos (botón de salir de pantalla completa visible solo en modo fullscreen) */}
-      <div className={`aia-stepper-with-fs ${!isAnyFullscreen ? 'is-full-width' : ''}`}>
+      {/* Stepper compacto de los 4 pasos */}
+      <div className="aia-stepper-with-fs is-full-width">
         <nav className="aia-student-module-grid aia-stepper-compact" aria-label="Ruta de estudio y evaluación">
           {modules.map((m) => {
             const isActive = activeModule === m.id;
@@ -335,19 +338,6 @@ export default function StudentAdaptivePortal({
             );
           })}
         </nav>
-
-        {isAnyFullscreen && (
-          <button
-            type="button"
-            className="aia-stepper-fs-btn active"
-            onClick={onToggleExternalFullscreen ? onToggleExternalFullscreen : handleToggleFullscreen}
-            title="Salir de pantalla completa (Esc)"
-            aria-label="Salir de pantalla completa"
-          >
-            <span className="material-symbols-outlined">fullscreen_exit</span>
-            <span>Salir</span>
-          </button>
-        )}
       </div>
 
       {/* Escenario Activo */}
@@ -358,6 +348,7 @@ export default function StudentAdaptivePortal({
             activity={activity}
             isMirrorPreview={isMirrorPreview}
             remediationFocus={remediationFocus}
+            fullscreenButton={fullscreenButton}
             onClearRemediation={() => setRemediationFocus(null)}
             onReturnToQuiz={() => {
               setRemediationFocus(null);
@@ -374,6 +365,7 @@ export default function StudentAdaptivePortal({
             pkg={pkg}
             activity={activity}
             isMirrorPreview={isMirrorPreview}
+            fullscreenButton={fullscreenButton}
             onCompleteVideo={() => switchModule('games')}
           />
         )}
@@ -382,6 +374,7 @@ export default function StudentAdaptivePortal({
             pkg={pkg}
             activity={activity}
             isMirrorPreview={isMirrorPreview}
+            fullscreenButton={fullscreenButton}
             onCompleteGames={() => switchModule('quiz')}
           />
         )}
@@ -390,6 +383,7 @@ export default function StudentAdaptivePortal({
             pkg={pkg}
             activity={activity}
             isMirrorPreview={isMirrorPreview}
+            fullscreenButton={fullscreenButton}
             onNavigateToMedia={handleNavigateFromQuiz}
           />
         )}

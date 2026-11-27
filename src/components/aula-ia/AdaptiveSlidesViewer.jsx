@@ -164,6 +164,7 @@ export default function AdaptiveSlidesViewer({
   activity,
   isMirrorPreview = false,
   remediationFocus = null,
+  fullscreenButton = null,
   onClearRemediation,
   onReturnToQuiz,
   onCompleteSlides
@@ -529,6 +530,8 @@ export default function AdaptiveSlidesViewer({
             </span>
             <span>{isExportingPptx ? 'Generando .pptx...' : 'Descargar PowerPoint'}</span>
           </button>
+
+          {fullscreenButton}
         </div>
       </div>
 

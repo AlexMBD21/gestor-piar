@@ -18,6 +18,7 @@ export default function AdaptiveQuizMultiAttempt({
   pkg,
   activity,
   isMirrorPreview = false,
+  fullscreenButton = null,
   onNavigateToMedia
 }) {
   const { submitQuizAttempt } = useAulaIa();
@@ -131,21 +132,24 @@ export default function AdaptiveQuizMultiAttempt({
           )}
         </div>
 
-        {isMirrorPreview ? (
-          <div className="aia-telemetry-chip">
-            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-              visibility
-            </span>
-            <span>Solo vista de recursos</span>
-          </div>
-        ) : (
-          <div className="aia-telemetry-chip">
-            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
-              emoji_events
-            </span>
-            <span className="aia-tabular">Mejor logro: {bestScorePct}%</span>
-          </div>
-        )}
+        <div className="aia-media-header-right">
+          {isMirrorPreview ? (
+            <div className="aia-telemetry-chip">
+              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                visibility
+              </span>
+              <span>Solo vista de recursos</span>
+            </div>
+          ) : (
+            <div className="aia-telemetry-chip">
+              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>
+                emoji_events
+              </span>
+              <span className="aia-tabular">Mejor logro: {bestScorePct}%</span>
+            </div>
+          )}
+          {fullscreenButton}
+        </div>
       </div>
 
       {/* Modo 1: Estudiante respondiendo 1 pregunta a la vez (o docente revisando preguntas en modo vista previa) */}
